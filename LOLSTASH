@@ -1,0 +1,3676 @@
+# diff --git a/swift/wispr/widget/widget.swift b/swift/wispr/widget/widget.swift
+# index 836dbc1..f282ad5 100644
+# --- a/swift/wispr/widget/widget.swift
+# +++ b/swift/wispr/widget/widget.swift
+# @@ -20,7 +20,6 @@ struct Provider: AppIntentTimelineProvider {
+#      func timeline(for configuration: ConfigurationAppIntent, in _: Context) async -> Timeline<SimpleEntry> {
+#          var entries: [SimpleEntry] = []
+#
+# -        // Generate a timeline consisting of five entries an hour apart, starting from the current date.
+#          let currentDate = Date()
+#          for hourOffset in 0 ..< 5 {
+#              let entryDate = Calendar.current.date(byAdding: .hour, value: hourOffset, to: currentDate)!
+# @@ -50,6 +49,7 @@ struct widget: Widget {
+#                  .font(.custom("GohuFont11NFM", size: 12))
+#                  .containerBackground(.black, for: .widget)
+#                  .environment(SharedState.dayDetailsConductor)
+# +                .environment(SharedState.widgetConductor)
+#                  .modelContainer(SharedState.sharedModelContainer)
+#          }
+#      }
+# diff --git a/swift/wispr/wispr.xcodeproj/project.pbxproj b/swift/wispr/wispr.xcodeproj/project.pbxproj
+# index 7c8eb70..8577a50 100644
+# --- a/swift/wispr/wispr.xcodeproj/project.pbxproj
+# +++ b/swift/wispr/wispr.xcodeproj/project.pbxproj
+# @@ -8,7 +8,6 @@
+#
+#  /* Begin PBXBuildFile section */
+#  		08E45829FB8748825105CC2B /* Util.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71A13C5C3F25F0F3FA6FF17A /* Util.swift */; };
+# -		361823B322067C06D146BFB6 /* Util.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71A13C5C3F25F0F3FA6FF17A /* Util.swift */; };
+#  		6CFADDFD14F573DCEA93E0B1 /* TimeLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C44952C8CF97636BAC358E05 /* TimeLine.swift */; };
+#  		7DB8800CCAC7514D54CDDF8C /* Day.swift in Sources */ = {isa = PBXBuildFile; fileRef = 675F733268FCCC5DFD8CFD9C /* Day.swift */; };
+#  		8B4854B57B7C4C50552CAFE4 /* TimeLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C44952C8CF97636BAC358E05 /* TimeLine.swift */; };
+# @@ -65,15 +64,8 @@
+#  /* End PBXCopyFilesBuildPhase section */
+#
+#  /* Begin PBXFileReference section */
+# -		107A94E1F61ED6B9E3353F91 /* DayDetail.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DayDetail.swift; sourceTree = "<group>"; };
+# -		11317E2015F93A11C0FB061C /* Hour.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Hour.swift; sourceTree = "<group>"; };
+# -		22012776C3CDEFFC1F0D8833 /* Future.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Future.swift; sourceTree = "<group>"; };
+# -		31DA0596A1365E6B9C7259DD /* Observables.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Observables.swift; sourceTree = "<group>"; };
+# -		47A9352EC3E6DAF16016F1E6 /* Element.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Element.swift; sourceTree = "<group>"; };
+# -		5D257C9EEDD4D4A1A7A613B8 /* NewItem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NewItem.swift; sourceTree = "<group>"; };
+#  		675F733268FCCC5DFD8CFD9C /* Day.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Day.swift; sourceTree = "<group>"; };
+#  		71A13C5C3F25F0F3FA6FF17A /* Util.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Util.swift; sourceTree = "<group>"; };
+# -		9E9705953FAEE7D4F4B75F65 /* Past.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Past.swift; sourceTree = "<group>"; };
+#  		A28D87042D5A83D700421031 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+#  		A28D87062D5A83D700421031 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+#  		A2A587862D3120F20000B20D /* wispr.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = wispr.app; sourceTree = BUILT_PRODUCTS_DIR; };
+# @@ -81,9 +73,7 @@
+#  		A2A587A22D3120F30000B20D /* wisprUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = wisprUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+#  		A2B9ACF22D5B249C0087911B /* widgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = widgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+#  		A2B9AD0A2D5B25190087911B /* widgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = widgetExtension.entitlements; sourceTree = "<group>"; };
+# -		AD7F7ECBCFFA99C65D789F04 /* Quarter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Quarter.swift; sourceTree = "<group>"; };
+#  		C44952C8CF97636BAC358E05 /* TimeLine.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TimeLine.swift; sourceTree = "<group>"; };
+# -		E19CC08EF80BFAEF58AD1D07 /* DayBox.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DayBox.swift; sourceTree = "<group>"; };
+#  /* End PBXFileReference section */
+#
+#  /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+# @@ -282,17 +272,8 @@
+#  			isa = PBXGroup;
+#  			children = (
+#  				675F733268FCCC5DFD8CFD9C /* Day.swift */,
+# -				11317E2015F93A11C0FB061C /* Hour.swift */,
+# -				AD7F7ECBCFFA99C65D789F04 /* Quarter.swift */,
+# -				5D257C9EEDD4D4A1A7A613B8 /* NewItem.swift */,
+#  				71A13C5C3F25F0F3FA6FF17A /* Util.swift */,
+# -				22012776C3CDEFFC1F0D8833 /* Future.swift */,
+# -				9E9705953FAEE7D4F4B75F65 /* Past.swift */,
+# -				107A94E1F61ED6B9E3353F91 /* DayDetail.swift */,
+#  				C44952C8CF97636BAC358E05 /* TimeLine.swift */,
+# -				E19CC08EF80BFAEF58AD1D07 /* DayBox.swift */,
+# -				31DA0596A1365E6B9C7259DD /* Observables.swift */,
+# -				47A9352EC3E6DAF16016F1E6 /* Element.swift */,
+#  			);
+#  			path = wispr;
+#  			sourceTree = "<group>";
+# @@ -484,7 +465,6 @@
+#  			isa = PBXSourcesBuildPhase;
+#  			buildActionMask = 2147483647;
+#  			files = (
+# -				361823B322067C06D146BFB6 /* Util.swift in Sources */,
+#  				6CFADDFD14F573DCEA93E0B1 /* TimeLine.swift in Sources */,
+#  			);
+#  			runOnlyForDeploymentPostprocessing = 0;
+# diff --git a/swift/wispr/wispr.xcodeproj/project.xcworkspace/xcuserdata/faisalalalaiwat.xcuserdatad/UserInterfaceState.xcuserstate b/swift/wispr/wispr.xcodeproj/project.xcworkspace/xcuserdata/faisalalalaiwat.xcuserdatad/UserInterfaceState.xcuserstate
+# index 6bdeabe..9510c8c 100644
+# Binary files a/swift/wispr/wispr.xcodeproj/project.xcworkspace/xcuserdata/faisalalalaiwat.xcuserdatad/UserInterfaceState.xcuserstate and b/swift/wispr/wispr.xcodeproj/project.xcworkspace/xcuserdata/faisalalalaiwat.xcuserdatad/UserInterfaceState.xcuserstate differ
+# diff --git a/swift/wispr/wispr.xcodeproj/xcuserdata/faisalalalaiwat.xcuserdatad/xcdebugger/Breakpoints_v2.xcbkptlist b/swift/wispr/wispr.xcodeproj/xcuserdata/faisalalalaiwat.xcuserdatad/xcdebugger/Breakpoints_v2.xcbkptlist
+# index 0a1864f..0509d15 100644
+# --- a/swift/wispr/wispr.xcodeproj/xcuserdata/faisalalalaiwat.xcuserdatad/xcdebugger/Breakpoints_v2.xcbkptlist
+# +++ b/swift/wispr/wispr.xcodeproj/xcuserdata/faisalalalaiwat.xcuserdatad/xcdebugger/Breakpoints_v2.xcbkptlist
+# @@ -58,11 +58,121 @@
+#              filePath = "wispr/Widget.swift"
+#              startingColumnNumber = "9223372036854775807"
+#              endingColumnNumber = "9223372036854775807"
+# -            startingLineNumber = "314"
+# -            endingLineNumber = "314"
+# +            startingLineNumber = "315"
+# +            endingLineNumber = "315"
+#              landmarkName = "body"
+#              landmarkType = "24">
+#           </BreakpointContent>
+#        </BreakpointProxy>
+# +      <BreakpointProxy
+# +         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+# +         <BreakpointContent
+# +            uuid = "12EF561D-D234-4862-AD34-A4D95F87D838"
+# +            shouldBeEnabled = "No"
+# +            ignoreCount = "0"
+# +            continueAfterRunningActions = "No"
+# +            filePath = "wispr/Day.swift"
+# +            startingColumnNumber = "9223372036854775807"
+# +            endingColumnNumber = "9223372036854775807"
+# +            startingLineNumber = "142"
+# +            endingLineNumber = "142"
+# +            landmarkName = "toolBar"
+# +            landmarkType = "24">
+# +         </BreakpointContent>
+# +      </BreakpointProxy>
+# +      <BreakpointProxy
+# +         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+# +         <BreakpointContent
+# +            uuid = "62E7C4BD-5794-4690-9C71-013238802D9D"
+# +            shouldBeEnabled = "No"
+# +            ignoreCount = "0"
+# +            continueAfterRunningActions = "No"
+# +            filePath = "wispr/Item.swift"
+# +            startingColumnNumber = "9223372036854775807"
+# +            endingColumnNumber = "9223372036854775807"
+# +            startingLineNumber = "1493"
+# +            endingLineNumber = "1493"
+# +            landmarkName = "body"
+# +            landmarkType = "24">
+# +         </BreakpointContent>
+# +      </BreakpointProxy>
+# +      <BreakpointProxy
+# +         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+# +         <BreakpointContent
+# +            uuid = "054A3248-CCAB-4640-8765-A4A9F10DC4D9"
+# +            shouldBeEnabled = "No"
+# +            ignoreCount = "0"
+# +            continueAfterRunningActions = "No"
+# +            filePath = "wispr/TimeLine.swift"
+# +            startingColumnNumber = "9223372036854775807"
+# +            endingColumnNumber = "9223372036854775807"
+# +            startingLineNumber = "335"
+# +            endingLineNumber = "335">
+# +         </BreakpointContent>
+# +      </BreakpointProxy>
+# +      <BreakpointProxy
+# +         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+# +         <BreakpointContent
+# +            uuid = "5B39DD0D-D738-462C-ADF6-4AEFB0483028"
+# +            shouldBeEnabled = "No"
+# +            ignoreCount = "0"
+# +            continueAfterRunningActions = "No"
+# +            filePath = "wispr/SharedContainer.swift"
+# +            startingColumnNumber = "9223372036854775807"
+# +            endingColumnNumber = "9223372036854775807"
+# +            startingLineNumber = "24"
+# +            endingLineNumber = "24"
+# +            landmarkName = "processEventData()"
+# +            landmarkType = "7">
+# +         </BreakpointContent>
+# +      </BreakpointProxy>
+# +      <BreakpointProxy
+# +         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+# +         <BreakpointContent
+# +            uuid = "97EC1F08-781E-43C5-BDCF-D7B6AD2EE037"
+# +            shouldBeEnabled = "No"
+# +            ignoreCount = "0"
+# +            continueAfterRunningActions = "No"
+# +            filePath = "wispr/Widget.swift"
+# +            startingColumnNumber = "9223372036854775807"
+# +            endingColumnNumber = "9223372036854775807"
+# +            startingLineNumber = "465"
+# +            endingLineNumber = "465"
+# +            landmarkName = "createNewItem()"
+# +            landmarkType = "7">
+# +         </BreakpointContent>
+# +      </BreakpointProxy>
+# +      <BreakpointProxy
+# +         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+# +         <BreakpointContent
+# +            uuid = "97EDBCB2-0446-40C6-B326-F2DE44D89CEC"
+# +            shouldBeEnabled = "No"
+# +            ignoreCount = "0"
+# +            continueAfterRunningActions = "No"
+# +            filePath = "wispr/Widget.swift"
+# +            startingColumnNumber = "9223372036854775807"
+# +            endingColumnNumber = "9223372036854775807"
+# +            startingLineNumber = "459"
+# +            endingLineNumber = "459"
+# +            landmarkName = "perform()"
+# +            landmarkType = "7">
+# +         </BreakpointContent>
+# +      </BreakpointProxy>
+# +      <BreakpointProxy
+# +         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+# +         <BreakpointContent
+# +            uuid = "013B8B29-171F-4B3E-86BA-57565E03BEC4"
+# +            shouldBeEnabled = "No"
+# +            ignoreCount = "0"
+# +            continueAfterRunningActions = "No"
+# +            filePath = "wispr/Day.swift"
+# +            startingColumnNumber = "9223372036854775807"
+# +            endingColumnNumber = "9223372036854775807"
+# +            startingLineNumber = "195"
+# +            endingLineNumber = "195"
+# +            landmarkName = "BottomToolbar"
+# +            landmarkType = "14">
+# +         </BreakpointContent>
+# +      </BreakpointProxy>
+#     </Breakpoints>
+#  </Bucket>
+diff --git a/swift/wispr/wispr/ContentView.swift b/swift/wispr/wispr/ContentView.swift
+index e188e58..d0e08f8 100644
+--- a/swift/wispr/wispr/ContentView.swift
++++ b/swift/wispr/wispr/ContentView.swift
+@@ -16,11 +16,13 @@ struct ContentView: View {
+     @Environment(\.modelContext) private var modelContext
+ 
+     var body: some View {
+-        DayDetails(date: Date())
+-            .onAppear {
++        DayDetails()
++        .onAppear {
++                WidgetCenter.shared.reloadAllTimelines()
++            }
++            .onDisappear {
+                 WidgetCenter.shared.reloadAllTimelines()
+             }
+-            .environment(SharedState.dayDetailsConductor)
+             .preferredColorScheme(.dark)
+     }
+ }
+diff --git a/swift/wispr/wispr/Day.swift b/swift/wispr/wispr/Day.swift
+index 8df4e57..cc69987 100644
+--- a/swift/wispr/wispr/Day.swift
++++ b/swift/wispr/wispr/Day.swift
+@@ -59,48 +59,37 @@ enum NavDestination: String, CaseIterable {
+     case day, timeline
+ }
+ 
+-#Preview {
+-    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+-    let container = try! ModelContainer(for: Item.self, configurations: config)
+-
+-    DayDetails(date: Date())
+-        .modelContainer(container)
+-        .preferredColorScheme(.dark)
+-        .background(.black)
+-}
+-
+ struct DayDetails: View {
+     @Environment(\.modelContext) private var modelContext: ModelContext
+-    @Environment(DayDetailsConductor.self) private var conductor: DayDetailsConductor
+-
++    @Environment(\.scenePhase) var scenePhase
+     @Environment(\.editMode) private var editMode
++
++    @Environment(DayDetailsConductor.self) private var conductor: DayDetailsConductor
++    @Environment(CalendarService.self) private var calendarService: CalendarService
+     @State var isEditing: Bool = false
+ 
+     @Namespace var namespace
+ 
+-    @State var date: Date
+     @Query var items: [Item]
+ 
++    @State var path: [NavDestination] = []
++    @FocusState var toolbarFocus: Bool
++
++    @State var newTaskLinkActive = false
++
+     var start: Date {
+-        Calendar.current.startOfDay(for: date)
++        Calendar.current.startOfDay(for: conductor.date)
+     }
+ 
+     var end: Date {
+         start.advanced(by: 86400)
+     }
+ 
+-    init(date: Date) {
+-        self.date = date
+-    }
+-
+     var dayItems: [Item] {
+         items.filter { start <= $0.timestamp && $0.timestamp < end && $0.parent == nil }.sorted(by: { $0.position < $1.position })
+     }
+ 
+-    @State var path: [NavDestination] = []
+-    @FocusState var toolbarFocus: Bool
+-
+-    @State var newTaskLinkActive = false
++    @State var editItem: Item?
+ 
+     var body: some View {
+         NavigationStack(path: $path) {
+@@ -108,60 +97,54 @@ struct DayDetails: View {
+                 if !conductor.isEditingItem {
+                     HStack {
+                         Image("Logo")
+-                            .resizable() // Make the image resizable if needed
+-                            .scaledToFit() // Adjust the content mode
+-                            .frame(width: 30, height: 30) // Set desired frame
++                            .resizable()
++                            .scaledToFit()
++                            .frame(width: 30, height: 30)
+                     }
+                 }
+ 
+                 VStack {
+-                    ItemList(items: dayItems)
++                    ItemList(editItem: $editItem, items: dayItems)
+                         .environment(\.editMode, .constant(self.isEditing ? EditMode.active : EditMode.inactive))
+                 }
+-                .overlay {
+-                    if conductor.isEditingItem || SharedState.editItem != nil {
+-                        VStack {
+-                            Button {
+-                                toolbarFocus = false
+-                                conductor.editItem = nil
+-                                SharedState.editItem = nil
+-                            } label: {
+-                                Color.clear
+-                            }
+-                        }
+-                    }
+-                }
+ 
+                 toolBar.focused($toolbarFocus)
+             }
+-            .matchedTransitionSource(id: date, in: namespace)
++            .matchedTransitionSource(id: conductor.date, in: namespace)
+             .navigationDestination(for: NavDestination.self) { destination in
+                 switch destination {
+                 case .timeline:
+-                    TimeLineView(path: $path, date: $date)
++                    TimeLineView(path: $path)
+                         .navigationBarBackButtonHidden()
+-                        .navigationTransition(.zoom(sourceID: date, in: namespace))
++                        .navigationTransition(
++                            .zoom(sourceID: conductor.date, in: namespace)
++                        )
+                 case .day:
+                     self
+                 }
+             }
+         }
++        .onChange(of: scenePhase) {
++            if [ScenePhase.background, ScenePhase.inactive].contains(scenePhase) {
++                SharedState.commitEditItem()
++            }
++        }
+         .font(.custom("GohuFont11NFM", size: 16))
++        .onAppear(perform: { calendarService.syncCalendar(modelContext: modelContext) })
+     }
+ 
+     @ViewBuilder
+     var toolBar: some View {
+         VStack {
+             TopToolbar(
++                editItem: $editItem,
+                 path: $path,
+-                date: $date,
+                 position: items.count
+             )
+ 
+             HStack {
+                 BottomToolbar(
+                     path: $path,
+-                    date: $date,
+                     itemCount: items.count
+                 ).onAppear {
+                     WidgetCenter.shared.reloadAllTimelines()
+@@ -171,13 +154,6 @@ struct DayDetails: View {
+             .tint(.white)
+     }
+ 
+-    var dateTime: Date {
+-        var comps = Calendar.current.dateComponents([.day, .month, .year], from: date)
+-        comps.hour = Calendar.current.component(.hour, from: Date())
+-        comps.minute = Calendar.current.component(.minute, from: Date())
+-        return Calendar.current.date(from: comps) ?? date
+-    }
+-
+     func dateString(date: Date) -> String {
+         return date.formatted(.dateTime.weekday(.wide).day().month().year())
+     }
+@@ -185,17 +161,15 @@ struct DayDetails: View {
+ 
+ struct TopToolbar: View {
+     @Environment(DayDetailsConductor.self) private var conductor: DayDetailsConductor
++    @Binding var editItem: Item?
+     @Binding var path: [NavDestination]
+-    @Binding var date: Date
+     let position: Int
+ 
+     var body: some View {
+-        if   conductor.isEditingItem || SharedState.editItem != nil {
++        @Bindable var conductor = conductor
++        if let e = editItem {
+             HStack {
+-                EditItemForm(
+-                    item: SharedState.editItem ?? conductor.editItem ??  createNewItem(),
+-                    date: $date
+-                )
++                EditItemForm(editItem: e, position: position)
+             }.transition(.push(from: .bottom))
+                 .opacity(conductor.showDatePicker ? 0 : 1)
+                 .onDisappear {
+@@ -205,127 +179,116 @@ struct TopToolbar: View {
+ 
+         if conductor.showDatePicker {
+             HStack {
+-                DatePicker("", selection: $date, displayedComponents: [.date])
++                DatePicker("", selection: $conductor.date, displayedComponents: [.date])
+                     .datePickerStyle(.graphical)
+                     .labelsHidden()
+             }
+         }
+     }
+-    
++
+     func createNewItem() -> Item {
+-        let d = date
+-        var comps = Calendar.current.dateComponents([.day, .month, .year], from: d)
+-        comps.hour = Calendar.current.component(.hour, from: Date())
+-        comps.minute = Calendar.current.component(.minute, from: Date())
+-        let timestamp = Calendar.current.date(from: comps) ?? d
+-        
+-        let newItem = Item(
+-            position: position,
+-            timestamp: timestamp
+-        )
+-        
+-        withAnimation {
+-            conductor.editItem = newItem
+-        }
+-        
+-        return newItem
++        return SharedState.createNewItem(date: conductor.date, position: position)
+     }
+ }
+ 
+ struct BottomToolbar: View {
++    @Environment(\.modelContext) private var modelContext: ModelContext
+     @Environment(DayDetailsConductor.self) private var conductor: DayDetailsConductor
+     @Binding var path: [NavDestination]
+-    @Binding var date: Date
+     let itemCount: Int
+ 
+     @State var newItemLink = false
+ 
+-    var body: some View {
+-        HStack {
+-            if !conductor.isEditingItem {
+-                NavigationLink(value: NavDestination.timeline) {
+-                    Image(systemName: "calendar.day.timeline.left")
+-                }.onChange(of: date) {
+-                    path.removeAll()
+-                }
+-            }
++    var activeDate: Date {
++        return Calendar.current.startOfDay(for: conductor.date)
++    }
+ 
+-            Spacer()
++    var todayDate: Date {
++        return Calendar.current.startOfDay(for: Date())
++    }
+ 
+-            Button {
+-                withAnimation {
+-                    date = Calendar.current.startOfDay(for: date.advanced(by: -86400))
++    var body: some View {
++        @Bindable var conductor = conductor
++        VStack {
++            HStack {
++                if !conductor.isEditingItem {
++                    NavigationLink(value: NavDestination.timeline) {
++                        Image(systemName: "calendar.day.timeline.left")
++                    }.onChange(of: conductor.date) {
++                        path.removeAll()
++                    }
+                 }
+-            } label: {
+-                Image(systemName: "chevron.left")
+-            }.padding(.horizontal)
+ 
+-            Button {
+-                withAnimation {
+-                    conductor.showDatePicker.toggle()
++                Button {
++                    withAnimation {
++                        conductor.showDatePicker.toggle()
++                    }
++                } label: {
++                    header
++                }.onChange(of: conductor.date) {
++                    WidgetCenter.shared.reloadAllTimelines()
+                 }
+-            } label: {
+-                Spacer()
+-                header
++            }.padding()
++            HStack {
+                 Spacer()
+-            }.onChange(of: date) {
+-                WidgetCenter.shared.reloadAllTimelines()
+-            }
+ 
+-            Button {
+-                withAnimation {
+-                    date = Calendar.current.startOfDay(for: date.advanced(by: 86400))
+-                }
+-            } label: {
+-                Image(systemName: "chevron.right")
+-            }.padding(.horizontal)
++                Button(action: { stepDate(by: -1) }) {
++                    Image(systemName: "chevron.left")
++                }.padding(.horizontal)
+ 
+-            Spacer()
++                Spacer()
++                Spacer()
+ 
+-            if !conductor.isEditingItem {
+-                Button {
+-                    createNewItem()
+-                } label: {
++                Button(action: createNewItem) {
+                     Image(systemName: "plus")
++                        .rotationEffect(.degrees(conductor.isEditingItem ? 45 : 0))
++                        .font(.system(size: conductor.isEditingItem ? 20 : 16))
+                 }
+-            }
+-        }
+-        .padding()
+-        .padding(.horizontal, 50)
+-        .tint(.white)
+-    }
+ 
+-    func createNewItem() {
+-        let d = date
+-        var comps = Calendar.current.dateComponents([.day, .month, .year], from: d)
+-        comps.hour = Calendar.current.component(.hour, from: Date())
+-        comps.minute = Calendar.current.component(.minute, from: Date())
+-        let timestamp = Calendar.current.date(from: comps) ?? d
++                Spacer()
++                Spacer()
+ 
+-        let newItem = Item(
+-            position: itemCount,
+-            timestamp: timestamp
+-        )
++                Button(action: { stepDate(by: 1) }) {
++                    Image(systemName: "chevron.right")
++                }.padding(.horizontal)
+ 
+-        withAnimation {
+-            conductor.editItem = newItem
++                Spacer()
++            }.padding()
+         }
++        .padding()
++        .padding(.horizontal, 50)
++        .tint(.white)
+     }
+ 
+     @ViewBuilder
+     var header: some View {
+         HStack {
+-            headerLeft
+-            headerCenter
+-            headerRight
++            if activeDate < todayDate {
++                Text(DateTimeString.toolbarPastDateString(date: conductor.date))
++                    .fixedSize()
++            }
++
++            if activeDate == todayDate {
++                Text(DateTimeString.toolbarTodayDateString())
++                    .fixedSize()
++            } else {
++                Button(action: { stepTo(date: Date()) }) {
++                    Image(systemName: "circle.fill")
++                }
++            }
++
++            if activeDate > todayDate {
++                Text(DateTimeString.toolbarFutureDateString(date: conductor.date))
++            }
+         }
++        .fixedSize()
+         .padding(.horizontal)
+         .lineLimit(1)
+     }
+ 
+     @ViewBuilder
+     var headerLeft: some View {
+-        Text(DateTimeString.leftDateString(date: date))
++        Text(DateTimeString.toolbarPastDateString(date: conductor.date))
+             .fixedSize()
+             .frame(alignment: .leading)
+     }
+@@ -336,8 +299,28 @@ struct BottomToolbar: View {
+ 
+     @ViewBuilder
+     var headerRight: some View {
+-        Text(DateTimeString.rightDateString(date: date))
++        Text(DateTimeString.toolbarFutureDateString(date: conductor.date))
+             .frame(alignment: .trailing)
+             .fixedSize()
+     }
++
++    fileprivate func stepDate(by days: TimeInterval) {
++        withAnimation {
++            conductor.date = Calendar.current.startOfDay(for: conductor.date.advanced(by: 86400 * days))
++        }
++    }
++
++    fileprivate func stepTo(date: Date) {
++        withAnimation {
++            conductor.date = Calendar.current.startOfDay(for: date)
++        }
++    }
++
++    func createNewItem() {
++        if conductor.editItem == nil {
++            _ = SharedState.createNewItem(date: conductor.date, position: itemCount)
++        } else {
++            conductor.rollback(context: modelContext)
++        }
++    }
+ }
+diff --git a/swift/wispr/wispr/Item.swift b/swift/wispr/wispr/Item.swift
+index a376a0f..530ca75 100644
+--- a/swift/wispr/wispr/Item.swift
++++ b/swift/wispr/wispr/Item.swift
+@@ -6,6 +6,7 @@ import SFSymbolsPicker
+ import SwiftData
+ import SwiftUI
+ import UniformTypeIdentifiers
++import UserNotifications
+ import WidgetKit
+ 
+ enum ItemType: String, Identifiable, Codable, CaseIterable {
+@@ -53,14 +54,22 @@ final class Tag: Identifiable {
+     }
+ }
+ 
+-struct NoteData: Identifiable, Codable {
++struct NoteData: Identifiable, Codable, Hashable {
+     var id: UUID = .init()
+     var text: String
+ }
+ 
+-struct TaskData: Identifiable, Codable, Equatable {
++struct TaskData: Identifiable, Codable, Equatable, Hashable {
+     var id: UUID = .init()
+     var completedAt: Date?
++    var subtasks: [SubTaskData] = []
++}
++
++struct SubTaskData: Identifiable, Codable, Equatable, Hashable {
++    var id: UUID = .init()
++    var position: Int = 0
++    var completedAt: Date?
++    var noteData: NoteData = .init(text: "")
+ }
+ 
+ struct LocationData: Identifiable, Codable {
+@@ -71,6 +80,7 @@ struct LocationData: Identifiable, Codable {
+ struct NotificationData: Identifiable, Codable {
+     var id: UUID = .init()
+     var date: Date
++    var offsetBy: TimeInterval
+     var text: String
+     var linkedItem: UUID?
+ }
+@@ -80,6 +90,8 @@ struct EventData: Identifiable, Codable {
+     var eventIdentifier: String?
+     var startDate: Date
+     var endDate: Date
++    var notifyAt: Date?
++    var calendarIdentifier: String?
+ }
+ 
+ struct AudioData: Identifiable, Codable {
+@@ -102,6 +114,38 @@ struct AudioData: Identifiable, Codable {
+     }
+ }
+ 
++struct ImageData: Identifiable, Codable {
++    var id: UUID = .init()
++    var date: Date
++    var url: URL?
++
++    var image: Image? {
++        if let data = data {
++            if let image = UIImage(data: data) {
++                return Image(uiImage: image)
++            }
++        }
++        return nil
++    }
++
++    var data: Data?
++
++    init(_ date: Date = Date(), url: URL? = nil, data: Data? = nil) {
++        self.date = date
++        if let u = url {
++            self.url = u
++        } else {
++            let documentPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
++            let audioFilename = documentPath.appendingPathComponent(UUID().description + ".m4a")
++            self.url = audioFilename
++        }
++
++        if let data = data {
++            self.data = data
++        }
++    }
++}
++
+ struct ItemQuery: EntityQuery {
+     func entities(for identifiers: [Item.ID]) async throws -> [Item] {
+         var entities: [Item] = []
+@@ -114,8 +158,9 @@ struct ItemQuery: EntityQuery {
+         return entities
+     }
+ 
++    @MainActor
+     func fetchItemsByIds(_ ids: [UUID]) async -> [Item] {
+-        let context =  ModelContext(SharedState.sharedModelContainer)
++        let context = SharedState.sharedModelContainer.mainContext
+         let desc = FetchDescriptor<Item>(predicate: #Predicate<Item> { ids.contains($0.id) })
+         guard let items = try? context.fetch(desc) else {
+             return []
+@@ -124,8 +169,9 @@ struct ItemQuery: EntityQuery {
+         return items
+     }
+ 
++    @MainActor
+     func fetchItemById(_ id: UUID) async -> Item? {
+-        let context =   ModelContext(SharedState.sharedModelContainer)
++        let context = SharedState.sharedModelContainer.mainContext
+         let desc = FetchDescriptor<Item>(predicate: #Predicate<Item> { id == $0.id })
+         guard let item = try? context.fetch(desc).first else {
+             return nil
+@@ -159,7 +205,7 @@ final class Item: Codable, Transferable, AppEntity {
+     static var defaultQuery = ItemQuery()
+ 
+     var parent: Item?
+-    @Relationship(inverse: \Item.parent) var children: [Item] = []
++    @Relationship(deleteRule: .cascade, inverse: \Item.parent) var children: [Item] = []
+     var position: Int
+     var timestamp: Date
+     var archived: Bool = false
+@@ -167,10 +213,16 @@ final class Item: Codable, Transferable, AppEntity {
+     var noteData: NoteData = NoteData(text: "")
+     var taskData: TaskData?
+     var eventData: EventData?
+-    var audioData: AudioData?
+ 
++    @Attribute(.externalStorage)
++    var imageData: ImageData?
++    var audioData: AudioData?
+     var notificationData: NotificationData?
+ 
++    var canSave: Bool {
++        return hasNote
++    }
++
+     var hasNote: Bool {
+         !noteData.text.isEmpty
+     }
+@@ -188,15 +240,13 @@ final class Item: Codable, Transferable, AppEntity {
+     }
+ 
+     var hasImage: Bool {
+-        externalData != nil
++        imageData != nil
+     }
+ 
+     var hasAudio: Bool {
+         audioData?.url != nil
+     }
+ 
+-    @Attribute(.externalStorage) var externalData: Data?
+-
+     var record: ItemRecord {
+         ItemRecord(id: id)
+     }
+@@ -221,7 +271,7 @@ final class Item: Codable, Transferable, AppEntity {
+     }
+ 
+     func loadImage() -> Image? {
+-        if let data = externalData {
++        if let data = imageData?.data {
+             if let image = UIImage(data: data) {
+                 return Image(uiImage: image)
+             }
+@@ -229,19 +279,34 @@ final class Item: Codable, Transferable, AppEntity {
+         return nil
+     }
+ 
++    func deleteEKEvent(from calendarService: CalendarService) {
++        if let id = eventData?.eventIdentifier {
++            calendarService.deleteEKEvent(id)
++            eventData = nil
++        }
++    }
++
+     init(
+         id: UUID = UUID(),
+         position: Int = 0,
+         timestamp: Date = .init(),
+         tags: [Tag] = [],
+-        externalData: Data? = nil
++        noteData: NoteData = .init(text: ""),
++        taskData: TaskData? = nil,
++        eventData: EventData? = nil,
++        imageData: ImageData? = nil,
++        audioData: AudioData? = nil
+     ) {
+         self.id = id
+         self.timestamp = timestamp
+-        self.externalData = externalData
+ 
+         self.position = position
+         self.tags = tags
++        self.noteData = noteData
++        self.taskData = taskData
++        self.eventData = eventData
++        self.imageData = imageData
++        self.audioData = audioData
+     }
+ 
+     enum CodingKeys: String, CodingKey {
+@@ -276,7 +341,17 @@ struct ItemList: View {
+     @Environment(
+         CalendarService.self
+     ) private var calendarService: CalendarService
+-    var items: [Item]
++
++    @Binding var editItem: Item?
++    @State var items: [Item]
++
++    var start: Date {
++        Calendar.current.startOfDay(for: conductor.date)
++    }
++
++    var end: Date {
++        start.advanced(by: 86400)
++    }
+ 
+     @State var listId: UUID = .init()
+     @State var focusedItem: Item?
+@@ -297,14 +372,21 @@ struct ItemList: View {
+     var list: some View {
+         VStack {
+             List {
+-                ForEach(items, id: \.self) { item in
+-                    itemRow(item)
++                ForEach(items.indices, id: \.self) { index in
++                    ItemListRow(editItem: $editItem, item: $items[index])
++                        .listRowBackground(Color.clear)
++                        .listRowSeparator(.hidden)
++                        .onChange(of: items[index].eventData?.startDate) {
++                            dynamicallyReorderList(item: items[index])
++                        }
++                        .onAppear {
++                            if !items[index].hasNote && conductor.editItem == nil {
++                                SharedState.deleteItem(items[index])
++                            }
++                        }
+                         .swipeActions(edge: .trailing) {
+                             Button(role: .destructive) {
+-                                withAnimation {
+-                                    modelContext.delete(item)
+-                                    try! modelContext.save()
+-                                }
++                                SharedState.deleteItem(items[index])
+                             } label: {
+                                 Image(systemName: "trash")
+                             }
+@@ -318,27 +400,6 @@ struct ItemList: View {
+         }.padding(0).safeAreaPadding(0)
+     }
+ 
+-    @ViewBuilder
+-    func itemRow(_ item: Item) -> some View {
+-        ItemRow(item: item)
+-            .listRowBackground(Color.clear)
+-            .listRowSeparator(.hidden)
+-            .onChange(of: item.eventData?.startDate) {
+-                withAnimation {
+-                    dynamicallyReorderList(item: item)
+-                }
+-            }.onAppear {
+-                if var event = item.eventData, let id = event.eventIdentifier,
+-                   let ek = calendarService.eventStore.event(withIdentifier: id)
+-                {
+-                    event.startDate = ek.startDate
+-                    event.endDate = ek.endDate
+-                    item.noteData.text = ek.title
+-                    item.eventData = event
+-                }
+-            }
+-    }
+-
+     @ViewBuilder
+     var errorFlash: some View {
+         VStack {
+@@ -349,12 +410,17 @@ struct ItemList: View {
+         .frame(alignment: .center)
+     }
+ 
+-    func handleDelete(_ indexSet: IndexSet) {
+-        for index in indexSet {
+-            let item = items[index]
+-            modelContext.delete(item)
++    fileprivate func triggerFlashError() {
++        withAnimation {
++            flashError = true
++            listId = UUID()
+         }
+-        try! modelContext.save()
++        DispatchQueue.main
++            .asyncAfter(deadline: .now() + 2) {
++                withAnimation {
++                    flashError = false
++                }
++            }
+     }
+ 
+     func handleMove(_ indexSet: IndexSet, _ newIndex: Int) {
+@@ -368,17 +434,7 @@ struct ItemList: View {
+                     let item = items[i]
+                     if let itemEventData = item.eventData {
+                         if movedEventData.startDate < itemEventData.startDate {
+-                            withAnimation {
+-                                flashError = true
+-                                listId = UUID()
+-                            }
+-                            DispatchQueue.main
+-                                .asyncAfter(deadline: .now() + 1) {
+-                                    withAnimation {
+-                                        flashError = false
+-                                    }
+-                                }
+-                            print("bad order above")
++                            triggerFlashError()
+                             return
+                         }
+                     }
+@@ -388,17 +444,7 @@ struct ItemList: View {
+                     let item = items[i]
+                     if let itemEventData = item.eventData {
+                         if movedEventData.startDate > itemEventData.startDate {
+-                            withAnimation {
+-                                flashError = true
+-                                listId = UUID()
+-                            }
+-                            DispatchQueue.main
+-                                .asyncAfter(deadline: .now() + 1) {
+-                                    withAnimation {
+-                                        flashError = false
+-                                    }
+-                                }
+-                            print("bad order below")
++                            triggerFlashError()
+                             return
+                         }
+                     }
+@@ -440,113 +486,216 @@ struct ItemList: View {
+     }
+ }
+ 
+-struct ItemRow: View {
++struct EditItemForm: View {
++    @Environment(DayDetailsConductor.self) private var conductor: DayDetailsConductor
+     @Environment(\.modelContext) private var modelContext: ModelContext
+-    @State var item: Item
+-    @State var expand: Bool = true
+-    @FocusState var focus: Bool
+-    @State var show: Bool = false
++    @State var editItem: Item
++    var position: Int
+ 
+     var body: some View {
+-        if item.children.isEmpty {
+-            ItemRowLabel(item: item)
+-        } else {
+-            DisclosureGroup(isExpanded: $expand) {
+-                ForEach(item.children) { child in
+-                    ItemRowLabel(item: child)
+-                }
+-            } label: {
+-                ItemRowLabel(item: item)
+-            }.tint(.white)
+-        }
++        @Bindable var conductor = conductor
++        ItemForm(
++            editItem: $editItem,
++            timestamp: $conductor.date,
++            position: position
++        )
+     }
+ }
+ 
+-struct ItemRowLabel: View {
++struct ItemListRow: View {
++    @Environment(DayDetailsConductor.self) private var conductor: DayDetailsConductor
+     @Environment(\.modelContext) private var modelContext: ModelContext
+-    @State var item: Item
+-    @FocusState var focus: Bool
+-    @State var initialText: String = ""
++    @Environment(CalendarService.self) private var calendarService: CalendarService
++
++    @Binding var editItem: Item?
++    @Binding var item: Item
++    init(editItem: Binding<Item?>, item: Binding<Item>) {
++        _editItem = editItem
++        _item = item
++        let item = item.wrappedValue
++        _taskData = State(initialValue: item.taskData)
++        _subtasks = State(initialValue: item.taskData?.subtasks ?? [])
++        _noteData = State(initialValue: item.noteData)
++        _eventData = State(initialValue: item.eventData)
++        _imageData = State(initialValue: item.imageData)
++        _audioData = State(initialValue: item.audioData)
++    }
++
++    @State var assignedTags: [Tag] = []
++    @State var noteData: NoteData = .init(text: "")
++    @State var taskData: TaskData? = nil
++    @State var subtasks: [SubTaskData] = []
++    @State var eventData: EventData? = nil
++    @State var imageData: ImageData? = nil
++    @State var audioData: AudioData? = nil
+ 
+-    @Namespace var namespace
++    @Query var tags: [Tag]
+ 
+-    func isActiveItem(_ item: Item, _ date: Date) -> Bool {
+-        if let eventData = item.eventData {
+-            return eventData.startDate <= date && date < eventData.endDate && item.taskData?.completedAt == nil
++    @State var showTag: Bool = false
++    @State var tagSearchTerm: String = ""
++    @State private var image: Image?
++
++    var tagSearchResults: [Tag] {
++        if tagSearchTerm.isEmpty {
++            return tags.filter { !assignedTags.contains($0) }
+         } else {
+-            return false
++            return tags.filter { $0.name.contains(tagSearchTerm) && !assignedTags.contains($0) }
+         }
+     }
+ 
+-    func isEventPast(_ item: Item, _ date: Date) -> Bool {
+-        if let eventData = item.eventData {
+-            return date > eventData.endDate
+-        } else {
+-            return false
++    @FocusState var noteFocus: Bool
++    @FocusState var childFocus: Bool
++    @FocusState var tagSearchFocus: Bool
++
++    @State var expand: Bool = true
++    var hasSubTasks: Bool {
++        if let task = taskData { return task.subtasks.isNotEmpty } else { return false }
++    }
++
++    var startString: String {
++        if let event = eventData {
++            let formatter = DateFormatter()
++            formatter.dateFormat = "HH:mm"
++            return formatter.string(from: event.startDate)
+         }
++        return ""
+     }
+ 
+-    var body: some View {
+-        HStack {
+-            VStack {
+-                TimelineView(.everyMinute) { time in
+-                    HStack {
+-                        VStack {
+-                            if item.hasImage {
+-                                Spacer()
+-                            }
++    var endString: String {
++        if let event = eventData {
++            let formatter = DateFormatter()
++            formatter.dateFormat = "HH:mm"
++            return formatter.string(from: event.endDate)
++        }
++        return ""
++    }
+ 
+-                            HStack {
+-                                TaskDataRowLabel(item: $item)
+-                                NoteDataRowLabel(item: $item)
+-                                EventDataRowLabel(item: $item, currentTime: time.date)
+-                            }
+-                            .padding(.vertical, item.isEvent || item.hasImage ? 10 : 4)
+-                            .padding(.horizontal, item.isEvent ? 32 : 20)
+-                            .tint(isActiveItem(item, time.date) ? .black : .white)
+-                            .frame(alignment: .bottom)
+-                        }
+-                    }
+-                    .background {
+-                        if item.hasImage {
+-                            ImageDataRowLabel(item: $item, namespace: namespace)
+-                        }
++    @ViewBuilder
++    var imageView: some View {
++        if let image = image {
++            image.resizable().scaledToFit()
++                .aspectRatio(CGSize(width: 4, height: 3), contentMode: .fill)
++                .overlay {
++                    LinearGradient(gradient: Gradient(colors: [.clear, .black]), startPoint: .top, endPoint: .bottom)
++                }
++                .overlay(alignment: .topTrailing) {
++                    Button(action: deleteImage) {
++                        Image(systemName: "xmark")
++                    }.padding()
++                }
++        }
++    }
+ 
+-                        RoundedRectangle(cornerRadius: 8)
+-                            .stroke(item.isEvent ? .white : .clear)
+-                            .fill(isActiveItem(item, time.date) ? .white : .clear).padding(2)
+-                            .padding(.horizontal, 12)
+-                    }
+-                    .foregroundStyle(isActiveItem(item, time.date) ? .black : .white)
+-                    .scaleEffect(isEventPast(item, time.date) ? 0.9 : 1, anchor: .center)
++    @ViewBuilder
++    var subtaskView: some View {
++        DisclosureGroup(isExpanded: $expand) {
++            HStack {
++                RoundedRectangle(cornerRadius: 2).fill(Color.gray).frame(width: 1)
++                    .padding(.horizontal, 8)
++                SubTasksDataListRow(subtasks: $subtasks)
++            }
++        } label: {
++            HStack {
++                TaskDataRow(taskData: $taskData)
++                    .fixedSize(horizontal: false, vertical: true)
++                Text(noteData.text)
++                    .fixedSize(horizontal: false, vertical: true)
++                    .focused($noteFocus)
++
++                Spacer()
++                Text(startString + "|" + endString)
++            }
++        }.tint(.white)
++    }
++
++    var body: some View {
++        @Bindable var conductor = conductor
++        Button(action: { conductor.editItem = editItem }) {
++            imageView
++            if hasSubTasks {
++                subtaskView
++            } else {
++                HStack {
++                    TaskDataRow(taskData: $taskData)
++                    Text(noteData.text)
++                    Spacer()
++                    Text(startString + "|" + endString)
+                 }
+             }
++
++            AudioRecordingView(audioData: $audioData)
++            TagDataRow(tags: $assignedTags)
++        }
++        .listRowBackground(Color.clear)
++        .onAppear {
++            if eventData != nil {
++                calendarService.requestAccessToCalendar()
++            }
+         }
+-        .onAppear { focus = item.noteData.text.isEmpty }
++        .tint(.white)
+     }
+-}
+ 
+-struct EditItemForm: View {
+-    @Environment(\.modelContext) private var modelContext: ModelContext
+-    @State var item: Item
+-    @Binding var date: Date
++    fileprivate func submitItem() {
++        noteFocus = false
++        if var t = taskData {
++            t.subtasks.removeAll()
++            t.subtasks.append(contentsOf: subtasks)
++            taskData = t
++        }
+ 
+-    init(item: Item, date: Binding<Date>) {
+-        self.item = item
+-        _date = date
++        if let editItem = editItem {
++            editItem.tags = tags
++            editItem.noteData = noteData
++            editItem.taskData = taskData
++            editItem.eventData = eventData
++            editItem.imageData = imageData
++            editItem.audioData = audioData
++            self.editItem = editItem
++            try? modelContext.save()
++        }
+     }
+ 
+-    var body: some View {
+-        ItemForm(item: $item, date: $date, position: item.position)
++    fileprivate func deleteImage() {
++        withAnimation {
++            imageData = nil
++        }
++    }
++
++    private func cancelEdit() {
++        noteFocus = false
++        conductor.rollback(context: modelContext)
+     }
+ }
+ 
+ struct ItemForm: View {
++    @Environment(DayDetailsConductor.self) private var conductor: DayDetailsConductor
+     @Environment(\.modelContext) private var modelContext: ModelContext
+     @Environment(CalendarService.self) private var calendarService: CalendarService
+ 
+-    @Binding var item: Item
+-    @Binding var date: Date
++    @Binding var editItem: Item
++    @Binding var timestamp: Date
++    @State var position: Int
++
++    init(editItem: Binding<Item>, timestamp: Binding<Date>, position: Int) {
++        _editItem = editItem
++        _timestamp = timestamp
++        self.position = position
++         let i = editItem.wrappedValue
++            _taskData = State(initialValue: i.taskData)
++            _subtasks = State(initialValue: i.taskData?.subtasks ?? [])
++            _noteData = State(initialValue: i.noteData)
++            _eventData = State(initialValue: i.eventData)
++            _imageData = State(initialValue: i.imageData)
++            _audioData = State(initialValue: i.audioData)
++    }
++
++    @State var assignedTags: [Tag] = []
++    @State var noteData: NoteData = .init(text: "")
++    @State var taskData: TaskData? = nil
++    @State var subtasks: [SubTaskData] = []
++    @State var eventData: EventData? = nil
++    @State var imageData: ImageData? = nil
++    @State var audioData: AudioData? = nil
+ 
+     @Query var tags: [Tag]
+ 
+@@ -554,16 +703,11 @@ struct ItemForm: View {
+     @State var tagSearchTerm: String = ""
+     @State private var image: Image?
+ 
+-    init(item: Binding<Item>, date: Binding<Date>, position _: Int) {
+-        _item = item
+-        _date = date
+-    }
+-
+     var tagSearchResults: [Tag] {
+         if tagSearchTerm.isEmpty {
+-            return tags.filter { !item.tags.contains($0) }
++            return tags.filter { !assignedTags.contains($0) }
+         } else {
+-            return tags.filter { $0.name.contains(tagSearchTerm) && !item.tags.contains($0) }
++            return tags.filter { $0.name.contains(tagSearchTerm) && !assignedTags.contains($0) }
+         }
+     }
+ 
+@@ -571,251 +715,187 @@ struct ItemForm: View {
+     @FocusState var childFocus: Bool
+     @FocusState var tagSearchFocus: Bool
+ 
++    @State var expand: Bool = true
++    var hasSubTasks: Bool {
++        if let task = taskData { return task.subtasks.isNotEmpty } else { return false }
++    }
++
++    @ViewBuilder
++    var imageView: some View {
++        if let image = image {
++            image.resizable().scaledToFit()
++                .aspectRatio(CGSize(width: 4, height: 3), contentMode: .fill)
++                .overlay {
++                    LinearGradient(gradient: Gradient(colors: [.clear, .black]), startPoint: .top, endPoint: .bottom)
++                }
++                .overlay(alignment: .topTrailing) {
++                    Button(action: deleteImage) {
++                        Image(systemName: "xmark")
++                    }.padding()
++                }
++        }
++    }
++
++    @ViewBuilder
++    var subtaskView: some View { DisclosureGroup(isExpanded: $expand) {
++        HStack {
++            RoundedRectangle(cornerRadius: 2).fill(Color.gray).frame(width: 1)
++                .padding(.horizontal, 8)
++            VStack {
++                SubTasksDataRow(subtasks: $subtasks)
++            }
++        }
++    } label: {
++        HStack {
++            TaskDataRow(taskData: $taskData).fixedSize(horizontal: false, vertical: true)
++            NoteDataRow(noteData: $noteData, subtasks: $subtasks)
++                .fixedSize(horizontal: false, vertical: true)
++                .focused($noteFocus)
++
++            Button(action: submitItem) {
++                Image(systemName: "checkmark.circle.fill")
++                    .font(.system(size: 20))
++            }.disabled(noteData.text.isEmpty)
++                .animation(.smooth, value: noteData.text.isNotEmpty)
++        }
++    }.tint(.white) }
++
+     var body: some View {
++        @Bindable var conductor = conductor
+         VStack {
+-            if image != nil {
+-                item.imageView(image: image)
+-                    .overlay(alignment: .topTrailing) {
+-                        Button {
+-                            withAnimation {
+-                                item.externalData = nil
+-                                image = nil
+-                            }
+-                        } label: {
+-                            Image(systemName: "xmark")
+-                        }.padding()
+-                    }
+-            }
++            imageView
+ 
+             HStack {
+-                if item.isTask {
+-                    TaskDataRow(item: $item)
+-                }
++                if hasSubTasks {
++                    subtaskView
+ 
+-                NoteDataRow(item: $item)
+-                    .focused($noteFocus)
+-                    .onSubmit {
+-                        if item.isTask {
+-                            let child = Item(
+-                                position: item.children.count,
+-                                timestamp: item.timestamp
+-                            )
+-
+-                            child.taskData = TaskData()
+-                            withAnimation {
+-                                item.children.append(child)
+-                            }
+-                        }
+-                    }.onDisappear {
+-                        for child in item.children {
+-                            if !child.hasNote {
+-                                modelContext.delete(child)
+-                            }
+-                        }
+-                    }
++                } else {
++                    TaskDataRow(taskData: $taskData)
++                    NoteDataRow(noteData: $noteData, subtasks: $subtasks)
++                        .focused($noteFocus)
++
++                    Button(action: submitItem) {
++                        Image(systemName: "checkmark.circle.fill")
++                            .font(.system(size: 20))
++                    }.disabled(noteData.text.isEmpty)
++                        .animation(.smooth, value: noteData.text.isNotEmpty)
++                }
+             }
+             .listRowBackground(Color.clear)
+ 
+-            if item.hasAudio {
+-                AudioRecordingView(item: $item)
+-            }
+-
+-            if item.hasTags {
+-                TagDataRow(item: $item)
+-            }
++            AudioRecordingView(audioData: $audioData)
++            TagDataRow(tags: $assignedTags)
++        }
++        .overlay {
++            if noteData.text.isNotEmpty {
++                VStack {
++                    // Button(action: cancelEdit) {
++                    //     Color.clear
++                    // }
+ 
+-            ForEach(item.children) { child in
+-                ChecklistDataRow(parent: $item, child: child)
+-                    .focused($childFocus)
+-                    .onDisappear {
+-                        noteFocus = true
+-                    }
++                    HStack {}.padding().background(.clear)
++                }.offset(y: -50)
+             }
+         }
+-        .onChange(of: item.isTask) {
+-            if !item.isTask {
+-                var string = item.noteData.text
+-
+-                for child in item.children {
+-                    string += "\n" + child.noteData.text
+-                    modelContext.delete(child)
+-                }
+-
+-                withAnimation {
+-                    item.children = []
+-                    item.noteData.text = string
+-                }
+-            } else {
+-                let strings = item.noteData.text.components(separatedBy: "\n")
+-                for (index, str) in strings.enumerated() {
+-                    if index == 0 {
+-                        item.noteData.text = str
+-                    } else {
+-                        let child = Item(position: item.children.count, timestamp: item.timestamp)
+-                        child.noteData.text = str
+-                        child.taskData = TaskData()
+-                        item.children.append(child)
+-                    }
+-                }
++        .onAppear {
++            if eventData != nil {
++                calendarService.requestAccessToCalendar()
+             }
+         }
+         .toolbar {
+             ToolbarItemGroup(placement: .keyboard) {
+                 HStack {
+-                    ImageDataButton(item: $item, image: $image)
+-                    AudioDataButton(item: $item)
++                    ImageDataButton(imageData: $imageData)
++                    AudioDataButton(audioData: $audioData, timestamp: $timestamp)
+                     TagDataButton(show: $showTag)
+-                    TaskDataButton(item: $item)
+-                    EventDataButton(item: $item)
+-
+-                    if let e = item.eventData {
+-                        EventDataRow(
+-                            item: $item,
+-                            eventData: e
+-                        )
++                    TaskDataButton(taskData: $taskData, subtasks: $subtasks, noteData: $noteData)
++                    EventDataButton(eventData: $eventData, timestamp: $timestamp)
++
++                    if let e = eventData {
++                        EventDataRow(editItem: $conductor.editItem, eventData: e)
+                     }
+                 }
+             }
+         }
+-        .onAppear {
+-            if item.eventData != nil {
+-                calendarService.requestAccessToCalendar()
+-                item.eventData = .init(
+-                    startDate: item.timestamp,
+-                    endDate: item.timestamp
+-                        .advanced(by: 3600)
+-                )
+-            }
+-        }.onChange(of: date) {
+-            var comps = Calendar.current.dateComponents([.year, .month, .day], from: date)
+-            comps.hour = Calendar.current.component(.hour, from: item.timestamp)
+-            comps.minute = Calendar.current.component(.minute, from: item.timestamp)
+-            let d = Calendar.current.date(from: comps)
+-            item.timestamp = d ?? item.timestamp
+-        }
+         .tint(.white)
+     }
+-}
+-
+-struct ChecklistDataButton: View {
+-    @Binding var item: Item
+-
+-    var body: some View {
+-        Button {
+-            if item.children.isEmpty {
+-                withAnimation {
+-                    let child = Item(
+-                        position: item.children.count,
+-                        timestamp: item.timestamp
+-                    )
+ 
+-                    child.taskData = TaskData()
+-                    item.children.append(child)
+-
+-                    if !item.isTask {
+-                        item.taskData = TaskData()
+-                    }
+-                }
+-            } else {
+-                withAnimation {
+-                    item.children = []
+-                }
+-            }
+-        } label: {
+-            Image(systemName: item.children.isEmpty ? "checklist" : "checklist.checked")
++    fileprivate func submitItem() {
++        noteFocus = false
++        if var t = taskData {
++            t.subtasks.removeAll()
++            t.subtasks.append(contentsOf: subtasks)
++            taskData = t
+         }
+-    }
+-}
+-
+-struct ChecklistDataRow: View {
+-    @Binding var parent: Item
+-    @State var child: Item
+-    @FocusState var focused: Bool
+-
+-    var body: some View {
+-        HStack {
+-            if child.isTask {
+-                TaskDataRow(item: $child)
+-            }
+ 
+-            TextField("...", text: $child.noteData.text)
+-                .onAppear {
+-                    focused = true
+-                }
+-                .focused($focused)
+-                .onSubmit {
+-                    withAnimation {
+-                        let c = Item(
+-                            position: parent.children.count,
+-                            timestamp: parent.timestamp
+-                        )
+-
+-                        c.taskData = TaskData()
+-                        parent.children.append(c)
+-                    }
+-                }
++    let item = editItem
++            item.position = position
++            item.timestamp = timestamp
++            item.tags = tags
++            item.noteData = noteData
++            item.taskData = taskData
++            item.eventData = eventData
++            item.imageData = imageData
++            item.audioData = audioData
++            SharedState.commitItem(item: item)
++        try? modelContext.save()
++    }
++
++    fileprivate func deleteImage() {
++        withAnimation {
++            imageData = nil
+         }
+     }
+-}
+ 
+-@Observable
+-class DayDetailsConductor {
+-    var showDatePicker: Bool = false
+-    var editItem: Item?
+-    var isEditingItem: Bool {
+-        editItem != nil
++    private func cancelEdit() {
++        noteFocus = false
++        conductor.rollback(context: modelContext)
+     }
+-
+-    init() {}
+ }
+ 
+ struct NoteDataRow: View {
+     @Environment(\.modelContext) private var modelContext: ModelContext
+     @Environment(DayDetailsConductor.self) private var conductor: DayDetailsConductor
++    @Environment(
++        CalendarService.self
++    ) private var calendarService: CalendarService
+ 
+-    @Binding var item: Item
++    @Binding var noteData: NoteData
++    @Binding var subtasks: [SubTaskData]
+     @FocusState var focus: Bool
+ 
++    var formatter: RelativeDateTimeFormatter {
++        let formatter =
++            RelativeDateTimeFormatter()
++        return formatter
++    }
++
++    func format(_ date: Date, _: Date) -> String {
++        return formatter.localizedString(for: date, relativeTo: .now)
++    }
++
+     var body: some View {
+-        TextField("...", text: $item.noteData.text, axis: .vertical)
++        TextField("...", text: $noteData.text, axis: .vertical)
++            .onSubmit {
++                withAnimation {
++                    let subtask = SubTaskData()
++                    subtasks.append(subtask)
++                }
++            }
+             .lineLimit(20)
+-            .onAppear { focus = true }
++            .onAppear { focus = noteData.text.isEmpty }
+             .focused($focus)
+             .multilineTextAlignment(.leading)
+-            .textFieldStyle(.roundedBorder)
+-
+-        if item.hasNote {
+-            HStack {
+-                Button {
+-                    focus = false
+-                    if item.hasNote {
+-                        modelContext.insert(item)
+-                    } else {
+-                        modelContext.delete(item)
+-                    }
+-
+-                    withAnimation {
+-                        conductor.editItem = nil
+-                        SharedState.editItem = nil
+-                    }
+-                } label: {
+-                    Image(systemName: "chevron.up.circle.fill")
+-                }
+-            }.animation(.smooth, value: item.hasNote)
+-        }
+     }
+ }
+ 
+ struct NoteDataRowLabel: View {
++    @Environment(\.modelContext) private var modelContext: ModelContext
+     @Environment(DayDetailsConductor.self) private var conductor: DayDetailsConductor
+     @Binding var item: Item
+ 
+     var body: some View {
+-        Button {
+-            withAnimation {
+-                conductor.editItem = item
+-            }
+-        } label: {
++        Button(action: setEditItem) {
+             HStack {
+                 Text(item.noteData.text)
+                 Spacer()
+@@ -825,46 +905,86 @@ struct NoteDataRowLabel: View {
+         .buttonStyle(.plain)
+         .scaleEffect(item.taskData?.completedAt != nil ? 0.8 : 1, anchor: .leading)
+     }
++
++    fileprivate func setEditItem() {
++        withAnimation {
++            conductor.editItem = item
++        }
++    }
+ }
+ 
+ struct TaskDataButton: View {
+-    @Binding var item: Item
++    @Environment(\.modelContext) private var modelContext: ModelContext
++    @Binding var taskData: TaskData?
++    @Binding var subtasks: [SubTaskData]
++    @Binding var noteData: NoteData
++
++    var isTask: Bool {
++        return taskData != nil
++    }
+ 
+     var body: some View {
+         Button {
+-            if item.isTask {
+-                withAnimation {
+-                    item.taskData = nil
+-                }
+-            } else {
+-                withAnimation {
+-                    let taskData = TaskData()
+-                    item.taskData = taskData
++            toggleTaskData()
++        } label: {
++            Image(systemName: isTask ? "checkmark.circle.fill" : "checkmark.circle")
++        }
++    }
++
++    fileprivate func toggleTaskData() {
++        if let task = taskData {
++            var string = noteData.text
++            for subtask in task.subtasks {
++                string += "\n" + subtask.noteData.text
++            }
++
++            withAnimation {
++                taskData = nil
++                noteData.text = string
++                WidgetCenter.shared.reloadAllTimelines()
++            }
++        } else {
++            withAnimation {
++                var task = TaskData()
++                let strings = noteData.text.components(separatedBy: "\n")
++                for (index, str) in strings.enumerated() {
++                    if index == 0 {
++                        noteData.text = str
++                    } else {
++                        let noteData = NoteData(text: str)
++                        let subtaskData = SubTaskData(noteData: noteData)
++                        subtasks.append(subtaskData)
++                    }
+                 }
++                task.subtasks.removeAll()
++                task.subtasks.append(contentsOf: subtasks)
++                self.taskData = task
++                WidgetCenter.shared.reloadAllTimelines()
+             }
+-        } label: {
+-            Image(systemName: item.isTask ? "checkmark.circle.fill" : "checkmark.circle")
+         }
+     }
+ }
+ 
+ struct TaskDataRow: View {
+     @Environment(\.modelContext) private var modelContext: ModelContext
+-    @Binding var item: Item
++    @Binding var taskData: TaskData?
+ 
+     var body: some View {
+-        if var task = item.taskData {
++        if var task = taskData {
+             Button {
+                 if task.completedAt == nil {
+                     withAnimation {
+                         task.completedAt = Date()
++                        taskData = task
++                        WidgetCenter.shared.reloadAllTimelines()
+                     }
+                 } else {
+                     withAnimation {
+                         task.completedAt = nil
++                        taskData = task
++                        WidgetCenter.shared.reloadAllTimelines()
+                     }
+                 }
+-                WidgetCenter.shared.reloadAllTimelines()
+             } label: {
+                 Image(systemName: task.completedAt == nil ? "square" : "square.fill")
+             }
+@@ -872,77 +992,175 @@ struct TaskDataRow: View {
+     }
+ }
+ 
+-struct TaskDataRowLabel: View {
+-    @Environment(\.modelContext) private var modelContext: ModelContext
+-    @Binding var item: Item
++struct SubTasksDataListRow: View {
++    @Binding var subtasks: [SubTaskData]
+ 
+     var body: some View {
+-        if item.isTask, var task = item.taskData {
+-            Button {
+-                if task.completedAt == nil {
+-                    task.completedAt = Date()
+-                    withAnimation {
+-                        item.taskData = task
++        if subtasks.isNotEmpty {
++            ScrollView {
++                ForEach(
++                    subtasks.sorted(by: { first, second in first.position < second.position }).indices,
++                    id: \.self
++                ) { index in
++                    SubTaskDataListRow(
++                        subtask: $subtasks[index]
++                    ).scrollTargetLayout()
++                        .fixedSize(horizontal: false, vertical: true)
++                        .scrollClipDisabled(subtasks.count > 0)
++                }
++            }
++        }
++    }
++}
++
++struct SubTasksDataRow: View {
++    @Binding var subtasks: [SubTaskData]
+ 
+-                        for child in item.children {
+-                            child.taskData?.completedAt = Date()
++    var body: some View {
++        if subtasks.isNotEmpty {
++            ScrollViewReader { proxy in
++                ScrollView {
++                    ForEach(
++                        subtasks.sorted(by: { first, second in first.position < second.position }).indices,
++                        id: \.self
++                    ) { index in
++                        SubTaskDataRow(
++                            subtask: $subtasks[index],
++                            subtasks: $subtasks,
++                            position: index
++                        ).scrollTargetLayout()
++                            .fixedSize(horizontal: false, vertical: true)
++                            .scrollClipDisabled(subtasks.count > 0)
++                    }
++                    .onSubmit {
++                        if let last = subtasks.last {
++                            proxy.scrollTo(last)
+                         }
+                     }
+-                } else {
+-                    task.completedAt = nil
++                }
++            }
++        }
++    }
++}
++
++struct SubTaskDataRow: View {
++    @Binding var subtask: SubTaskData
++    @Binding var subtasks: [SubTaskData]
++    let position: Int
++
++    @FocusState var focused: Bool
++
++    var body: some View {
++        HStack {
++            ToggleCompletedAt(completedAt: $subtask.completedAt)
++            TextField("", text: $subtask.noteData.text)
++                .focused($focused)
++                .onAppear { focused = subtask.noteData.text.isEmpty }
++            Spacer()
++        }.ignoresSafeArea()
++            .onChange(of: focused) {
++                if !focused && subtask.noteData.text.isEmpty {
++                    subtasks.removeAll(where: { $0.id == subtask.id })
++                }
++            }
++            .onSubmit {
++                if focused && subtask.noteData.text.isNotEmpty {
+                     withAnimation {
+-                        item.taskData = task
+-                        for child in item.children {
+-                            child.taskData?.completedAt = nil
+-                        }
++                        let newSubtask = SubTaskData(position: subtask.position + 1, noteData: NoteData(text: ""))
++                        subtasks.append(newSubtask)
+                     }
++                } else {
++                    focused = false
+                 }
+-                WidgetCenter.shared.reloadAllTimelines()
+-                WidgetCenter.shared.reloadAllTimelines()
+-            } label: {
+-                Image(systemName: task.completedAt == nil ? "square" : "square.fill")
+-            }.buttonStyle(.plain)
++            }.environment(\.defaultMinListRowHeight, 15)
++    }
++}
++
++struct SubTaskDataListRow: View {
++    @Binding var subtask: SubTaskData
++
++    var body: some View {
++        HStack {
++            ToggleCompletedAt(completedAt: $subtask.completedAt)
++            Text(subtask.noteData.text)
++            Spacer()
++        }.ignoresSafeArea()
++            .environment(\.defaultMinListRowHeight, 15)
++    }
++}
++
++struct ToggleCompletedAt: View {
++    @Environment(\.modelContext) private var modelContext: ModelContext
++    @Binding var completedAt: Date?
++
++    var body: some View {
++        Button {
++            if completedAt == nil {
++                withAnimation {
++                    completedAt = Date()
++                    WidgetCenter.shared.reloadAllTimelines()
++                }
++            } else {
++                withAnimation {
++                    completedAt = nil
++                    WidgetCenter.shared.reloadAllTimelines()
++                }
++            }
++        } label: {
++            Image(systemName: completedAt == nil ? "square" : "square.fill")
+         }
+     }
+ }
+ 
+ struct EventDataButton: View {
++    @Environment(\.modelContext) private var modelContext: ModelContext
+     @Environment(CalendarService.self) private var calendarService: CalendarService
+-    @Binding var item: Item
++    @Binding var eventData: EventData?
++    @Binding var timestamp: Date
+ 
+     var body: some View {
+         Button {
+-            withAnimation {
+-                if let event = item.eventData {
+-                    if let id = event.eventIdentifier, let ekEvent =
+-                        calendarService.eventStore.event(withIdentifier: id)
+-                    {
+-                        calendarService.deleteEventInCalendar(event: ekEvent)
+-                    }
+-                    item.eventData = nil
+-                } else {
+-                    item.eventData = .init(
+-                        startDate: item.timestamp,
+-                        endDate: item.timestamp
+-                            .advanced(by: 3600)
+-                    )
++            toggleEventData()
++        } label: { Image(systemName: eventData != nil ? "clock.fill" : "clock") }
++    }
++
++    fileprivate func toggleEventData() {
++        withAnimation {
++            if let event = eventData {
++                if let id = event.eventIdentifier, let ekEvent =
++                    calendarService.eventStore.event(withIdentifier: id)
++                {
++                    calendarService.deleteEventInCalendar(event: ekEvent)
+                 }
++                eventData = nil
++            } else {
++                eventData = .init(
++                    startDate: timestamp,
++                    endDate: timestamp.advanced(by: 3600)
++                )
+             }
+-        } label: { Image(systemName: item.eventData != nil ? "clock.fill" : "clock") }
++        }
+     }
+ }
+ 
+ struct EventDataRow: View {
++    @Environment(\.modelContext) private var modelContext: ModelContext
+     @Environment(CalendarService.self) private var calendarService: CalendarService
+-    @Binding var item: Item
++    @Binding var editItem: Item?
+     @State var event: EventData
+     @State var interval: TimeInterval = 3600
+     @State var deleteEvent: Bool = false
++    @State var notify: Bool = false
+ 
+-    init(item: Binding<Item>, eventData: EventData) {
+-        let event = eventData
+-        _event = State(initialValue: event)
+-        _item = item
++    init(editItem: Binding<Item?>, eventData: EventData) {
++        if let i = editItem.wrappedValue {
++            let e = i.eventData ?? eventData
++            _event = State(initialValue: e)
++            interval = e.endDate.timeIntervalSince(e.startDate)
++        } else {
++            _event = State(initialValue: eventData)
++        }
++        _editItem = editItem
+     }
+ 
+     var startString: String {
+@@ -959,111 +1177,79 @@ struct EventDataRow: View {
+ 
+     var body: some View {
+         Text(startString)
++            .frame(width: 50)
+             .overlay {
+                 DatePicker("start:", selection: $event.startDate, displayedComponents: [.hourAndMinute])
+                     .datePickerStyle(.compact)
+                     .colorMultiply(.clear)
+                     .labelsHidden()
+                     .onChange(of: event.startDate) {
+-                        event.endDate = event.startDate.advanced(by: interval)
++                        updateEndDate()
+                     }
+             }
+ 
+         RoundedRectangle(cornerRadius: 2).background(.white).frame(width: 2, height: 15)
+ 
+         Text(endString)
++            .frame(width: 50)
+             .overlay {
+                 DatePicker("end:", selection: $event.endDate, displayedComponents: [.hourAndMinute])
+                     .datePickerStyle(.compact)
+                     .colorMultiply(.clear)
+                     .labelsHidden()
+                     .onChange(of: event.endDate) {
+-                        if event.endDate < event.startDate {
+-                            event.startDate = event.endDate.advanced(by: -interval)
+-                        } else {
+-                            interval = event.endDate.timeIntervalSince(event.startDate)
+-                        }
++                        updateStartDate()
+                     }
+             }
+             .onAppear {
+                 if !calendarService.accessToCalendar {
+                     calendarService.requestAccessToCalendar()
+                 }
+-
+-                if event.eventIdentifier != nil {
+-                    interval = event.endDate.timeIntervalSince(event.startDate)
++                notify = event.notifyAt != nil
++                if let i = editItem {
++                    i.eventData = event
++                    editItem = i
+                 }
+             }
+-            .onDisappear {
+-                if !item.noteData.text.isEmpty, let id = item.eventData?.eventIdentifier {
+-                    if let ekEvent = calendarService.eventStore.event(withIdentifier: id) {
+-                        item.eventData = event
+-                        ekEvent.startDate = event.startDate
+-                        ekEvent.endDate = event.endDate
+-                        ekEvent.title = item.noteData.text
+-                        try? calendarService.eventStore.save(ekEvent, span: .thisEvent)
+-                    } else if !item.noteData.text.isEmpty, item.eventData != nil, let
+-                        ekEvent = calendarService.createEventInCalendar(title:
+-                            item.noteData.text, start: event.startDate, end: event.endDate)
+-                    {
+-                        event.eventIdentifier = ekEvent.eventIdentifier
+-                        item.eventData = event
+-                    }
+-                }
++
++        Button {
++            Task {
++                await toggleNotification()
+             }
++        } label: {
++            Image(systemName: notify ? "bell.and.waves.left.and.right.fill" : "bell")
++        }
+     }
+-}
+ 
+-struct EventDataRowLabel: View {
+-    @Binding var item: Item
+-    let currentTime: Date
+-
+-    var formatter: RelativeDateTimeFormatter {
+-        let formatter =
+-            RelativeDateTimeFormatter()
+-        return formatter
++    fileprivate func updateEndDate() {
++        event.endDate = event.startDate.advanced(by: interval)
++        if let i = editItem {
++            i.eventData = event
++            editItem = i
++        }
+     }
+ 
+-    func format(_ date: Date, _: Date) -> String {
+-        return formatter.localizedString(for: date, relativeTo: .now)
++    fileprivate func updateStartDate() {
++        if event.endDate < event.startDate {
++            event.startDate = event.endDate.advanced(by: -interval)
++        } else {
++            interval = event.endDate.timeIntervalSince(event.startDate)
++        }
++
++        if let i = editItem {
++            i.eventData = event
++            editItem = i
++        }
+     }
+ 
+-    var body: some View {
+-        if let eventData = item.eventData {
+-            Button {
+-                withAnimation {
+-                    print("")
+-                }
+-            } label: {
+-                VStack {
+-                    if Calendar.current.isDateInToday(eventData.startDate) {
+-                        if eventData.startDate > currentTime {
+-                            HStack {
+-                                Spacer()
+-                                Text(format(eventData.startDate, currentTime))
+-                            }
+-                        } else if item.taskData?.completedAt == nil && eventData.startDate <= currentTime && currentTime < eventData.endDate {
+-                            TimelineView(.periodic(from: .now, by: 1)) { timer in
+-                                HStack(spacing: 5) {
+-                                    Spacer()
+-                                    Image(systemName: "timer")
+-                                    Text(timer.date, format: .timer(countingDownIn: eventData.startDate ..< eventData.endDate))
+-                                }
+-                            }
+-                        }
+-                    }
++    fileprivate func toggleNotification() async {
++        guard let hasAuth = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) else {
++            notify = false
++            return
++        }
+ 
+-                    HStack {
+-                        Spacer()
+-                        Text(eventData.startDate.formatted(.dateTime.hour().minute()) + " | " + eventData.endDate.formatted(.dateTime.hour().minute()))
+-                            .scaleEffect(item.taskData?.completedAt == nil &&
+-                                eventData.startDate <= currentTime &&
+-                                currentTime < eventData.endDate ? 0.8 : 1)
+-                            .fixedSize()
+-                            .lineLimit(1)
+-                    }
+-                }
+-            }
++        if hasAuth {
++            notify.toggle()
+         }
+     }
+ }
+@@ -1080,57 +1266,66 @@ struct TagDataButton: View {
+ }
+ 
+ struct TagDataRow: View {
+-    @Binding var item: Item
++    @Binding var tags: [Tag]
+ 
+     var body: some View {
+-        HStack {
+-            ScrollView(.horizontal) {
+-                HStack {
+-                    ForEach(item.tags) { tag in
+-                        Button {
+-                            withAnimation {
+-                                item.tags.removeAll(where: { $0.id == tag.id })
++        if tags.isNotEmpty {
++            HStack {
++                ScrollView(.horizontal) {
++                    HStack {
++                        ForEach(tags) { tag in
++                            Button {
++                                deleteTag(tag)
++                            } label: {
++                                Text(tag.name)
++                                    .padding(.horizontal, 8)
++                                    .padding(.vertical, 6)
++                                    .font(.custom("GohuFont11NFM", size: 14))
+                             }
+-                        } label: {
+-                            Text(tag.name)
+-                                .padding(.horizontal, 8)
+-                                .padding(.vertical, 6)
+-                                .font(.custom("GohuFont11NFM", size: 14))
+-                        }
+-                        .background {
+-                            RoundedRectangle(cornerRadius:
+-                                20).fill(Color(uiColor: UIColor(hex:
+-                                tag.colorHex))).stroke(.white).opacity(0.75)
++                            .background {
++                                RoundedRectangle(cornerRadius:
++                                    20).fill(Color(uiColor: UIColor(hex:
++                                    tag.colorHex))).stroke(.white).opacity(0.75)
++                            }
++                            .tint(.white)
++                            .padding(.vertical, 4)
++                            .padding(.horizontal, 2)
+                         }
+-                        .tint(.white)
+-                        .padding(.vertical, 4)
+-                        .padding(.horizontal, 2)
+                     }
+                 }
+             }
++            .padding(10)
++        }
++    }
++
++    fileprivate func deleteTag(_ tag: Tag) {
++        withAnimation {
++            tags.removeAll(where: { $0.id == tag.id })
+         }
+-        .padding(10)
+     }
+ }
+ 
+ struct ImageDataButton: View {
+-    @Binding var item: Item
+     @State private var imageItem: PhotosPickerItem?
+-    @Binding var image: Image?
++    @Binding var imageData: ImageData?
+ 
+     var body: some View {
+         PhotosPicker(selection: $imageItem, matching: .images) {
+-            Image(systemName: image == nil ? "photo" : "photo.fill")
++            Image(systemName: imageData?.data == nil ? "photo" : "photo.fill")
+         }.onChange(of: imageItem) {
+-            Task {
+-                if let image = try await imageItem?.loadTransferable(type: Data.self) {
+-                    if let uiImage = UIImage(data: image) {
+-                        withAnimation {
+-                            self.image = Image(uiImage: uiImage)
+-                        }
+-                    }
+-                    withAnimation {
+-                        item.externalData = image
++            saveImage()
++        }
++    }
++
++    fileprivate func saveImage() {
++        Task {
++            if let image = try await imageItem?.loadTransferable(type: Data.self) {
++                withAnimation {
++                    if var i = imageData {
++                        i.data = image
++                        self.imageData = i
++                    } else {
++                        imageData = ImageData(data: image)
+                     }
+                 }
+             }
+@@ -1139,85 +1334,113 @@ struct ImageDataButton: View {
+ }
+ 
+ struct ImageDataRowLabel: View {
+-    @Binding var item: Item
++    var imageData: ImageData
+     var namespace: Namespace.ID
+ 
++    @ViewBuilder
++    var imageView: some View {
++        if let image = imageData.image {
++            image.resizable().scaledToFit()
++                .aspectRatio(CGSize(width: 4, height: 3), contentMode: .fill)
++                .overlay {
++                    LinearGradient(gradient: Gradient(colors: [.clear, .black]), startPoint: .top, endPoint: .bottom)
++                }
++        }
++    }
++
+     var body: some View {
+         NavigationLink {
+             VStack {
+-                item.imageView()
+-                    .padding(2)
+-                    .padding(.horizontal, 12)
+-                    .clipShape(RoundedRectangle(cornerRadius: 8))
++                imageView
+             }.padding()
+-                .navigationTransition(.zoom(sourceID: item.id, in: namespace))
++                .navigationTransition(.zoom(sourceID: imageData.id, in: namespace))
+         } label: {
+-            item.imageView()
++            imageView
++                .clipShape(RoundedRectangle(cornerRadius: 10))
+                 .padding(2)
+                 .padding(.horizontal, 12)
+                 .clipShape(RoundedRectangle(cornerRadius: 8))
+-                .matchedTransitionSource(id: item.id, in: namespace)
++                .matchedTransitionSource(id: imageData.id, in: namespace)
+         }
+     }
+ }
+ 
+ struct AudioDataButton: View {
+-    @Binding var item: Item
++    @Binding var audioData: AudioData?
++    @Binding var timestamp: Date
++
++    var hasAudio: Bool {
++        return audioData?.url != nil
++    }
+ 
+     var body: some View {
+         Button {
+-            if item.audioData == nil {
+-                withAnimation {
+-                    item.audioData = AudioData(item.timestamp)
+-                }
+-            }
++            toggleAudioData()
+         } label: {
+-            Image(systemName: item.hasAudio ? "microphone.fill" : "microphone")
++            Image(systemName: hasAudio ? "microphone.fill" : "microphone")
++        }
++    }
++
++    fileprivate func toggleAudioData() {
++        if let audioData = audioData {
++            try? FileManager.default.removeItem(at: audioData.url)
++            self.audioData = nil
++        } else {
++            withAnimation {
++                audioData = AudioData(timestamp)
++            }
+         }
+     }
+ }
+ 
+ struct AudioPlayerView: View {
+-    @Binding var item: Item
+-    let data: AudioData
++    @Binding var audioData: AudioData?
+     @State private var player: AVPlayer?
+     @State private var isPlaying = false
+     @State private var audioSession: AVAudioSession?
+ 
+     var body: some View {
+-        HStack {
+-            Button(action: togglePlayback) {
+-                Image(systemName: isPlaying ? "square.circle.fill" : "play.circle.fill")
+-                    .resizable()
+-                    .frame(width: 30, height: 30)
+-            }
++        if let data = audioData {
++            HStack {
++                Button(action: togglePlayback) {
++                    Image(systemName: isPlaying ? "square.circle.fill" : "play.circle.fill")
++                        .resizable()
++                        .frame(width: 30, height: 30)
++                }
+ 
+-            if !data.transcript.isEmpty {
+-                Text(data.transcript)
++                if !data.transcript.isEmpty {
++                    Text(data.transcript)
++                }
+             }
++            .onAppear(perform: setupAudioPlayer)
+         }
+-        .onAppear {
+-            let audioSession = AVAudioSession.sharedInstance()
+-            try? audioSession.setCategory(.playback, mode: .spokenAudio)
+-            try? audioSession.overrideOutputAudioPort(AVAudioSession.PortOverride.speaker)
+-            try? audioSession.setActive(true)
+-            self.audioSession = audioSession
++    }
+ 
+-            if !FileManager.default.fileExists(atPath: data.url.path()) {
+-                withAnimation {
+-                    item.audioData = nil
+-                }
++    private func setupAudioPlayer() {
++        guard let data = audioData else {
++            return
++        }
++
++        if !FileManager.default.fileExists(atPath: data.url.path()) {
++            withAnimation {
++                audioData = nil
+             }
++        }
+ 
+-            player = AVPlayer(url: data.url)
++        let audioSession = AVAudioSession.sharedInstance()
++        try? audioSession.setCategory(.playback, mode: .spokenAudio)
++        try? audioSession.overrideOutputAudioPort(AVAudioSession.PortOverride.speaker)
++        try? audioSession.setActive(true)
++        self.audioSession = audioSession
+ 
+-            NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime,
+-                                                   object: player?.currentItem,
+-                                                   queue: .main)
+-            { _ in
+-                isPlaying = false
+-                player?.seek(to: .zero)
+-            }
++        player = AVPlayer(url: data.url)
++
++        NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime,
++                                               object: player?.currentItem,
++                                               queue: .main)
++        { _ in
++            isPlaying = false
++            player?.seek(to: .zero)
+         }
+     }
+ 
+@@ -1237,7 +1460,7 @@ struct AudioPlayerView: View {
+ struct AudioRecordingView: View {
+     @Environment(AudioService.self) private var audioService: AudioService
+     @Environment(\.modelContext) private var modelContext: ModelContext
+-    @Binding var item: Item
++    @Binding var audioData: AudioData?
+ 
+     @State private var currentTime: TimeInterval = 0
+     @State private var transcript: String = ""
+@@ -1250,17 +1473,15 @@ struct AudioRecordingView: View {
+     @State var startDate: Date?
+ 
+     var body: some View {
+-        HStack {
++        if audioData != nil {
+             if showPlay {
+-                if let audioData = item.audioData {
+-                    AudioPlayerView(item: $item, data: audioData)
+-                        .disabled(!item.hasAudio)
+-                } else {
+-                    HStack {
+-                        Image(systemName: "play.circle.fill")
+-                            .resizable()
+-                            .frame(width: 30, height: 30)
+-                    }
++                HStack {
++                    AudioPlayerView(audioData: $audioData)
++                        .disabled(audioData == nil)
++
++                    Image(systemName: "play.circle.fill")
++                        .resizable()
++                        .frame(width: 30, height: 30)
+                 }
+             } else {
+                 HStack {
+@@ -1273,16 +1494,21 @@ struct AudioRecordingView: View {
+                         .frame(width: 30, height: 30)
+                     Spacer()
+                 }
+-            }
+-        }.padding()
+-            .onAppear {
+-                if !audioService.hasPermission {
+-                    Task {
+-                        await audioService.requestRecordPermission()
+-                    }
++                .onAppear {
++                    setupAudioRecorder()
+                 }
+-                showPlay = item.audioData != nil
+             }
++        }
++    }
++
++    private func setupAudioRecorder() {
++        if !audioService.hasPermission {
++            Task {
++                await audioService.requestRecordPermission()
++            }
++        }
++
++        showPlay = audioData != nil
+     }
+ 
+     func toggleRecording() {
+@@ -1293,13 +1519,13 @@ struct AudioRecordingView: View {
+                     audioService.extractTextFromAudio(url) { result in
+                         switch result {
+                         case let .success(string):
+-                            if var audio = item.audioData {
++                            if var audio = audioData {
+                                 audio.transcript = string
+-                                item.audioData = audio
++                                audioData = audio
+                             } else {
+                                 transcript = string
+                                 let newAudio = AudioData(url: url, transcript: transcript)
+-                                item.audioData = newAudio
++                                audioData = newAudio
+                             }
+                             doneLoading = true
+                         case let .failure(error):
+@@ -1310,7 +1536,7 @@ struct AudioRecordingView: View {
+             }
+         } else {
+             Task {
+-                if let audio = item.audioData {
++                if let audio = audioData {
+                     try? await audioService.setupRecorder(audioFilename: audio.url)
+                     startDate = Date()
+                     audioService.startRecording()
+@@ -1318,7 +1544,7 @@ struct AudioRecordingView: View {
+                     let documentPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                     let audioFilename = documentPath.appendingPathComponent(UUID().description + ".m4a")
+                     let newAudio = AudioData(url: audioFilename)
+-                    item.audioData = newAudio
++                    audioData = newAudio
+                     try? await audioService.setupRecorder(audioFilename: audioFilename)
+                     startDate = Date()
+                     audioService.startRecording()
+diff --git a/swift/wispr/wispr/SharedContainer.swift b/swift/wispr/wispr/SharedContainer.swift
+index 7ae7f55..045f14e 100644
+--- a/swift/wispr/wispr/SharedContainer.swift
++++ b/swift/wispr/wispr/SharedContainer.swift
+@@ -4,15 +4,203 @@
+ //
+ //  Created by Faisal Alalaiwat on 10.02.25.
+ //
++import EventKit
+ import Foundation
++import NotificationCenter
+ import SwiftData
++import SwiftUI
+ 
+-enum SharedState {
+-    static var dayDetailsConductor: DayDetailsConductor = .init()
+-    static var newItem: Bool = false
+-    static var editItem: Item?
+-    static var date: Date = .init()
++@MainActor
++class EventHandler {
++    let calendarService = SharedState.calendarService
++    var item: Item
++    var event: EventData
++
++    init(_ item: Item, _ event: EventData) {
++        self.item = item
++        self.event = event
++    }
++
++    fileprivate func processEventData() -> EventData? {
++        if !item.isEvent {
++            return nil
++        }
++
++        event.startDate = Calendar.current.combineDateAndTime(date: item.timestamp, time: event.startDate)
++        event.endDate = Calendar.current.combineDateAndTime(date: item.timestamp, time: event.endDate)
++
++        if let id = event.eventIdentifier, let ekEvent = calendarService.eventStore.event(withIdentifier: id) {
++            calendarService.updateEKEvent(ekEvent: ekEvent, item: item, event: event)
++            return event
++        }
++
++        if let ek = calendarService.createEventInCalendar(
++            title: item.noteData.text,
++            start: event.startDate,
++            end: event.endDate
++        ) {
++            var e = event
++            e.eventIdentifier = ek.eventIdentifier
++            return createNotification(e)
++        }
++
++        return nil
++    }
++
++    fileprivate func createNotification(_ event: EventData) ->
++        EventData
++    {
++        var e = event
++        if e.notifyAt != nil {
++            deleteNotification()
++            e.notifyAt = nil
++        }
++
++        let content = UNMutableNotificationContent()
++        content.title = item.noteData.text
++        content.body = event.startDate.formatted(date: .omitted, time: .shortened)
++        let notifyAt = event.startDate.advanced(by: -1800)
++        e.notifyAt = notifyAt
++
++        let comps = Calendar.current.dateComponents([.day, .month, .year, .hour, .minute], from: notifyAt)
++        let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
++        let request = UNNotificationRequest(identifier: event.id.uuidString, content: content, trigger: trigger)
++        let notificationCenter = UNUserNotificationCenter.current()
++
++        Task {
++            try? await notificationCenter.add(request)
++        }
++        return e
++    }
++
++    fileprivate func deleteNotification() {
++        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [item.eventData?.id.uuidString ?? event.id.uuidString])
++    }
++
++    fileprivate func deleteEKEvent() {
++        if let id = event.eventIdentifier {
++            calendarService.deleteEKEvent(id)
++        }
++    }
++}
++
++@MainActor
++class CommitHandler {
++    let context = SharedState.sharedModelContainer.mainContext
++    let calendarService = SharedState.calendarService
++
++    init() {}
++
++    func create(_ item: Item) -> Bool {
++        context.insert(item)
++        try? context.save()
++        return true
++    }
++
++    func rollback() {
++        SharedState.dayDetailsConductor.editItem = nil
++        context.rollback()
++        try? context.save()
++    }
++
++    func commit(item: Item, _: Bool = false) -> Bool {
++        if !item.hasNote {
++            _ = DeleteHandler().delete(item)
++            return true
++        }
++
++        item.timestamp = SharedState.dayDetailsConductor.date
++
++        if let event = item.eventData {
++            let eventHandler = EventHandler(item, event)
++            let e = eventHandler.processEventData()
++            item.eventData = e
++        }
++
++        if var i = itemExists(item) {
++            context.delete(i)
++            context.insert(item)
++            try? context.save()
++        } else {
++            context.insert(item)
++            for child in item.children {
++                if child.hasNote && itemExists(child) == nil {
++                    context.insert(child)
++                }
++            }
++        }
++        try? context.save()
++
++        SharedState.dayDetailsConductor.editItem = nil
++        SharedState.dayDetailsConductor.rollbackItem = nil
++        return true
++    }
+ 
++    func itemExists(_ item: Item) -> Item? {
++        let desc = FetchDescriptor<Item>(predicate: #Predicate { $0.id ==
++                item.id
++        })
++
++        return try? context.fetch(desc).first
++    }
++}
++
++@MainActor
++class DeleteHandler {
++    let context = SharedState.sharedModelContainer.mainContext
++    let calendarService = SharedState.calendarService
++
++    init() {}
++
++    func delete(_ item: Item) -> Bool {
++        if let event = item.eventData {
++            let eh = EventHandler(item, event)
++            eh.deleteNotification()
++            eh.deleteEKEvent()
++        }
++
++        withAnimation {
++            context.delete(item)
++            try? context.save()
++            SharedState.dayDetailsConductor.editItem = nil
++        }
++        return true
++    }
++}
++
++@Observable
++@MainActor
++class WidgetConductor {
++    var date: Date = .init()
++    var parentItem: Item?
++}
++
++@Observable
++@MainActor
++class DayDetailsConductor {
++    var showDatePicker: Bool = false
++    var editItem: Item?
++    var rollbackItem: Item?
++
++    var isEditingItem: Bool {
++        editItem != nil
++    }
++
++    func rollback(context: ModelContext) {
++        withAnimation {
++            SharedState.dayDetailsConductor.editItem = nil
++            context.rollback()
++            try? context.save()
++        }
++    }
++
++    var date: Date = .init()
++
++    init() {}
++}
++
++@MainActor
++enum SharedState {
+     static var sharedModelContainer: ModelContainer = {
+         let schema = Schema([
+             Item.self,
+@@ -25,4 +213,48 @@ enum SharedState {
+             fatalError("Could not create ModelContainer: \(error)")
+         }
+     }()
++
++    static var dayDetailsConductor: DayDetailsConductor = .init()
++    static var calendarService: CalendarService = .init()
++    static var widgetConductor: WidgetConductor = .init()
++
++    static var syncedCalendar = false
++
++    static func createNewItem(date: Date, position: Int) -> Item {
++        let timestamp = Calendar.current.combineDateAndTime(date: date, time: Date())
++
++        let newItem = Item(
++            position: position,
++            timestamp: timestamp
++        )
++
++        withAnimation {
++            if CommitHandler().create(newItem) {
++                SharedState.dayDetailsConductor.date = Calendar.current.startOfDay(for: newItem.timestamp)
++                SharedState.dayDetailsConductor.editItem = newItem
++            } else {
++                SharedState.dayDetailsConductor.editItem = nil
++            }
++        }
++
++        return newItem
++    }
++
++    static func commitItem(item: Item, _ rollback: Bool = false) {
++        _ = CommitHandler().commit(item: item, rollback)
++    }
++
++    static func commitEditItem(_ rollback: Bool = false) {
++        if let item = SharedState.dayDetailsConductor.editItem {
++            _ = CommitHandler().commit(item: item, rollback)
++        }
++    }
++
++    static func deleteItem(_ item: Item) {
++        _ = DeleteHandler().delete(item)
++    }
++
++    static func rollbackItem() {
++        CommitHandler().rollback()
++    }
+ }
+diff --git a/swift/wispr/wispr/TimeLine.swift b/swift/wispr/wispr/TimeLine.swift
+index 91da5b0..0d9f3b0 100644
+--- a/swift/wispr/wispr/TimeLine.swift
++++ b/swift/wispr/wispr/TimeLine.swift
+@@ -92,10 +92,10 @@ class TimeLine {
+ 
+ struct TimeLineView: View {
+     @Environment(\.modelContext) private var modelContext
++    @Environment(DayDetailsConductor.self) private var conductor: DayDetailsConductor
+ 
+     @Namespace var namespace
+     @Binding var path: [NavDestination]
+-    @Binding var date: Date
+ 
+     @State var firstLoad: Bool = true
+     @State var todayHidden: Bool = false
+@@ -111,7 +111,7 @@ struct TimeLineView: View {
+     var days: [Date: [Item]] {
+         var days: [Date: [Item]] = [:]
+         for dayInt in -365 ... 365 {
+-            let date = Calendar.current.startOfDay(for: date)
++            let date = Calendar.current.startOfDay(for: conductor.date)
+             let start = date.advanced(by: TimeInterval(dayInt * 86400))
+             let end = start.advanced(by: TimeInterval(86400))
+             days[start] = items.filter { start <= $0.timestamp && $0.timestamp < end }.sorted(by: { $0.position < $1.position })
+@@ -131,27 +131,7 @@ struct TimeLineView: View {
+                     .onAppear {
+                         listAppear(proxy: proxy)
+                     }.overlay(alignment: .bottomTrailing) {
+-                        Button {
+-                            withAnimation {
+-                                hideAll.toggle()
+-                            }
+-
+-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+-                                withAnimation {
+-                                    showAllDays.toggle()
+-                                }
+-                            }
+-
+-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+-                                withAnimation {
+-                                    listAppear(proxy: proxy)
+-                                }
+-                            }
+-
+-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
+-                                hideAll.toggle()
+-                            }
+-                        } label: {
++                        Button(action: { toggleDaysFilter(proxy) }) {
+                             Image(systemName: showAllDays ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
+                         }
+                         .frame(width: 50, height: 50)
+@@ -159,7 +139,6 @@ struct TimeLineView: View {
+                         .tint(.white)
+                     }
+             }
+-            .listRowSpacing(10)
+         }
+         .toolbarBackgroundVisibility(.hidden, for: .bottomBar)
+         .toolbarBackground(.clear, for: .bottomBar)
+@@ -167,36 +146,9 @@ struct TimeLineView: View {
+         .preferredColorScheme(.dark)
+     }
+ 
+-    func getXOffset(_ date: Date) -> CGFloat {
+-        if !Calendar.current.isDateInToday(date) {
+-            return date < Date() ? -20 : 20
+-        }
+-
+-        return 0
+-    }
+-
+-    func getScale(_ date: Date) -> CGFloat {
+-        if !Calendar.current.isDateInToday(date) {
+-            return 0.9
+-        }
+-
+-        return 1
+-    }
+-
+-    func getScaleAnchor(_ date: Date) -> UnitPoint {
+-        if !Calendar.current.isDateInToday(date) {
+-            return date < Date() ? .leading : .trailing
+-        }
+-
+-        return .center
+-    }
+-
+     @ViewBuilder
+-    func listRow(_ date: Date, _ items: [Item]) -> some View {
+-        Button {
+-            self.date = date
+-            self.path.removeAll()
+-        } label: {
++    private func listRow(_ date: Date, _ items: [Item]) -> some View {
++        Button(action: { resetNavigationPath(date: date) }) {
+             HStack {
+                 if Calendar.current.isDateInToday(date) {
+                     Image(systemName: "play.fill")
+@@ -213,31 +165,49 @@ struct TimeLineView: View {
+         .listRowBackground(Color.clear)
+     }
+ 
++    private func resetNavigationPath(date: Date) {
++        conductor.date = date
++        path.removeAll()
++    }
++
+     @ViewBuilder
+-    func rowBody(_: Date, _ items: [Item]) -> some View {
++    private func rowBody(_ date: Date, _ items: [Item]) -> some View {
+         VStack {
+             ForEach(items) { item in
+-                ItemRowLabel(item: item)
+-                    .onChange(of: item.position) {
+-                        try! modelContext.save()
+-                    }
+-                    .disabled(true)
++                Button {
++                    self.conductor.date = date
++                    self.path.removeAll()
++                    SharedState.dayDetailsConductor.editItem = item
++                } label: {
++                    TimeLineItemRowLabel(item: item)
++                        .onChange(of: item.position) {
++                            try! modelContext.save()
++                        }
++                        .disabled(true)
++                }
+             }
+         }
+     }
+ 
+-    fileprivate func listRowAppear(date: Date) {
+-        if firstLoad && date == todayDate {
++    private func toggleDaysFilter(_ proxy: ScrollViewProxy) {
++        withAnimation {
++            hideAll.toggle()
++        }
++
++        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+             withAnimation {
+-                self.date = todayDate
+-                self.firstLoad = false
++                showAllDays.toggle()
+             }
+         }
+-    }
+ 
+-    fileprivate func listRowDisappear(date: Date) {
+-        if date == todayDate {
+-            todayHidden = true
++        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
++            withAnimation {
++                listAppear(proxy: proxy)
++            }
++        }
++
++        DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
++            hideAll.toggle()
+         }
+     }
+ 
+@@ -247,3 +217,97 @@ struct TimeLineView: View {
+         }
+     }
+ }
++
++struct TimeLineItemRowLabel: View {
++    @Environment(\.modelContext) private var modelContext: ModelContext
++    @State var item: Item
++    @Namespace var namespace
++
++    func isActiveItem(_ item: Item, _ date: Date) -> Bool {
++        if let eventData = item.eventData {
++            return eventData.startDate <= date && date < eventData.endDate && item.taskData?.completedAt == nil
++        } else {
++            return false
++        }
++    }
++
++    var body: some View {
++        HStack {
++            VStack {
++                TimelineView(.everyMinute) { time in
++                    HStack {
++                        VStack {
++                            if item.hasImage {
++                                Spacer()
++                            }
++
++                            HStack {
++                                TimeLineTaskDataRowLabel(item: item)
++                                TimeLineNoteDataRowLabel(item: item)
++                                TimeLineEventDataRowLabel(item: item)
++                            }
++                            .padding(.vertical, item.isEvent || item.hasImage ? 10 : 4)
++                            .padding(.horizontal, item.isEvent ? 32 : 20)
++                            .tint(isActiveItem(item, time.date) ? .black : .white)
++                            .frame(alignment: .bottom)
++                        }
++                    }
++                    .background {
++                        if let imageData = item.imageData {
++                            ImageDataRowLabel(imageData: imageData, namespace: namespace)
++                        }
++
++                        RoundedRectangle(cornerRadius: 8)
++                            .stroke(item.isEvent ? .white : .clear)
++                            .fill(isActiveItem(item, time.date) ? .white : .clear).padding(2)
++                            .padding(.horizontal, 12)
++                    }
++                    .foregroundStyle(isActiveItem(item, time.date) ? .black : .white)
++                }
++            }
++        }
++    }
++}
++
++struct TimeLineTaskDataRowLabel: View {
++    var item: Item
++
++    var body: some View {
++        if item.isTask, let task = item.taskData {
++            Image(systemName: task.completedAt == nil ? "square" : "square.fill")
++        }
++    }
++}
++
++struct TimeLineNoteDataRowLabel: View {
++    var item: Item
++
++    var body: some View {
++        HStack {
++            Text(item.noteData.text)
++            Spacer()
++        }
++        .scaleEffect(item.taskData?.completedAt != nil ? 0.8 : 1, anchor: .leading)
++    }
++}
++
++struct TimeLineEventDataRowLabel: View {
++    var item: Item
++
++    var body: some View {
++        if let eventData = item.eventData {
++            VStack {
++                HStack {
++                    Spacer()
++                    if eventData.startDate == Calendar.current.startOfDay(for: eventData.startDate) && eventData.endDate == Calendar.current.startOfDay(for: eventData.endDate).advanced(by: -60) {
++                        Image(systemName: "square.fill.and.line.vertical.and.square.fill")
++                    } else {
++                        Text(eventData.startDate.formatted(.dateTime.hour().minute()) + " | " + eventData.endDate.formatted(.dateTime.hour().minute()))
++                            .fixedSize()
++                            .lineLimit(1)
++                    }
++                }
++            }
++        }
++    }
++}
+diff --git a/swift/wispr/wispr/Util.swift b/swift/wispr/wispr/Util.swift
+index 7dc9bb6..1439989 100644
+--- a/swift/wispr/wispr/Util.swift
++++ b/swift/wispr/wispr/Util.swift
+@@ -1,4 +1,5 @@
+ 
++import AppIntents
+ import AudioKit
+ import AVFoundation
+ import EventKit
+@@ -8,6 +9,24 @@ import SwiftData
+ import SwiftUI
+ import SwiftWhisper
+ 
++public extension Calendar {
++    func combineDateAndTime(date: Date, time: Date) -> Date {
++        var comps = Calendar.current.dateComponents([.year, .month, .day], from: date)
++        comps.hour = Calendar.current.component(.hour, from: time)
++        comps.minute = Calendar.current.component(.minute, from: time)
++        let d = Calendar.current.date(from: comps)
++        return d ?? time
++    }
++}
++
++public extension Date {
++    var defaultIntentParameter: IntentParameter<Date> {
++        let i = IntentParameter<Date>(title: "Date", default: self)
++        i.wrappedValue = self
++        return i
++    }
++}
++
+ class AudioPlayer {
+     var audioSession: AVAudioSession
+     var audioPlayer: AVAudioPlayer?
+@@ -264,6 +283,25 @@ extension Calendar {
+ }
+ 
+ enum DateTimeString {
++    static func toolbarTodayDateString() -> String {
++        let date = Calendar.current.startOfDay(for: Date())
++        return date.formatted(date: .abbreviated, time: .omitted)
++    }
++
++    static func toolbarFutureDateString(date: Date) -> String {
++        let formatter = RelativeDateTimeFormatter()
++        let today = Calendar.current.startOfDay(for: Date())
++        formatter.unitsStyle = .short
++        return date.formatted(date: .abbreviated, time: .omitted) + " [\(formatter.localizedString(for: date, relativeTo: today))]"
++    }
++
++    static func toolbarPastDateString(date: Date) -> String {
++        let formatter = RelativeDateTimeFormatter()
++        let today = Calendar.current.startOfDay(for: Date())
++        formatter.unitsStyle = .short
++        return date.formatted(date: .abbreviated, time: .omitted) + " [\(formatter.localizedString(for: date, relativeTo: today))]"
++    }
++
+     static func leftDateString(date: Date) -> String {
+         if Calendar.current.isDateInToday(date) {
+             return date
+@@ -292,10 +330,82 @@ enum DateTimeString {
+ @Observable
+ class CalendarService {
+     var accessToCalendar: Bool = false
++    var synced: Bool = false
++
+     let eventStore: EKEventStore = .init()
+ 
+     init() {}
+ 
++    func syncCalendar(modelContext: ModelContext) {
++        if synced { return }
++
++        let es = eventStore
++            .events(
++                matching: eventStore
++                    .predicateForEvents(
++                        withStart: Date().advanced(by: -365 * 24 * 60 * 60),
++                        end: Date().advanced(by: 365 * 24 * 60 * 60),
++                        calendars: nil
++                    )
++            )
++
++        let eDict: [Date: [EKEvent]] = Dictionary(grouping: es, by: { Calendar.current.startOfDay(for: $0.startDate) })
++
++        let desc = FetchDescriptor<Item>()
++
++        guard let evs = try? modelContext.fetch(desc) else {
++            return
++        }
++
++        let events = evs.filter { $0.eventData != nil }
++
++        let eventsDict: [Date: [Item]] = Dictionary(grouping: events, by: { if let ed = $0.eventData {
++            return Calendar.current.startOfDay(for: ed.startDate)
++        }
++        return Calendar.current.startOfDay(for: Date())
++        })
++
++        for (date, es) in eDict {
++            for e in es {
++                if let event = events.filter({ $0.eventData?.eventIdentifier == e.eventIdentifier }).first, var data = event.eventData {
++                    data.startDate = e.startDate
++                    data.endDate = e.endDate
++                    data.calendarIdentifier = e.calendar.calendarIdentifier
++                    event.eventData = data
++                    event.noteData.text = e.title
++                } else {
++                    let newEvent = Item(position: eventsDict[Calendar.current.startOfDay(for: date)]?.count ?? 0, timestamp: date)
++                    newEvent.noteData.text = e.title
++                    newEvent.eventData = EventData(
++                        eventIdentifier: e.eventIdentifier,
++                        startDate: e.startDate,
++                        endDate: e.endDate,
++                        calendarIdentifier: e.calendar.calendarIdentifier
++                    )
++                    modelContext.insert(newEvent)
++                }
++            }
++        }
++
++        try? modelContext.save()
++        synced = true
++    }
++
++    func deleteEKEvent(_ eventIdentifier: String) {
++        if let ekEvent = eventStore.event(withIdentifier: eventIdentifier) {
++            deleteEventInCalendar(event: ekEvent)
++        }
++    }
++
++    @MainActor
++    func updateEKEvent(ekEvent: EKEvent, item: Item, event: EventData) {
++
++        ekEvent.startDate = event.startDate
++        ekEvent.endDate = event.endDate
++        ekEvent.title = item.noteData.text
++        try? eventStore.save(ekEvent, span: .thisEvent)
++    }
++
+     func requestAccessToCalendar() {
+         eventStore.requestFullAccessToEvents { granted, error in
+             if granted, error == nil {
+diff --git a/swift/wispr/wispr/Widget.swift b/swift/wispr/wispr/Widget.swift
+index d397071..dee8b85 100644
+--- a/swift/wispr/wispr/Widget.swift
++++ b/swift/wispr/wispr/Widget.swift
+@@ -19,7 +19,7 @@ struct WidgetView: View {
+         switch family {
+         case .systemLarge:
+             LargeWidget()
+-                .font(.custom("GohuFont11NFM", size: 14))
++                .font(.custom("GohuFont11NFM", size: 16))
+ 
+         case .systemMedium:
+             MediumWidget()
+@@ -38,66 +38,148 @@ struct SmallWidget: View {
+ }
+ 
+ struct LargeWidget: View {
++    @Environment(WidgetConductor.self) private var widgetConductor: WidgetConductor
+     @Query var items: [Item]
+ 
+     var todaysItems: [Item] {
+         let cal = Calendar.current
+-        let start = cal.startOfDay(for: SharedState.date)
++        let start = cal.startOfDay(for: widgetConductor.date)
+         let end = start.advanced(by: 86400)
+-        return items.filter { start < $0.timestamp && $0.timestamp < end }.sorted(by: { first, second in first.position < second.position })
++        return items.filter { start < $0.timestamp && $0.timestamp < end && $0.parent == nil }.sorted(by: { first, second in first.position < second.position })
+     }
+ 
+-    var body: some View {
+-        VStack {
+-            HStack {
+-                Button(intent: ShowTodayIntent()) {
+-                    Image("Logo")
+-                        .resizable()
+-                        .scaledToFit()
+-                        .frame(width: 10, height: 10) // Set desired frame
+-                }.buttonStyle(.plain).foregroundStyle(.white)
+-            }
+-            if todaysItems.isEmpty {
+-                Spacer()
+-                Text("Maidenless")
+-                    .foregroundStyle(.white)
+-                Spacer()
+-            } else {
+-                WidgetItemList(items: todaysItems)
+-            }
++    var activeDate: Date {
++        return Calendar.current.startOfDay(for: widgetConductor.date)
++    }
+ 
+-            HStack {
+-                Spacer()
+-                Button(intent: ShowYesterdayIntent()) {
+-                    Image(systemName: "chevron.left")
+-                }.buttonStyle(.plain).foregroundStyle(.white)
+-                    .frame(alignment: .center)
++    var todayDate: Date {
++        return Calendar.current.startOfDay(for: Date())
++    }
+ 
+-                Button(intent: ShowTodayIntent()) {
+-                    Spacer()
+-                    Text(SharedState.date.formatted(date: .abbreviated, time: .omitted))
+-                        .frame(alignment: .top)
+-                        .foregroundStyle(.white)
++    var body: some View {
++        Button(intent: OpenOnDateIntent(date: widgetConductor.date.defaultIntentParameter)) {
++            VStack {
++                VStack {
+                     Spacer()
+-                }.buttonStyle(.plain).foregroundStyle(.white)
+-                    .frame(alignment: .center)
++                    if let parent = widgetConductor.parentItem, let itm = items.filter({ $0.id == parent.id }).first {
++                        HStack {
++                            VStack {
++                                WidgetItemRowLabel(item: itm)
++                                ForEach(itm.children.prefix(6)) { child in
++                                    WidgetItemRowLabel(item: child)
++                                        .padding(.leading, 40)
++                                }
++                            }
++                        }
++                    } else {
++                        HStack {
++                            if todaysItems.isEmpty {
++                                Spacer()
++                                Text(
++                                    """
++                                    Nothing planned...
++                                    (loser)
++                                    """)
++                                    .foregroundStyle(.white)
++                                Spacer()
++                            } else {
++                                VStack {
++                                    ForEach(todaysItems.prefix(6), id: \.self) { item in
++                                        if item.children.isEmpty {
++                                            WidgetItemRowLabel(item: item)
++                                        } else {
++                                            Button(intent: ShowItemChildren(item: item.defaultIntentParameter)) {
++                                                HStack {
++                                                    WidgetItemRowLabel(item: item)
++                                                    Image(systemName: "arrow.up.left.and.arrow.down.right")
++                                                        .rotationEffect(.degrees(90))
++                                                }
++                                            }.buttonStyle(.plain).foregroundStyle(.white)
++                                        }
++                                    }
++                                    Spacer()
++                                }.padding()
++                            }
++                        }
++                        Spacer()
++                    }
++                }.overlay(alignment: .topLeading) {
++                    HStack {
++                        let formatter = RelativeDateTimeFormatter()
++                        Button(intent: ShowTodayIntent()) {
++                            Image("Logo")
++                                .resizable()
++                                .scaledToFit()
++                                .frame(width: 15, height: 15)
++                        }.buttonStyle(.plain).foregroundStyle(.white)
+ 
+-                Button(intent: ShowTomorrowIntent()) {
+-                    Image(systemName: "chevron.right")
+-                }.buttonStyle(.plain).foregroundStyle(.white)
+-                    .frame(alignment: .center)
++                        Spacer()
+ 
+-                Spacer()
+-                Spacer()
++                        if activeDate < todayDate {
++                            Button(intent: OpenOnDateIntent(date: widgetConductor.date.defaultIntentParameter)) {
++                                Text(formatter.localizedString(for:
++                                    Calendar.current.startOfDay(for:
++                                        widgetConductor.date), relativeTo:
++                                    Calendar.current.startOfDay(for: Date())) + " ... ")
++                            }.buttonStyle(.plain).foregroundStyle(.white)
++                                .foregroundStyle(.white)
++                                .frame(alignment: .center)
++                        }
+ 
+-                Button(intent: NewTaskIntent()) {
+-                    Image(systemName: "plus")
+-                }.buttonStyle(.plain).foregroundStyle(.white)
+-                    .widgetURL(URL(string: "wispr//NewTask"))
+-                    .frame(alignment: .trailing)
+-                Spacer()
+-            }.padding()
+-        }
++                        Button(intent: ShowTodayIntent()) {
++                            if activeDate == todayDate {
++                                Text(Date().formatted(date: .abbreviated, time: .omitted))
++                            } else {
++                                Image(systemName: "circle.fill")
++                            }
++                        }.buttonStyle(.plain).foregroundStyle(.white)
++                            .foregroundStyle(.white)
++                            .frame(alignment: .center)
++                            .onAppear {
++                                formatter.unitsStyle = .short
++                            }
++
++                        if activeDate > todayDate {
++                            Button(intent: OpenOnDateIntent(date: widgetConductor.date.defaultIntentParameter)) {
++                                Text(" ... " + formatter.localizedString(for:
++                                    Calendar.current.startOfDay(for:
++                                        widgetConductor.date), relativeTo:
++                                    Calendar.current.startOfDay(for: Date())))
++                            }.buttonStyle(.plain).foregroundStyle(.white)
++                                .foregroundStyle(.white)
++                                .frame(alignment: .center)
++                        }
++                    }
++                }
++
++                HStack {
++                    Button(intent: ShowYesterdayIntent(date: widgetConductor.date.defaultIntentParameter)) {
++                        Spacer()
++                        Image(systemName: "chevron.left")
++                            .padding()
++                        Spacer()
++                    }.buttonStyle(.plain).foregroundStyle(.white)
++                        .frame(alignment: .center)
++
++                    Button(intent: NewTaskIntent(date: widgetConductor.date.defaultIntentParameter)) {
++                        Spacer()
++                        Image(systemName: "plus")
++                            .padding()
++                        Spacer()
++                    }.buttonStyle(.plain).foregroundStyle(.white)
++                        .widgetURL(URL(string: "wispr//NewTask"))
++                        .frame(alignment: .trailing)
++
++                    Button(intent: ShowTomorrowIntent(date: widgetConductor.date.defaultIntentParameter)) {
++                        Spacer()
++                        Image(systemName: "chevron.right")
++                            .padding()
++                        Spacer()
++                    }.buttonStyle(.plain).foregroundStyle(.white)
++                        .frame(alignment: .center)
++                }.padding()
++            }
++        }.buttonStyle(.plain)
+     }
+ }
+ 
+@@ -107,8 +189,17 @@ struct WidgetItemList: View {
+ 
+     var body: some View {
+         VStack {
+-            ForEach(items.prefix(5), id: \.self) { item in
+-                itemRow(item)
++            ForEach(items.prefix(6), id: \.self) { item in
++                if item.children.isEmpty {
++                    itemRow(item)
++                } else {
++                    Button(intent: ShowItemChildren(item: item.defaultIntentParameter)) {
++                        HStack {
++                            itemRow(item)
++                            Image(systemName: "chevron.right")
++                        }
++                    }
++                }
+             }
+             Spacer()
+         }.padding()
+@@ -121,6 +212,7 @@ struct WidgetItemList: View {
+ }
+ 
+ struct MediumWidget: View {
++    @Environment(WidgetConductor.self) private var widgetConductor: WidgetConductor
+     @Query var items: [Item]
+     @State var date: Date = .init()
+ 
+@@ -148,7 +240,6 @@ struct MediumWidget: View {
+     var body: some View {
+         VStack {
+             Spacer()
+-
+             GeometryReader { geo in
+                 HStack {
+                     VStack(spacing: 4) {
+@@ -161,7 +252,6 @@ struct MediumWidget: View {
+                         ForEach(tasks) { item in
+                             WidgetItemRowLabel(item: item)
+                         }
+-
+                         Spacer()
+                     }.frame(width: geo.size.width * 0.32)
+ 
+@@ -181,7 +271,7 @@ struct MediumWidget: View {
+ 
+             HStack {
+                 Spacer()
+-                Button(intent: NewTaskIntent()) {
++                Button(intent: NewTaskIntent(date: widgetConductor.date.defaultIntentParameter)) {
+                     Image(systemName: "plus")
+                 }.buttonStyle(.plain).foregroundStyle(.white)
+                     .widgetURL(URL(string: "wispr//NewTask"))
+@@ -232,11 +322,10 @@ struct WidgetItemRowLabel: View {
+                     WidgetEventDataRowLabel(item: $item, currentTime: time.date)
+                 }
+                 .padding(4)
+-                .tint(isActiveItem(item, time.date) ? .black : .white)
+                 .frame(alignment: .bottom)
+                 .foregroundStyle(isActiveItem(item, time.date) ? .black : .white)
++                .foregroundStyle(isEventPast(item, time.date) ? .gray : .white)
+                 .background(isActiveItem(item, time.date) ? .white : .black)
+-                .scaleEffect(isEventPast(item, time.date) ? 0.9 : 1, anchor: .center)
+                 .clipShape(RoundedRectangle(cornerRadius: 10))
+             }
+         }
+@@ -248,10 +337,13 @@ struct WidgetTaskDataRowLabel: View {
+     @Binding var item: Item
+ 
+     var body: some View {
+-        if item.isTask, let task = item.taskData {
++        if item.isTask {
+             Button(intent: ToggleTaskCompletionIntent(task: item.defaultIntentParameter)) {
+-                Image(systemName: task.completedAt == nil ? "square" : "square.fill")
++                Image(systemName: item.taskData?.completedAt == nil ? "square" : "square.fill")
+             }.background(.clear).buttonStyle(.plain)
++                .onChange(of: item.taskData?.completedAt) {
++                    WidgetCenter.shared.reloadAllTimelines()
++                }
+         }
+     }
+ }
+@@ -301,8 +393,7 @@ struct WidgetEventDataRowLabel: View {
+                     HStack {
+                         Spacer()
+                         Text(eventData.startDate.formatted(.dateTime.hour().minute()))
+-                            .scaleEffect(isActiveItem(item, currentTime) ? 0.8 :
+-                                1, anchor: .bottomTrailing)
++                            .scaleEffect(isActiveItem(item, currentTime) ? 0.8 : 1, anchor: .bottomTrailing)
+                     }
+                     HStack {
+                         Spacer()
+@@ -330,14 +421,35 @@ struct OpenAppIntent: AppIntent {
+     }
+ }
+ 
++struct OpenOnDateIntent: AppIntent {
++    static var title: LocalizedStringResource = "Open on Date"
++    static let openAppWhenRun: Bool = true
++
++    @Parameter
++    var date: Date
++
++    @MainActor
++    func perform() async throws -> some IntentResult {
++        withAnimation {
++            SharedState.widgetConductor.parentItem = nil
++            SharedState.dayDetailsConductor.editItem = nil
++            SharedState.widgetConductor.date = Calendar.current.startOfDay(for: date)
++            SharedState.dayDetailsConductor.date = Calendar.current.startOfDay(for: date)
++        }
++        return .result()
++    }
++}
++
+ struct ShowTodayIntent: AppIntent {
+     static var title: LocalizedStringResource = "Go to tomorrow"
+ 
+-    init() {}
+-
++    @MainActor
+     func perform() async throws -> some IntentResult {
+         withAnimation {
+-            SharedState.date = Date()
++            SharedState.widgetConductor.parentItem = nil
++            SharedState.dayDetailsConductor.editItem = nil
++            SharedState.widgetConductor.date = Calendar.current.startOfDay(for: Date())
++            SharedState.dayDetailsConductor.date = SharedState.widgetConductor.date
+         }
+         return .result()
+     }
+@@ -346,11 +458,16 @@ struct ShowTodayIntent: AppIntent {
+ struct ShowTomorrowIntent: AppIntent {
+     static var title: LocalizedStringResource = "Go to tomorrow"
+ 
+-    init() {}
++    @Parameter
++    var date: Date
+ 
++    @MainActor
+     func perform() async throws -> some IntentResult {
+         withAnimation {
+-            SharedState.date.addTimeInterval(86400)
++            SharedState.widgetConductor.parentItem = nil
++            SharedState.dayDetailsConductor.editItem = nil
++            SharedState.widgetConductor.date = Calendar.current.startOfDay(for: date.advanced(by: 86400))
++            SharedState.dayDetailsConductor.date = Calendar.current.startOfDay(for: date.advanced(by: 86400))
+         }
+         return .result()
+     }
+@@ -359,11 +476,31 @@ struct ShowTomorrowIntent: AppIntent {
+ struct ShowYesterdayIntent: AppIntent {
+     static var title: LocalizedStringResource = "Go to tomorrow"
+ 
+-    init() {}
++    @Parameter
++    var date: Date
++
++    @MainActor
++    func perform() async throws -> some IntentResult {
++        withAnimation {
++            SharedState.widgetConductor.parentItem = nil
++            SharedState.dayDetailsConductor.editItem = nil
++            SharedState.widgetConductor.date = Calendar.current.startOfDay(for: date.advanced(by: -86400))
++            SharedState.dayDetailsConductor.date = Calendar.current.startOfDay(for: date.advanced(by: -86400))
++        }
++        return .result()
++    }
++}
++
++struct ShowItemChildren: AppIntent {
++    static var title: LocalizedStringResource = "Go to tomorrow"
++
++    @Parameter(title: "Item")
++    var item: Item
+ 
++    @MainActor
+     func perform() async throws -> some IntentResult {
+         withAnimation {
+-            SharedState.date.addTimeInterval(-86400)
++            SharedState.widgetConductor.parentItem = item
+         }
+         return .result()
+     }
+@@ -373,11 +510,13 @@ struct NewTaskIntent: AppIntent {
+     static var title: LocalizedStringResource = "New Task"
+     static let openAppWhenRun: Bool = true
+ 
++    @Parameter
++    var date: Date
++
+     @MainActor
+     func perform() async throws -> some IntentResult {
+-        SharedState.newItem = true
++        SharedState.widgetConductor.parentItem = nil
+         createNewItem()
+-        WidgetCenter.shared.reloadAllTimelines()
+         return .result()
+     }
+ 
+@@ -385,25 +524,17 @@ struct NewTaskIntent: AppIntent {
+     func createNewItem() {
+         let context = SharedState.sharedModelContainer.mainContext
+         let items = getItems(context)
+-
+-        let newItem = Item(
+-            position: items.count,
+-            timestamp: Date()
+-        )
+-
+-        withAnimation {
+-            SharedState.editItem = newItem
+-        }
+-
+-        context.insert(newItem)
+-        try? context.save()
+-        WidgetCenter.shared.reloadAllTimelines()
++        _ = SharedState
++            .createNewItem(
++                date: date,
++                position: items.count
++            )
+     }
+ 
+     @MainActor
+     func getItems(_ context: ModelContext) -> [Item] {
+         let cal = Calendar.current
+-        let start = cal.startOfDay(for: Date())
++        let start = cal.startOfDay(for: SharedState.widgetConductor.date)
+         let end = start.advanced(by: 86400)
+         let desc = FetchDescriptor<Item>(predicate: #Predicate<Item> { start < $0.timestamp && $0.timestamp < end })
+         do {
+@@ -421,10 +552,12 @@ struct EditItemIntent: AppIntent {
+     @Parameter(title: "Item")
+     var item: Item
+ 
++    @MainActor
+     func perform() async throws -> some IntentResult {
+-//            withAnimation {
+-//                SharedState.editItem = item
+-//            }
++        withAnimation {
++            SharedState.dayDetailsConductor.date = Calendar.current.startOfDay(for: item.timestamp)
++            SharedState.dayDetailsConductor.editItem = item
++        }
+         return .result()
+     }
+ }
+@@ -437,7 +570,6 @@ struct ToggleTaskCompletionIntent: AppIntent {
+ 
+     @MainActor
+     func perform() async throws -> some IntentResult {
+-        print("madeIT")
+         let context = SharedState.sharedModelContainer.mainContext
+         if task.taskData?.completedAt == nil {
+             task.taskData?.completedAt = Date()
+@@ -445,6 +577,15 @@ struct ToggleTaskCompletionIntent: AppIntent {
+             task.taskData?.completedAt = nil
+         }
+ 
++        for child in task.children {
++            if child.taskData?.completedAt == nil {
++                child.taskData?.completedAt = Date()
++            } else {
++                child.taskData?.completedAt = nil
++            }
++            context.insert(child)
++        }
++
+         context.insert(task)
+         try context.save()
+ 
+diff --git a/swift/wispr/wispr/wisprApp.swift b/swift/wispr/wispr/wisprApp.swift
+index df481c5..c769c68 100644
+--- a/swift/wispr/wispr/wisprApp.swift
++++ b/swift/wispr/wispr/wisprApp.swift
+@@ -10,17 +10,16 @@ import SwiftUI
+ 
+ @main
+ struct wisprApp: App {
+-    @State var calendarService: CalendarService = .init()
+     @State var audioService: AudioService = .init()
+-
++    
+     var body: some Scene {
+         WindowGroup {
+             ContentView()
+-                .environment(calendarService)
++                .environment(SharedState.calendarService)
++                .environment(SharedState.dayDetailsConductor)
+                 .environment(audioService)
+                 .preferredColorScheme(.dark)
+         }
+-        
+         .modelContainer(SharedState.sharedModelContainer)
+     }
+ }

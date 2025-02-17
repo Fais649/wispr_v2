@@ -21,7 +21,7 @@ class EventHandler {
         self.event = event
     }
 
-    fileprivate func processEventData() -> EventData? {
+    public func processEventData() -> EventData? {
         if !item.isEvent {
             return nil
         }
@@ -103,7 +103,7 @@ class CommitHandler {
         try? context.save()
     }
 
-    func commit(item: Item, _: Bool = false) -> Bool {
+    func commit(context: ModelContext, item: Item, _: Bool = false) -> Bool {
         if !item.hasNote {
             _ = DeleteHandler().delete(item)
             return true
@@ -117,17 +117,8 @@ class CommitHandler {
             item.eventData = e
         }
 
-        if var i = itemExists(item) {
-            context.delete(i)
+        if itemExists(item) == nil {
             context.insert(item)
-            try? context.save()
-        } else {
-            context.insert(item)
-            for child in item.children {
-                if child.hasNote && itemExists(child) == nil {
-                    context.insert(child)
-                }
-            }
         }
         try? context.save()
 
@@ -240,13 +231,13 @@ enum SharedState {
         return newItem
     }
 
-    static func commitItem(item: Item, _ rollback: Bool = false) {
-        _ = CommitHandler().commit(item: item, rollback)
+    static func commitItem(context: ModelContext, item: Item, _ rollback: Bool = false) {
+        _ = CommitHandler().commit(context: context, item: item, rollback)
     }
 
-    static func commitEditItem(_ rollback: Bool = false) {
+    static func commitEditItem(context: ModelContext, _ rollback: Bool = false) {
         if let item = SharedState.dayDetailsConductor.editItem {
-            _ = CommitHandler().commit(item: item, rollback)
+            _ = CommitHandler().commit(context: context, item: item, rollback)
         }
     }
 

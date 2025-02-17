@@ -119,26 +119,49 @@ struct TimeLineView: View {
         return days
     }
 
+    @State var day: ScrollPosition = .init()
+
     var body: some View {
         ScrollViewReader { proxy in
-            VStack {
-                List(days.sorted(by: { $0.key < $1.key }), id: \.key) { key, value in
-                    if showAllDays || !value.isEmpty {
-                        listRow(key, value)
-                    }
-                }.opacity(hideAll ? 0 : 1)
-                    .animation(.snappy(duration: 0.1), value: hideAll)
-                    .onAppear {
-                        listAppear(proxy: proxy)
-                    }.overlay(alignment: .bottomTrailing) {
-                        Button(action: { toggleDaysFilter(proxy) }) {
-                            Image(systemName: showAllDays ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
+            ScrollView {
+                LazyVStack {
+                    ForEach(days.sorted(by: { $0.key < $1.key }), id: \.key) { key, value in
+                        if showAllDays || !value.isEmpty {
+                            listRow(key, value)
                         }
-                        .frame(width: 50, height: 50)
-                        .padding()
-                        .tint(.white)
+                    }.opacity(hideAll ? 0 : 1)
+                        .onAppear { listAppear(proxy: proxy) }
+                        .scrollTransition(.interactive.threshold(.centered.interpolated(towards:
+                            .hidden, amount: 0.4)))
+                    { content, phase in
+                        content
+                            .opacity(phase.isIdentity ? 1 : -0.2)
+                            .scaleEffect(phase.isIdentity ? 1 : 0.2)
+                            .blur(radius: phase.isIdentity ? 0 : 10)
                     }
+                }.padding()
+                    .scrollTargetLayout()
             }
+            .overlay(alignment: .bottom) {
+                Button(action: {
+                    withAnimation {
+                        proxy.scrollTo(todayDate, anchor: .center)
+                    }
+                }) {
+                    Image(systemName: "circle.dotted.circle")
+                        .font(.custom("GohuFont11NFM", size: 40))
+                        .foregroundStyle(.white)
+                }.buttonStyle(.plain)
+                    .background {
+                        Circle().fill(.black)
+                    }
+                    .frame(width: 100, height: 100)
+                    .padding()
+            }
+            .scrollPosition($day, anchor: .center)
+            .padding()
+            .defaultScrollAnchor(.center)
+            .scrollTargetBehavior(.viewAligned)
         }
         .toolbarBackgroundVisibility(.hidden, for: .bottomBar)
         .toolbarBackground(.clear, for: .bottomBar)
@@ -149,42 +172,47 @@ struct TimeLineView: View {
     @ViewBuilder
     private func listRow(_ date: Date, _ items: [Item]) -> some View {
         Button(action: { resetNavigationPath(date: date) }) {
-            HStack {
+            VStack {
                 if Calendar.current.isDateInToday(date) {
-                    Image(systemName: "play.fill")
-                        .tint(.white)
+                    HStack {
+                        DayHeader(date: date, isEmpty: items.isEmpty)
+                            .font(.custom("GohuFont11NFM", size: 20))
+                            .padding(.horizontal)
+                    }
+                    .background(.white)
+                    .foregroundStyle(.black)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                } else {
+                    HStack {
+                        DayHeader(date: date, isEmpty: items.isEmpty)
+                            .font(.custom("GohuFont11NFM", size: 18))
+                    }
                 }
-                DayHeader(date: date, isEmpty: items.isEmpty)
-                    .font(.custom("GohuFont11NFM", size: 14))
+
+                rowBody(date, items)
+                    .padding(.leading)
+                    .font(.custom("GohuFont11NFM", size: 16))
             }
-            rowBody(date, items)
-                .padding(.leading)
-                .font(.custom("GohuFont11NFM", size: 14))
         }
-        .opacity(Calendar.current.isDateInToday(date) || date > Date() ? 1 : 0.6)
+        .padding()
+        .opacity(Calendar.current.isDateInToday(date) || date > Date() ? 1 :
+            0.3)
         .listRowBackground(Color.clear)
+        .clipShape(RoundedRectangle(cornerRadius: 20))
     }
 
     private func resetNavigationPath(date: Date) {
-        conductor.date = date
-        path.removeAll()
+        withAnimation {
+            conductor.date = date
+            path.removeAll()
+        }
     }
 
     @ViewBuilder
-    private func rowBody(_ date: Date, _ items: [Item]) -> some View {
+    private func rowBody(_: Date, _ items: [Item]) -> some View {
         VStack {
             ForEach(items) { item in
-                Button {
-                    self.conductor.date = date
-                    self.path.removeAll()
-                    SharedState.dayDetailsConductor.editItem = item
-                } label: {
-                    TimeLineItemRowLabel(item: item)
-                        .onChange(of: item.position) {
-                            try! modelContext.save()
-                        }
-                        .disabled(true)
-                }
+                TimeLineItemListRow(path: $path, item: item)
             }
         }
     }
@@ -213,7 +241,7 @@ struct TimeLineView: View {
 
     fileprivate func listAppear(proxy: ScrollViewProxy) {
         withAnimation {
-            proxy.scrollTo(todayDate, anchor: .top)
+            proxy.scrollTo(Calendar.current.startOfDay(for: conductor.date), anchor: .center)
         }
     }
 }
@@ -254,7 +282,7 @@ struct TimeLineItemRowLabel: View {
                     }
                     .background {
                         if let imageData = item.imageData {
-                            ImageDataRowLabel(imageData: imageData, namespace: namespace)
+                            ImageDataRowLabel(imageData: imageData, namespace: namespace, disabled: true)
                         }
 
                         RoundedRectangle(cornerRadius: 8)
@@ -309,5 +337,223 @@ struct TimeLineEventDataRowLabel: View {
                 }
             }
         }
+    }
+}
+
+struct TimeLineItemListRow: View {
+    @Environment(DayDetailsConductor.self) private var conductor: DayDetailsConductor
+    @Environment(\.modelContext) private var modelContext: ModelContext
+    @Environment(CalendarService.self) private var calendarService: CalendarService
+    @Binding var path: [NavDestination]
+
+    var item: Item
+    init(path: Binding<[NavDestination]>, item: Item) {
+        _path = path
+        self.item = item
+        let item = item
+        taskData = item.taskData
+        subtasks = item.taskData?.subtasks ?? []
+        noteData = item.noteData
+        eventData = item.eventData
+        imageData = item.imageData
+        audioData = item.audioData
+    }
+
+    var assignedTags: [Tag] = []
+    var noteData: NoteData = .init(text: "")
+    var taskData: TaskData? = nil
+    var subtasks: [SubTaskData] = []
+    var eventData: EventData? = nil
+    var imageData: ImageData? = nil
+    var audioData: AudioData? = nil
+
+    @Query var tags: [Tag]
+
+    @State var showTag: Bool = false
+    @State var tagSearchTerm: String = ""
+    @State private var image: Image?
+    @Namespace var namespace
+
+    var tagSearchResults: [Tag] {
+        if tagSearchTerm.isEmpty {
+            return tags.filter { !assignedTags.contains($0) }
+        } else {
+            return tags.filter { $0.name.contains(tagSearchTerm) && !assignedTags.contains($0) }
+        }
+    }
+
+    @FocusState var noteFocus: Bool
+    @FocusState var childFocus: Bool
+    @FocusState var tagSearchFocus: Bool
+
+    @State var expand: Bool = false
+    var hasSubTasks: Bool {
+        if let task = taskData { return task.subtasks.isNotEmpty } else { return false }
+    }
+
+    @ViewBuilder
+    func relateiveStartString(_ time: Date) -> some View {
+        if let event = eventData, Calendar.current.isDateInToday(event.startDate) {
+            if time < event.startDate {
+                HStack {
+                    Image(systemName: "clock")
+                    Text(formatter.localizedString(for: event.startDate, relativeTo: time))
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
+                }
+            } else if time < event.endDate {
+                HStack {
+                    Image(systemName: "timer")
+                    Text(time, format: .timer(countingDownIn: event.startDate ..< event.endDate))
+                }
+            }
+        }
+    }
+
+    var formatter: RelativeDateTimeFormatter {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .abbreviated
+        return formatter
+    }
+
+    var startString: String {
+        if let event = eventData {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "HH:mm"
+            return formatter.string(from: event.startDate)
+        }
+        return ""
+    }
+
+    var endString: String {
+        if let event = eventData {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "HH:mm"
+            return formatter.string(from: event.endDate)
+        }
+        return ""
+    }
+
+    func isActiveItem(_ item: Item, _ date: Date) -> Bool {
+        if let eventData = item.eventData {
+            return eventData.startDate <= date && date < eventData.endDate && item.taskData?.completedAt == nil
+        } else {
+            return false
+        }
+    }
+
+    @ViewBuilder
+    var rowBackgroundView: some View {
+        if let imageData = item.imageData {
+            ImageDataListRow(imageData: imageData, namespace: namespace)
+        } else {
+            TimelineView(.periodic(from: .now, by: 1)) { time in
+                RoundedRectangle(cornerRadius: 20).fill(isActiveItem(item, time.date) ? .white : .clear)
+            }
+        }
+    }
+
+    @ViewBuilder
+    func subtaskView(time: Date) -> some View {
+        DisclosureGroup(isExpanded: $expand) {
+            if subtasks.isNotEmpty {
+                ForEach(
+                    subtasks.sorted(by: { first, second in first.position < second.position }).indices,
+                    id: \.self
+                ) { index in
+                    SubTaskDataListRow(
+                        item: item,
+                        subtask: subtasks[index]
+                    ).scrollTargetLayout()
+                        .fixedSize(horizontal: false, vertical: true)
+                        .scrollClipDisabled(subtasks.count > 0)
+                }
+            }
+        } label: {
+            labelView(time: time)
+        }
+    }
+
+    @ViewBuilder
+    func labelView(time: Date) -> some View {
+        HStack {
+            TaskDataListRow(item: item, taskData: taskData)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text(noteData.text)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer()
+
+            if eventData != nil {
+                VStack {
+                    relateiveStartString(time)
+                    HStack {
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(isActiveItem(item, time) && item.imageData == nil ? .black : .white)
+                            .frame(width: 1, height: 20)
+                            .padding(.horizontal, 8)
+                        Spacer()
+                        VStack {
+                            Text(startString)
+                            Text(endString)
+                        }
+                    }
+                }
+                .font(.custom("GohuFont11NFM", size: 12))
+                .frame(width: 58)
+            }
+        }.background {
+            if let imageData = item.imageData {
+                TimeLineImageDataListRow(imageData: imageData)
+            }
+        }
+    }
+
+    var body: some View {
+        TimelineView(.everyMinute) { time in
+            VStack {
+                if hasSubTasks {
+                    subtaskView(time: time.date)
+                } else {
+                    labelView(time: time.date)
+                }
+            }
+            .padding()
+            .background {
+                if isActiveItem(item, time.date) {
+                    RoundedRectangle(cornerRadius: 20).fill(.white)
+                }
+            }
+            .foregroundStyle(isActiveItem(item, time.date) ? .black : .white)
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+            // AudioRecordingView(audioData: $audioData)
+            // TagDataRow(tags: $assignedTags)
+        }
+        .listRowBackground(Color.clear)
+        .tint(.white)
+    }
+}
+
+struct TimeLineImageDataListRow: View {
+    var imageData: ImageData
+    var disabled: Bool = false
+    @State var showImage: Bool = false
+
+    @ViewBuilder
+    var imageView: some View {
+        if let image = imageData.image {
+            image.resizable().scaledToFill()
+                .aspectRatio(CGSize(width: 4, height: 3), contentMode: .fill)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .overlay {
+                    LinearGradient(gradient: Gradient(colors: [.clear, .black]), startPoint: .top, endPoint: .bottom)
+                }
+        }
+    }
+
+    var body: some View {
+        imageView
+            .padding(2)
+            .padding(.horizontal, 12)
     }
 }

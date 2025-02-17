@@ -67,6 +67,7 @@ struct DayDetails: View {
     @Environment(DayDetailsConductor.self) private var conductor: DayDetailsConductor
     @Environment(CalendarService.self) private var calendarService: CalendarService
     @State var isEditing: Bool = false
+    @State var hideItemList: Bool = false
 
     @Namespace var namespace
 
@@ -94,21 +95,72 @@ struct DayDetails: View {
     var body: some View {
         NavigationStack(path: $path) {
             VStack {
-                if !conductor.isEditingItem {
+                if !showItemForm {
                     HStack {
+                        Spacer()
                         Image("Logo")
                             .resizable()
                             .scaledToFit()
-                            .frame(width: 30, height: 30)
-                    }
+                            .frame(width: 10, height: 10)
+                        Spacer()
+                    }.padding()
                 }
 
                 VStack {
-                    ItemList(editItem: $editItem, items: dayItems)
+                    ItemList(items: dayItems)
                         .environment(\.editMode, .constant(self.isEditing ? EditMode.active : EditMode.inactive))
+                        .onChange(of: conductor.editItem) {
+                            withAnimation {
+                                showItemForm = conductor.editItem != nil
+                            }
+                        }.onChange(of: showItemForm) {
+                            if !showItemForm {
+                                withAnimation {
+                                    conductor.editItem = nil
+                                }
+                            }
+                        }
                 }
 
-                toolBar.focused($toolbarFocus)
+                VStack {
+                    if showItemForm {
+                        @Bindable var conductor = conductor
+                        ItemForm(
+                            item: conductor.editItem,
+                            showItemForm: $showItemForm,
+                            timestamp: $conductor.date,
+                            position: items.count
+                        ).onDisappear {
+                            withAnimation {
+                                hideItemList = false
+                            }
+                        }
+                        .transition(.push(from: .bottom))
+                        .opacity(conductor.showDatePicker ? 0 : 1)
+                        .onDisappear {
+                            WidgetCenter.shared.reloadAllTimelines()
+                        }
+                    }
+
+                    if conductor.showDatePicker {
+                        @Bindable var conductor = conductor
+                        HStack {
+                            DatePicker("", selection: $conductor.date, displayedComponents: [.date])
+                                .datePickerStyle(.graphical)
+                                .labelsHidden()
+                        }
+                    }
+                }
+                .padding()
+                .tint(.white)
+
+                BottomToolbar(
+                    showItemForm: $showItemForm,
+                    path: $path,
+                    itemCount: items.count
+                ).onAppear {
+                    WidgetCenter.shared.reloadAllTimelines()
+                }
             }
             .matchedTransitionSource(id: conductor.date, in: namespace)
             .navigationDestination(for: NavDestination.self) { destination in
@@ -126,78 +178,27 @@ struct DayDetails: View {
         }
         .onChange(of: scenePhase) {
             if [ScenePhase.background, ScenePhase.inactive].contains(scenePhase) {
-                SharedState.commitEditItem()
+                SharedState.commitEditItem(context: modelContext)
             }
         }
         .font(.custom("GohuFont11NFM", size: 16))
         .onAppear(perform: { calendarService.syncCalendar(modelContext: modelContext) })
     }
 
-    @ViewBuilder
-    var toolBar: some View {
-        VStack {
-            TopToolbar(
-                editItem: $editItem,
-                path: $path,
-                position: items.count
-            )
-
-            HStack {
-                BottomToolbar(
-                    path: $path,
-                    itemCount: items.count
-                ).onAppear {
-                    WidgetCenter.shared.reloadAllTimelines()
-                }
-            }
-        }.padding()
-            .tint(.white)
-    }
+    @State var showItemForm: Bool = false
 
     func dateString(date: Date) -> String {
         return date.formatted(.dateTime.weekday(.wide).day().month().year())
     }
 }
 
-struct TopToolbar: View {
-    @Environment(DayDetailsConductor.self) private var conductor: DayDetailsConductor
-    @Binding var editItem: Item?
-    @Binding var path: [NavDestination]
-    let position: Int
-
-    var body: some View {
-        @Bindable var conductor = conductor
-        if let e = editItem {
-            HStack {
-                EditItemForm(editItem: e, position: position)
-            }.transition(.push(from: .bottom))
-                .opacity(conductor.showDatePicker ? 0 : 1)
-                .onDisappear {
-                    WidgetCenter.shared.reloadAllTimelines()
-                }
-        }
-
-        if conductor.showDatePicker {
-            HStack {
-                DatePicker("", selection: $conductor.date, displayedComponents: [.date])
-                    .datePickerStyle(.graphical)
-                    .labelsHidden()
-            }
-        }
-    }
-
-    func createNewItem() -> Item {
-        return SharedState.createNewItem(date: conductor.date, position: position)
-    }
-}
-
 struct BottomToolbar: View {
     @Environment(\.modelContext) private var modelContext: ModelContext
     @Environment(DayDetailsConductor.self) private var conductor: DayDetailsConductor
+
+    @Binding var showItemForm: Bool
     @Binding var path: [NavDestination]
     let itemCount: Int
-
-    @State var newItemLink = false
 
     var activeDate: Date {
         return Calendar.current.startOfDay(for: conductor.date)
@@ -208,56 +209,54 @@ struct BottomToolbar: View {
     }
 
     var body: some View {
-        @Bindable var conductor = conductor
-        VStack {
-            HStack {
-                if !conductor.isEditingItem {
-                    NavigationLink(value: NavDestination.timeline) {
-                        Image(systemName: "calendar.day.timeline.left")
-                    }.onChange(of: conductor.date) {
-                        path.removeAll()
-                    }
+        HStack {
+            Button(action: { withAnimation { showItemForm.toggle() } }) {
+                Image(systemName: "plus")
+                    .rotationEffect(.degrees(showItemForm ? 45 : 0))
+                    .font(.system(size: conductor.isEditingItem ? 20 : 16))
+            }
+            .padding(.horizontal)
+
+            Spacer()
+            Spacer()
+
+            Button(action: { stepDate(by: -1) }) {
+                Image(systemName: "chevron.left")
+            }.padding(.horizontal)
+
+            Spacer()
+
+            Button(action: { stepTo(date: Date()) }) {
+                Image(systemName: "circle.dotted.circle")
+            }.opacity(activeDate == todayDate ? 0 : 1).disabled(activeDate == todayDate)
+
+            Button {
+                withAnimation {
+                    conductor.showDatePicker.toggle()
                 }
+            } label: {
+                header
+            }.onChange(of: conductor.date) {
+                WidgetCenter.shared.reloadAllTimelines()
+            }
 
-                Button {
-                    withAnimation {
-                        conductor.showDatePicker.toggle()
-                    }
-                } label: {
-                    header
-                }.onChange(of: conductor.date) {
-                    WidgetCenter.shared.reloadAllTimelines()
-                }
-            }.padding()
-            HStack {
-                Spacer()
+            Spacer()
 
-                Button(action: { stepDate(by: -1) }) {
-                    Image(systemName: "chevron.left")
-                }.padding(.horizontal)
+            Button(action: { stepDate(by: 1) }) {
+                Image(systemName: "chevron.right")
+            }.padding(.horizontal)
 
-                Spacer()
-                Spacer()
+            Spacer()
+            Spacer()
 
-                Button(action: createNewItem) {
-                    Image(systemName: "plus")
-                        .rotationEffect(.degrees(conductor.isEditingItem ? 45 : 0))
-                        .font(.system(size: conductor.isEditingItem ? 20 : 16))
-                }
-
-                Spacer()
-                Spacer()
-
-                Button(action: { stepDate(by: 1) }) {
-                    Image(systemName: "chevron.right")
-                }.padding(.horizontal)
-
-                Spacer()
-            }.padding()
-        }
-        .padding()
-        .padding(.horizontal, 50)
-        .tint(.white)
+            NavigationLink(value: NavDestination.timeline) {
+                Image(systemName: "calendar.day.timeline.left")
+            }.onChange(of: conductor.date) {
+                path.removeAll()
+            }.opacity(showItemForm ? 0 : 1).disabled(showItemForm)
+                .padding(.horizontal)
+        }.padding()
+            .tint(.white)
     }
 
     @ViewBuilder
@@ -271,17 +270,13 @@ struct BottomToolbar: View {
             if activeDate == todayDate {
                 Text(DateTimeString.toolbarTodayDateString())
                     .fixedSize()
-            } else {
-                Button(action: { stepTo(date: Date()) }) {
-                    Image(systemName: "circle.fill")
-                }
             }
 
             if activeDate > todayDate {
                 Text(DateTimeString.toolbarFutureDateString(date: conductor.date))
+                    .fixedSize()
             }
         }
-        .fixedSize()
         .padding(.horizontal)
         .lineLimit(1)
     }
@@ -317,10 +312,12 @@ struct BottomToolbar: View {
     }
 
     func createNewItem() {
-        if conductor.editItem == nil {
-            _ = SharedState.createNewItem(date: conductor.date, position: itemCount)
-        } else {
-            conductor.rollback(context: modelContext)
-        }
+        conductor.editItem = Item(position: itemCount, timestamp: conductor.date)
+
+        // if conductor.editItem == nil {
+        //     _ = SharedState.createNewItem(date: conductor.date, position: itemCount)
+        // } else {
+        //     conductor.rollback(context: modelContext)
+        // }
     }
 }

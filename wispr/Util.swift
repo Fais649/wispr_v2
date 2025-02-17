@@ -291,38 +291,37 @@ enum DateTimeString {
     static func toolbarFutureDateString(date: Date) -> String {
         let formatter = RelativeDateTimeFormatter()
         let today = Calendar.current.startOfDay(for: Date())
-        formatter.unitsStyle = .short
+        formatter.unitsStyle = .abbreviated
         return date.formatted(date: .abbreviated, time: .omitted) + " [\(formatter.localizedString(for: date, relativeTo: today))]"
     }
 
     static func toolbarPastDateString(date: Date) -> String {
         let formatter = RelativeDateTimeFormatter()
         let today = Calendar.current.startOfDay(for: Date())
-        formatter.unitsStyle = .short
+        formatter.unitsStyle = .abbreviated
         return date.formatted(date: .abbreviated, time: .omitted) + " [\(formatter.localizedString(for: date, relativeTo: today))]"
     }
 
     static func leftDateString(date: Date) -> String {
-        if Calendar.current.isDateInToday(date) {
-            return date
-                .formatted(
-                    .dateTime
-                        .weekday(.abbreviated)
-                        .day()
-                        .month()
-                        .year(.twoDigits)
-                )
-        }
+        // if Calendar.current.isDateInToday(date) {
+        //     return date
+        //         .formatted(
+        //             .dateTime
+        //                 .day()
+        //                 .month()
+        //                 .year(.twoDigits)
+        //         )
+        // }
         return date.formatted(.dateTime.day().month().year(.twoDigits))
     }
 
     static func rightDateString(date: Date) -> String {
         if Calendar.current.isDateInToday(date) {
-            return "Today"
+            return "Today - " + date.formatted(.dateTime.weekday(.abbreviated))
         }
 
         let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
+        formatter.unitsStyle = .short
         return formatter.localizedString(for: date, relativeTo: Date()) + " - " + date.formatted(.dateTime.weekday(.abbreviated))
     }
 }
@@ -399,7 +398,6 @@ class CalendarService {
 
     @MainActor
     func updateEKEvent(ekEvent: EKEvent, item: Item, event: EventData) {
-
         ekEvent.startDate = event.startDate
         ekEvent.endDate = event.endDate
         ekEvent.title = item.noteData.text

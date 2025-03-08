@@ -8,12 +8,22 @@
 
 /* Begin PBXBuildFile section */
 		08E45829FB8748825105CC2B /* Util.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71A13C5C3F25F0F3FA6FF17A /* Util.swift */; };
+		0E7671E8E126B1B15704F20B /* Query.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B72413105B525634EC035D6 /* Query.swift */; };
 		361823B322067C06D146BFB6 /* Util.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71A13C5C3F25F0F3FA6FF17A /* Util.swift */; };
-		6CFADDFD14F573DCEA93E0B1 /* TimeLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C44952C8CF97636BAC358E05 /* TimeLine.swift */; };
 		7DB8800CCAC7514D54CDDF8C /* Day.swift in Sources */ = {isa = PBXBuildFile; fileRef = 675F733268FCCC5DFD8CFD9C /* Day.swift */; };
 		8B4854B57B7C4C50552CAFE4 /* TimeLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C44952C8CF97636BAC358E05 /* TimeLine.swift */; };
 		8E4F0EB0CD89A0B2EE014BA8 /* Day.swift in Sources */ = {isa = PBXBuildFile; fileRef = 675F733268FCCC5DFD8CFD9C /* Day.swift */; };
 		8E912B88272EA0CCBD688CC2 /* Util.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71A13C5C3F25F0F3FA6FF17A /* Util.swift */; };
+		A206192B2D68535C003FE91F /* AudioKit in Frameworks */ = {isa = PBXBuildFile; productRef = A206192A2D68535C003FE91F /* AudioKit */; };
+		A206192D2D68535C003FE91F /* SwiftWhisper in Frameworks */ = {isa = PBXBuildFile; productRef = A206192C2D68535C003FE91F /* SwiftWhisper */; };
+		A206192F2D68535C003FE91F /* SFSymbolsPicker in Frameworks */ = {isa = PBXBuildFile; productRef = A206192E2D68535C003FE91F /* SFSymbolsPicker */; };
+		A20619312D685377003FE91F /* AudioKit in Frameworks */ = {isa = PBXBuildFile; productRef = A20619302D685377003FE91F /* AudioKit */; };
+		A20619332D685377003FE91F /* SwiftWhisper in Frameworks */ = {isa = PBXBuildFile; productRef = A20619322D685377003FE91F /* SwiftWhisper */; };
+		A20619352D685377003FE91F /* SFSymbolsPicker in Frameworks */ = {isa = PBXBuildFile; productRef = A20619342D685377003FE91F /* SFSymbolsPicker */; };
+		A2174CE32D781AFE00BF4E86 /* Flow in Frameworks */ = {isa = PBXBuildFile; productRef = A2174CE22D781AFE00BF4E86 /* Flow */; };
+		A2174CE52D781D6900BF4E86 /* Flow in Frameworks */ = {isa = PBXBuildFile; productRef = A2174CE42D781D6900BF4E86 /* Flow */; };
+		A288E70D2D7A9FC400CB1218 /* SwiftUIIntrospect in Frameworks */ = {isa = PBXBuildFile; productRef = A288E70C2D7A9FC400CB1218 /* SwiftUIIntrospect */; };
+		A288E7132D7AA23C00CB1218 /* SwiftUIIntrospect in Frameworks */ = {isa = PBXBuildFile; productRef = A288E7122D7AA23C00CB1218 /* SwiftUIIntrospect */; };
 		A2B9ACF32D5B249C0087911B /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A28D87042D5A83D700421031 /* WidgetKit.framework */; };
 		A2B9ACF42D5B249C0087911B /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A28D87062D5A83D700421031 /* SwiftUI.framework */; };
 		A2B9AD052D5B249E0087911B /* widgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A2B9ACF22D5B249C0087911B /* widgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -23,6 +33,7 @@
 		A2FE05B92D5B96480087AE41 /* AudioKit in Frameworks */ = {isa = PBXBuildFile; productRef = A2FE05B82D5B96480087AE41 /* AudioKit */; };
 		A2FE05BB2D5B96480087AE41 /* SwiftWhisper in Frameworks */ = {isa = PBXBuildFile; productRef = A2FE05BA2D5B96480087AE41 /* SwiftWhisper */; };
 		A2FE05BD2D5B96480087AE41 /* SFSymbolsPicker in Frameworks */ = {isa = PBXBuildFile; productRef = A2FE05BC2D5B96480087AE41 /* SFSymbolsPicker */; };
+		C4BD33E6D6F240B694779B20 /* Query.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B72413105B525634EC035D6 /* Query.swift */; };
 		D9A552DB3B3541D1AC321A3D /* TimeLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C44952C8CF97636BAC358E05 /* TimeLine.swift */; };
 /* End PBXBuildFile section */
 
@@ -73,6 +84,7 @@
 		5D257C9EEDD4D4A1A7A613B8 /* NewItem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NewItem.swift; sourceTree = "<group>"; };
 		675F733268FCCC5DFD8CFD9C /* Day.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Day.swift; sourceTree = "<group>"; };
 		71A13C5C3F25F0F3FA6FF17A /* Util.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Util.swift; sourceTree = "<group>"; };
+		9B72413105B525634EC035D6 /* Query.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Query.swift; sourceTree = "<group>"; };
 		9E9705953FAEE7D4F4B75F65 /* Past.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Past.swift; sourceTree = "<group>"; };
 		A28D87042D5A83D700421031 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		A28D87062D5A83D700421031 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
@@ -151,14 +163,17 @@
 		A2B9AD142D5B26250087911B /* Exceptions for "wispr" folder in "widgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				ContentView.swift,
-				Day.swift,
 				"Fonts/GohuFont/GohuFont11NerdFontMono-Regular.ttf",
-				Item.swift,
+				Model/Board.swift,
+				Model/Item.swift,
+				Model/Tag.swift,
 				SharedContainer.swift,
-				TimeLine.swift,
 				Util.swift,
-				Widget.swift,
+				View/Component/Selects.swift,
+				View/ContentView.swift,
+				View/Day.swift,
+				View/TimeLine.swift,
+				View/Widget.swift,
 			);
 			target = A2B9ACF12D5B249C0087911B /* widgetExtension */;
 		};
@@ -209,8 +224,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A2174CE32D781AFE00BF4E86 /* Flow in Frameworks */,
 				A2FE05B12D5B96260087AE41 /* AudioKit in Frameworks */,
 				A2FE05B72D5B96400087AE41 /* SFSymbolsPicker in Frameworks */,
+				A288E70D2D7A9FC400CB1218 /* SwiftUIIntrospect in Frameworks */,
 				A2FE05B42D5B96350087AE41 /* SwiftWhisper in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -219,6 +236,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A20619312D685377003FE91F /* AudioKit in Frameworks */,
+				A20619352D685377003FE91F /* SFSymbolsPicker in Frameworks */,
+				A20619332D685377003FE91F /* SwiftWhisper in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -226,6 +246,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A206192B2D68535C003FE91F /* AudioKit in Frameworks */,
+				A206192F2D68535C003FE91F /* SFSymbolsPicker in Frameworks */,
+				A206192D2D68535C003FE91F /* SwiftWhisper in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -233,8 +256,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A288E7132D7AA23C00CB1218 /* SwiftUIIntrospect in Frameworks */,
 				A2FE05B92D5B96480087AE41 /* AudioKit in Frameworks */,
 				A2B9ACF42D5B249C0087911B /* SwiftUI.framework in Frameworks */,
+				A2174CE52D781D6900BF4E86 /* Flow in Frameworks */,
 				A2B9ACF32D5B249C0087911B /* WidgetKit.framework in Frameworks */,
 				A2FE05BB2D5B96480087AE41 /* SwiftWhisper in Frameworks */,
 				A2FE05BD2D5B96480087AE41 /* SFSymbolsPicker in Frameworks */,
@@ -293,6 +318,7 @@
 				E19CC08EF80BFAEF58AD1D07 /* DayBox.swift */,
 				31DA0596A1365E6B9C7259DD /* Observables.swift */,
 				47A9352EC3E6DAF16016F1E6 /* Element.swift */,
+				9B72413105B525634EC035D6 /* Query.swift */,
 			);
 			path = wispr;
 			sourceTree = "<group>";
@@ -322,6 +348,8 @@
 				A2FE05B02D5B96260087AE41 /* AudioKit */,
 				A2FE05B32D5B96350087AE41 /* SwiftWhisper */,
 				A2FE05B62D5B96400087AE41 /* SFSymbolsPicker */,
+				A2174CE22D781AFE00BF4E86 /* Flow */,
+				A288E70C2D7A9FC400CB1218 /* SwiftUIIntrospect */,
 			);
 			productName = wispr;
 			productReference = A2A587862D3120F20000B20D /* wispr.app */;
@@ -389,6 +417,8 @@
 				A2FE05B82D5B96480087AE41 /* AudioKit */,
 				A2FE05BA2D5B96480087AE41 /* SwiftWhisper */,
 				A2FE05BC2D5B96480087AE41 /* SFSymbolsPicker */,
+				A2174CE42D781D6900BF4E86 /* Flow */,
+				A288E7122D7AA23C00CB1218 /* SwiftUIIntrospect */,
 			);
 			productName = widgetExtension;
 			productReference = A2B9ACF22D5B249C0087911B /* widgetExtension.appex */;
@@ -434,6 +464,8 @@
 				A2FE05B22D5B96350087AE41 /* XCRemoteSwiftPackageReference "SwiftWhisper" */,
 				A2FE05B52D5B96400087AE41 /* XCRemoteSwiftPackageReference "SFSymbolsPicker" */,
 				A2FE05BE2D5B968E0087AE41 /* XCLocalSwiftPackageReference "../Formula" */,
+				A2174CE12D781AFE00BF4E86 /* XCRemoteSwiftPackageReference "SwiftUI-Flow" */,
+				A288E70B2D7A9FC400CB1218 /* XCRemoteSwiftPackageReference "swiftui-introspect" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A2A587872D3120F20000B20D /* Products */;
@@ -485,7 +517,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				361823B322067C06D146BFB6 /* Util.swift in Sources */,
-				6CFADDFD14F573DCEA93E0B1 /* TimeLine.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -496,6 +527,7 @@
 				8E4F0EB0CD89A0B2EE014BA8 /* Day.swift in Sources */,
 				08E45829FB8748825105CC2B /* Util.swift in Sources */,
 				D9A552DB3B3541D1AC321A3D /* TimeLine.swift in Sources */,
+				C4BD33E6D6F240B694779B20 /* Query.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -506,6 +538,7 @@
 				7DB8800CCAC7514D54CDDF8C /* Day.swift in Sources */,
 				8E912B88272EA0CCBD688CC2 /* Util.swift in Sources */,
 				8B4854B57B7C4C50552CAFE4 /* TimeLine.swift in Sources */,
+				0E7671E8E126B1B15704F20B /* Query.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -673,14 +706,14 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = punk.systems.wispr;
+				MARKETING_VERSION = 10.1;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.wisp-r.app";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -705,14 +738,14 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = punk.systems.wispr;
+				MARKETING_VERSION = 10.1;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.wisp-r.app";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -811,7 +844,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = punk.systems.wispr.widget;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.wisp-r.app.widget";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -839,7 +872,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = punk.systems.wispr.widget;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.wisp-r.app.widget";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -906,6 +939,22 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		A2174CE12D781AFE00BF4E86 /* XCRemoteSwiftPackageReference "SwiftUI-Flow" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/tevelee/SwiftUI-Flow.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.0.1;
+			};
+		};
+		A288E70B2D7A9FC400CB1218 /* XCRemoteSwiftPackageReference "swiftui-introspect" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/siteline/swiftui-introspect.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.3.0;
+			};
+		};
 		A2FE05AF2D5B96260087AE41 /* XCRemoteSwiftPackageReference "AudioKit" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/AudioKit/AudioKit.git";
@@ -933,6 +982,56 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		A206192A2D68535C003FE91F /* AudioKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A2FE05AF2D5B96260087AE41 /* XCRemoteSwiftPackageReference "AudioKit" */;
+			productName = AudioKit;
+		};
+		A206192C2D68535C003FE91F /* SwiftWhisper */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A2FE05B22D5B96350087AE41 /* XCRemoteSwiftPackageReference "SwiftWhisper" */;
+			productName = SwiftWhisper;
+		};
+		A206192E2D68535C003FE91F /* SFSymbolsPicker */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A2FE05B52D5B96400087AE41 /* XCRemoteSwiftPackageReference "SFSymbolsPicker" */;
+			productName = SFSymbolsPicker;
+		};
+		A20619302D685377003FE91F /* AudioKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A2FE05AF2D5B96260087AE41 /* XCRemoteSwiftPackageReference "AudioKit" */;
+			productName = AudioKit;
+		};
+		A20619322D685377003FE91F /* SwiftWhisper */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A2FE05B22D5B96350087AE41 /* XCRemoteSwiftPackageReference "SwiftWhisper" */;
+			productName = SwiftWhisper;
+		};
+		A20619342D685377003FE91F /* SFSymbolsPicker */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A2FE05B52D5B96400087AE41 /* XCRemoteSwiftPackageReference "SFSymbolsPicker" */;
+			productName = SFSymbolsPicker;
+		};
+		A2174CE22D781AFE00BF4E86 /* Flow */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A2174CE12D781AFE00BF4E86 /* XCRemoteSwiftPackageReference "SwiftUI-Flow" */;
+			productName = Flow;
+		};
+		A2174CE42D781D6900BF4E86 /* Flow */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A2174CE12D781AFE00BF4E86 /* XCRemoteSwiftPackageReference "SwiftUI-Flow" */;
+			productName = Flow;
+		};
+		A288E70C2D7A9FC400CB1218 /* SwiftUIIntrospect */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A288E70B2D7A9FC400CB1218 /* XCRemoteSwiftPackageReference "swiftui-introspect" */;
+			productName = SwiftUIIntrospect;
+		};
+		A288E7122D7AA23C00CB1218 /* SwiftUIIntrospect */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A288E70B2D7A9FC400CB1218 /* XCRemoteSwiftPackageReference "swiftui-introspect" */;
+			productName = SwiftUIIntrospect;
+		};
 		A2FE05B02D5B96260087AE41 /* AudioKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = A2FE05AF2D5B96260087AE41 /* XCRemoteSwiftPackageReference "AudioKit" */;

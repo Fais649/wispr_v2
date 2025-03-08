@@ -16,8 +16,8 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
 
     var body: some View {
-        DayDetails()
-        .onAppear {
+        DayScreen()
+            .onAppear {
                 WidgetCenter.shared.reloadAllTimelines()
             }
             .onDisappear {

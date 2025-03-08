@@ -283,35 +283,19 @@ extension Calendar {
 }
 
 enum DateTimeString {
-    static func toolbarTodayDateString() -> String {
-        let date = Calendar.current.startOfDay(for: Date())
+    static func toolbarDateString(date: Date) -> String {
+        let date = Calendar.current.startOfDay(for: date)
         return date.formatted(date: .abbreviated, time: .omitted)
     }
 
-    static func toolbarFutureDateString(date: Date) -> String {
+    static func navbarDateString(date: Date) -> String {
         let formatter = RelativeDateTimeFormatter()
         let today = Calendar.current.startOfDay(for: Date())
-        formatter.unitsStyle = .abbreviated
-        return date.formatted(date: .abbreviated, time: .omitted) + " [\(formatter.localizedString(for: date, relativeTo: today))]"
-    }
-
-    static func toolbarPastDateString(date: Date) -> String {
-        let formatter = RelativeDateTimeFormatter()
-        let today = Calendar.current.startOfDay(for: Date())
-        formatter.unitsStyle = .abbreviated
-        return date.formatted(date: .abbreviated, time: .omitted) + " [\(formatter.localizedString(for: date, relativeTo: today))]"
+        formatter.unitsStyle = .short
+        return "\(date.formatted(.dateTime.weekday(.short))) - \(formatter.localizedString(for: date, relativeTo: today))"
     }
 
     static func leftDateString(date: Date) -> String {
-        // if Calendar.current.isDateInToday(date) {
-        //     return date
-        //         .formatted(
-        //             .dateTime
-        //                 .day()
-        //                 .month()
-        //                 .year(.twoDigits)
-        //         )
-        // }
         return date.formatted(.dateTime.day().month().year(.twoDigits))
     }
 
@@ -444,6 +428,24 @@ class CalendarService {
                 }
             }
         }
+    }
+}
+
+struct TextFieldLimitModifer: ViewModifier {
+    @Binding var value: String
+    var length: Int
+
+    func body(content: Content) -> some View {
+        content
+            .onReceive(value.publisher.collect()) {
+                value = String($0.prefix(length))
+            }
+    }
+}
+
+extension View {
+    func limitInputLength(value: Binding<String>, length: Int) -> some View {
+        modifier(TextFieldLimitModifer(value: value, length: length))
     }
 }
 

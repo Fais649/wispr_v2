@@ -23,6 +23,8 @@ class EventHandler {
 
     public func processEventData() -> EventData? {
         if !item.isEvent {
+            deleteEventNotification()
+            deleteEKEvent()
             return nil
         }
 
@@ -31,7 +33,7 @@ class EventHandler {
 
         if let id = event.eventIdentifier, let ekEvent = calendarService.eventStore.event(withIdentifier: id) {
             calendarService.updateEKEvent(ekEvent: ekEvent, item: item, event: event)
-            return event
+            return createNotification(event)
         }
 
         if let ek = calendarService.createEventInCalendar(
@@ -47,15 +49,19 @@ class EventHandler {
         return nil
     }
 
-    fileprivate func createNotification(_ event: EventData) ->
-        EventData
-    {
+    public func deleteEventNotification() {
         var e = event
         if e.notifyAt != nil {
             deleteNotification()
             e.notifyAt = nil
         }
+    }
 
+    fileprivate func createNotification(_ event: EventData) ->
+        EventData
+    {
+        deleteEventNotification()
+        var e = event
         let content = UNMutableNotificationContent()
         content.title = item.noteData.text
         content.body = event.startDate.formatted(date: .omitted, time: .shortened)
@@ -168,10 +174,19 @@ class WidgetConductor {
 
 @Observable
 @MainActor
+class FocusConductor {
+    var focused: FocusedField?
+}
+
+@Observable
+@MainActor
 class DayDetailsConductor {
     var showDatePicker: Bool = false
+    var showArchive: Bool = false
     var editItem: Item?
+    var lastFocusedItem: Item?
     var rollbackItem: Item?
+    var itemCount: Int = 0
 
     var isEditingItem: Bool {
         editItem != nil
@@ -195,17 +210,31 @@ enum SharedState {
     static var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
+            Tag.self,
+            Board.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
         do {
+            let urlApp = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).last
+            let url = urlApp!.appendingPathComponent("default.store")
+            if FileManager.default.fileExists(atPath: url.path) {
+                print("swiftdata db at \(url.absoluteString)")
+            }
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
+            let urlApp = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).last
+            let url = urlApp!.appendingPathComponent("default.store")
+            if FileManager.default.fileExists(atPath: url.path) {
+                print("swiftdata db at \(url.absoluteString)")
+            }
+
             fatalError("Could not create ModelContainer: \(error)")
         }
     }()
 
     static var dayDetailsConductor: DayDetailsConductor = .init()
+    static var focusConductor: FocusConductor = .init()
     static var calendarService: CalendarService = .init()
     static var widgetConductor: WidgetConductor = .init()
 

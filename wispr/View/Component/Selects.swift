@@ -112,8 +112,99 @@ enum SelectorStyle {
     case list, grid, inlineList, inlineGrid
 }
 
+struct ToolbarButton<Content: View, S: Shape>: View {
+    @Environment(ActiveTheme.self) private var activeTheme
+    var clipShape: S
+
+    let action: () -> Void
+    @ViewBuilder var label: () -> Content
+
+    init(
+        clipShape: S = Circle(),
+        action: @escaping () -> Void,
+        @ViewBuilder label: @escaping () -> Content
+    ) {
+        self.clipShape = clipShape
+        self.action = action
+        self.label = label
+    }
+
+    var body: some View {
+        AniButton {
+            action()
+        } label: {
+            label()
+                .toolbarButtonLabelStyler()
+        }
+        .background(activeTheme.theme.headerMaterial)
+        .clipShape(clipShape)
+    }
+}
+
+struct ToolbarToggle<Content: View, S: Shape>: View {
+    @Environment(ActiveTheme.self) private var activeTheme
+    var clipShape: S
+    @Binding var toggledOn: Bool
+    var anchor: UnitPoint
+    let action: (() -> Void)?
+    @ViewBuilder var label: () -> Content
+
+    init(
+        clipShape: S = Capsule(),
+        toggledOn: Binding<Bool>,
+        anchor: UnitPoint = .center,
+        action: (() -> Void)? = nil,
+        @ViewBuilder label: @escaping () -> Content
+    ) {
+        self.clipShape = clipShape
+        _toggledOn = toggledOn
+        self.anchor = anchor
+        self.action = action
+        self.label = label
+    }
+
+    var yOffset: CGFloat {
+        switch anchor {
+        case .top:
+            10
+        case .bottom, .center:
+            -10
+        default:
+            0
+        }
+    }
+
+    var xOffset: CGFloat {
+        switch anchor {
+        case .leading:
+            10
+        case .trailing:
+            -10
+        default:
+            0
+        }
+    }
+
+    var body: some View {
+        AniButton {
+            toggledOn.toggle()
+            if let action {
+                action()
+            }
+        } label: {
+            label()
+                .toolbarButtonLabelStyler()
+        }
+        .background(activeTheme.theme.headerMaterial)
+        .clipShape(clipShape)
+        .offset(x: toggledOn ? xOffset : 0, y: toggledOn ? yOffset : 0)
+        .animation(.bouncy, value: toggledOn)
+    }
+}
+
 struct AniButton<Content: View>: View {
     @Environment(\.isEnabled) private var isEnabled
+    var duration: Double = 0.5
     let action: () -> Void
     @ViewBuilder var label: () -> Content
     @State var clicked: Bool = false
@@ -132,7 +223,7 @@ struct AniButton<Content: View>: View {
 
     var body: some View {
         Button {
-            withAnimation(.spring) {
+            withAnimation(.spring(duration: duration)) {
                 action()
                 clicked.toggle()
             }
@@ -151,39 +242,16 @@ struct AniToggle<Content: View>: View {
     @ViewBuilder var label: () -> Content
     @State var clicked: Bool = false
 
-    var background: some View {
-        Circle().fill(toggledOn ? .white : .clear)
-            .frame(width: 4, height: 4)
-    }
-
-    var foregroundColor: Color {
-        if isEnabled {
-            return .white
-        } else {
-            return .gray
-        }
-    }
-
     var body: some View {
-        Button {
-            withAnimation(.smooth) {
-                toggledOn.toggle()
-                if let action {
-                    action()
-                }
+        AniButton {
+            toggledOn.toggle()
+            if let action {
+                action()
             }
         } label: {
             label()
-        }.padding(5)
-            .background {
-                VStack {
-                    Spacer()
-                    background
-                }
-            }
-            .foregroundStyle(foregroundColor)
-            .offset(y: toggledOn ? -8 : 0)
-            .scaleEffect(toggledOn ? 1.02 : 1)
+        }
+        .scaleEffect(toggledOn ? 0.95 : 1)
     }
 }
 
@@ -266,7 +334,7 @@ struct Selector<Content: View, T: Identifiable & Equatable & Selectable>: View {
                     AniButton {
                         minimized = true
                     } label: {
-                        Image(systemName: "chevron.left")
+                        Image(systemName: "chevron.up")
                     }.buttonStyle(.plain).tint(.white)
                 }
 
@@ -275,6 +343,7 @@ struct Selector<Content: View, T: Identifiable & Equatable & Selectable>: View {
                     search: $search,
                     selectAction: $selectAction,
                     selected: $selected,
+                    all: all,
                     editT: $editT,
                     editTForm: editTForm,
                     isEditable: isEditable,
@@ -291,6 +360,7 @@ struct SelectorTopBar<Content: View, T: Identifiable & Equatable & Selectable>: 
     @Binding var search: String
     @Binding var selectAction: SelectAction
     @Binding var selected: [T]
+    var all: [T]
     @Binding var editT: T?
     var editTForm: ((Binding<[T]>, Binding<SelectAction>, Binding<T?>) -> Content)? = nil
     var isEditable: Bool
@@ -312,12 +382,16 @@ struct SelectorTopBar<Content: View, T: Identifiable & Equatable & Selectable>: 
         return false
     }
 
+    var isNotEmpty: Bool {
+        all.isNotEmpty || selected.isNotEmpty
+    }
+
     @FocusState var focus: Bool
 
     var body: some View {
         if !showEditTForm {
             HStack {
-                if search.isEmpty, hasEditTForm, isEditable {
+                if search.isEmpty, hasEditTForm, isEditable, isNotEmpty {
                     AniButton {
                         if selectAction.isSelectEdit || selectAction.isEdit {
                             selectAction = .view
@@ -330,7 +404,7 @@ struct SelectorTopBar<Content: View, T: Identifiable & Equatable & Selectable>: 
                     .buttonStyle(.plain)
                 }
 
-                if isSearchable {
+                if isSearchable, isNotEmpty {
                     TextField("search...", text: $search)
                         .focused($focus)
                         .onAppear {

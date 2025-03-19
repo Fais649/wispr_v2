@@ -4,14 +4,13 @@ import AVFoundation
 import EventKit
 import Foundation
 import PhotosUI
-import SFSymbolsPicker
 import SwiftData
 import SwiftUI
 import SwiftWhisper
+import SwipeActions
 import UniformTypeIdentifiers
 import UserNotifications
 import WidgetKit
-@_spi(Advanced) import SwiftUIIntrospect
 
 @Model
 final class Item: Codable, Transferable, AppEntity {
@@ -28,20 +27,43 @@ final class Item: Codable, Transferable, AppEntity {
     @Relationship(deleteRule: .noAction)
     var tags: [Tag] = []
 
-    var title: String = "UNTITLED: " + Date().formatted(.dateTime.hour().minute())
-    var noteData: NoteData = NoteData(text: "")
+    var text: String = ""
     var taskData: TaskData?
     var eventData: EventData?
     @Attribute(.externalStorage)
     var imageData: ImageData?
     var audioData: AudioData?
 
-    var hasNote: Bool {
-        !noteData.text.isEmpty
+    init(
+        id: UUID = UUID(),
+        position: Int = 0,
+        timestamp: Date = .init(),
+        archived: Bool = false,
+        archivedAt: Date? = nil,
+        tags: [Tag] = [],
+        taskData: TaskData? = nil,
+        eventData: EventData? = nil,
+        imageData: ImageData? = nil,
+        audioData: AudioData? = nil
+    ) {
+        self.id = id
+        self.timestamp = Calendar.current.startOfDay(for: timestamp)
+        self.archived = archived
+        self.archivedAt = archivedAt
+        self.position = position
+        self.tags = tags
+        self.taskData = taskData
+        self.eventData = eventData
+        self.imageData = imageData
+        self.audioData = audioData
     }
 
     var isTask: Bool {
         taskData != nil
+    }
+
+    var isTaskCompleted: Bool {
+        taskData?.completedAt != nil
     }
 
     var isParent: Bool {
@@ -68,37 +90,293 @@ final class Item: Codable, Transferable, AppEntity {
         ItemRecord(id: id)
     }
 
-    @ViewBuilder
-    var colorMesh: some View {
-        let colors = tags.map { $0.color }
-
-        MeshGradient(width: 2, height: 2, points: [
-            [0, 0], [1, 0],
-            [0, 1], [1, 1],
-        ], colors: colors)
-            .blur(radius: 15 + 10)
-    }
-
-    init(
+    static func create(
         id: UUID = UUID(),
         position: Int = 0,
         timestamp: Date = .init(),
+        archived: Bool = false,
+        archivedAt: Date? = nil,
         tags: [Tag] = [],
-        noteData: NoteData = .init(text: ""),
         taskData: TaskData? = nil,
         eventData: EventData? = nil,
         imageData: ImageData? = nil,
         audioData: AudioData? = nil
+    ) -> Item {
+        let item = Item()
+        item.id = id
+        item.timestamp = Calendar.current.startOfDay(for: timestamp)
+        item.archived = archived
+        item.archivedAt = archivedAt
+        item.position = position
+        item.tags = tags
+        item.taskData = taskData
+        item.eventData = eventData
+        item.imageData = imageData
+        item.audioData = audioData
+        return item
+    }
+
+    func addNewChild() -> Item {
+        let child = Item.create(position: children.count)
+        children.append(child)
+        return child
+    }
+
+    func setTimestamp(_ date: Date) {
+        timestamp = Calendar.current.startOfDay(for: date)
+    }
+
+    func commit(
+        _ modelContext: ModelContext,
+        text: String = "",
+        taskData: TaskData?,
+        eventData: EventData?,
+        tags: [Tag],
+        children: [Item]
     ) {
-        self.id = id
-        self.timestamp = timestamp
-        self.position = position
-        self.tags = tags
-        self.noteData = noteData
+        self.text = text
         self.taskData = taskData
         self.eventData = eventData
-        self.imageData = imageData
-        self.audioData = audioData
+        self.tags = tags
+        self.children = children
+
+        if self.text.isNotEmpty {
+            modelContext.insert(self)
+        } else {
+            modelContext.delete(self)
+        }
+    }
+
+    func toggleTaskData() {
+        taskData = taskData == nil ? TaskData() : nil
+    }
+
+    func toggleCompletedAt() {
+        taskData?.completedAt = taskData?.completedAt == nil ? Date() : nil
+    }
+
+    @ViewBuilder
+    var backgroundColor: some View {
+        Tag.composeLinearGradient(for: tags)
+            .opacity(0.6)
+    }
+
+    struct DGroups: View {
+        @Environment(\.modelContext) private var modelContext: ModelContext
+        var items: [Item]
+        var animated: Bool = false
+        var withSwipe: Bool = false
+        @State var flashError: Bool = false
+
+        var body: some View {
+            if flashError {
+                HStack {
+                    Image(systemName: "xmark").font(.system(size: 32))
+                    Text("Invalid event order!")
+                }.onAppear {
+                    DispatchQueue.main.asyncAfter(deadline: .now() +
+                        2.5)
+                    {
+                        flashError = false
+                    }
+                }
+            }
+
+            ForEach(items) { item in
+                DGroup(item: item, animated: animated, withSwipe: withSwipe)
+            }
+            .onMove { indexSet, newIndex in
+                for index in indexSet {
+                    let count = self.items.count
+                    let movedItem = self.items[index]
+
+                    if let movedEvent = movedItem.eventData {
+                        for i in 0 ..< newIndex {
+                            let item = items[i]
+                            if let itemEvent = item.eventData {
+                                if movedEvent.startDate < itemEvent.startDate {
+                                    withAnimation {
+                                        flashError = true
+                                    }
+                                    print("bad order above")
+                                    return
+                                }
+                            }
+                        }
+
+                        for i in newIndex ..< count {
+                            let item = items[i]
+                            if let itemEvent = item.eventData {
+                                if movedEvent.startDate >= itemEvent.startDate {
+                                    withAnimation {
+                                        flashError = true
+                                    }
+                                    print("bad order below")
+                                    return
+                                }
+                            }
+                        }
+                    }
+                }
+
+                var i = items
+                i.move(fromOffsets: indexSet, toOffset: newIndex)
+                for (index, item) in i.enumerated() {
+                    item.position = index
+                }
+            }
+            .opacity(flashError ? 0 : 1)
+        }
+    }
+
+    struct DGroup: View {
+        @Environment(\.modelContext) private var modelContext: ModelContext
+        @Environment(Navigator.self) private var nav: Navigator
+        var item: Item
+        var animated: Bool = false
+        var withSwipe: Bool = false
+        @State var opacity: CGFloat = 1
+        @State var blur: CGFloat = 0
+
+        var body: some View {
+            DisclosureGroup {
+                ForEach(item.children) { child in
+                    row(child)
+                }.onMove { indexSet, newIndex in
+                    item.children.move(fromOffsets: indexSet, toOffset: newIndex)
+                    for (index, child) in item.children.enumerated() {
+                        child.position = index
+                    }
+                }
+            } label: {
+                label
+            }
+            .disclosureGroupStyle(ItemDetailsStack(isAnimated: animated, hideExpandButton: item.children.isEmpty))
+        }
+
+        var label: some View {
+            AniButton {
+                nav.selectedDate = item.timestamp
+                nav.path.append(.itemForm(item: item))
+            } label: {
+                HStack {
+                    if item.text.isNotEmpty {
+                        Text(item.text)
+                    }
+                    Spacer()
+                }
+            }
+            .contentShape(Rectangle())
+            .background(item.backgroundColor)
+            .buttonStyle(.plain)
+            .swipeActions(edge: .leading) {
+                archiveButton(item)
+            }.swipeActions(edge: .trailing) {
+                deleteButton(item)
+            }
+        }
+
+        func row(_ child: Item) -> some View {
+            HStack(spacing: 0) {
+                if var task = child.taskData {
+                    AniButton {
+                        task.completedAt = task.completedAt == nil ? Date() : nil
+                        child.taskData = task
+                    } label: {
+                        Image(systemName: task.completedAt == nil ? "circle.dotted" : "circle.fill")
+                    }
+                }
+
+                Text(child.text)
+                Spacer()
+            }
+            .swipeActions(edge: .trailing) {
+                deleteButton(child)
+            }
+        }
+
+        @ViewBuilder
+        func archiveButton(_ item: Item) -> some View {
+            AniButton {
+                archive(item)
+            } label: {
+                Image(systemName: "archivebox.fill")
+            }
+            .tint(.clear)
+        }
+
+        @ViewBuilder
+        func deleteButton(_ item: Item) -> some View {
+            AniButton {
+                delete(item)
+            } label: {
+                Image(systemName: "trash.fill")
+            }
+            .tint(.clear)
+        }
+
+        func archive(_ item: Item) {
+            checkEventData(item)
+            withAnimation {
+                item.archived = true
+                item.archivedAt = Date()
+            }
+        }
+
+        func delete(_ item: Item) {
+            checkEventData(item)
+            withAnimation {
+                modelContext.delete(item)
+            }
+        }
+
+        func checkEventData(_ item: Item) {
+            if let event = item.eventData {
+                Task {
+                    let eh = EventHandler(item, event)
+                    _ = eh.processEventData()
+                }
+            }
+        }
+    }
+
+    struct DGroupHeader: View {
+        @Environment(Navigator.self) private var nav: Navigator
+        var item: Item
+
+        var body: some View {
+            AniButton {
+                nav.selectedDate = item.timestamp
+                nav.path.append(contentsOf: [.dayScreen, .itemForm(item: item)])
+            } label: {
+                Text(item.text)
+            }.background(item.backgroundColor)
+                .buttonStyle(.plain)
+        }
+    }
+
+    struct DGroupContent: View {
+        @Environment(\.modelContext) private var modelContext: ModelContext
+        @Environment(Navigator.self) private var nav: Navigator
+        var item: Item
+
+        var body: some View {
+            ForEach(item.children) { child in
+                HStack(spacing: 0) {
+                    if var task = child.taskData {
+                        AniButton {
+                            task.completedAt = task.completedAt == nil ? Date() : nil
+                            child.taskData = task
+                        } label: {
+                            Text(task.completedAt == nil ? "[ ]" : "[x]")
+                        }
+                    }
+
+                    Text(child.text)
+                    Spacer()
+                }
+            }
+        }
     }
 
     enum CodingKeys: String, CodingKey {
@@ -109,7 +387,7 @@ final class Item: Codable, Transferable, AppEntity {
 
     static var transferRepresentation: some TransferRepresentation {
         CodableRepresentation(contentType: .item)
-        ProxyRepresentation(exporting: \.noteData.text)
+        ProxyRepresentation(exporting: \.text)
     }
 
     required init(from decoder: Decoder) throws {
@@ -127,7 +405,8 @@ final class Item: Codable, Transferable, AppEntity {
     }
 
     var displayRepresentation: DisplayRepresentation {
-        DisplayRepresentation(title: LocalizedStringResource(stringLiteral: noteData.text))
+        DisplayRepresentation(title: LocalizedStringResource(stringLiteral:
+            text))
     }
 
     var queryIntentParameter: IntentParameter<Item> {
@@ -188,11 +467,6 @@ struct ItemQuery: EntityQuery {
 
         return item
     }
-}
-
-struct NoteData: Identifiable, Codable, Hashable {
-    var id: UUID = .init()
-    var text: String
 }
 
 struct TaskData: Identifiable, Codable, Equatable, Hashable {
@@ -270,209 +544,143 @@ enum FocusedField: Hashable {
     case item(id: UUID), tag(id: UUID)
 }
 
-struct TestContentView: View {
-    @Environment(\.modelContext) private var modelContext: ModelContext
-    @Query() var items: [Item]
-    @State private var selected: Set<Item> = []
-
-    var body: some View {
-        NavigationStack {
-            List(items, id: \.self) { item in
-                NavigationLink {
-                    TestForm(item: item)
-                } label: {
-                    Text(item.noteData.text)
-                }
-            }
-        }
-    }
-}
-
-struct TestChildRow: View {
-    @Binding var children: [Item]
-    @State var child: Item
-    @State var noteData: NoteData = .init(text: "")
-    @FocusState var focus: Bool
-
-    var body: some View {
-        HStack {
-            if var taskData = child.taskData {
-                AniButton {
-                    taskData.completedAt = taskData.completedAt == nil ? Date() : nil
-                    child.taskData = taskData
-                } label: {
-                    Image(systemName: taskData.completedAt == nil ? "circle.dotted" : "circle.fill")
-                }
-            }
-
-            TextField("", text: $noteData.text, axis: .vertical)
-                .onAppear {
-                    noteData = child.noteData
-                    if noteData.text.isEmpty {
-                        focus = true
-                    }
-                }.onChange(of: focus) {
-                    if !focus {
-                        child.noteData = noteData
-                        if noteData.text.isEmpty {
-                            children.removeAll { $0.id == child.id }
-                        }
-                    }
-                }
-                .focused($focus)
-                .onChange(of: noteData.text) {
-                    guard focus else { return }
-                    guard noteData.text.contains("\n") else { return }
-                    noteData.text = noteData.text.replacing("\n", with: "")
-
-                    if noteData.text.isNotEmpty {
-                        child.noteData = noteData
-                        let newItem = Item(position: child.position + 1)
-                        newItem.taskData = child.taskData
-                        children.insert(newItem, at: newItem.position)
-                    } else {
-                        children.removeAll { $0.id == child.id }
-                    }
-                }
-        }
-        .toolbar {
-            if focus {
-                ToolbarItemGroup(placement: .keyboard) {
-                    HStack {
-                        AniButton {
-                            focus = false
-                        } label: {
-                            Image(systemName: "keyboard")
-                        }
-
-                        Divider()
-
-                        Spacer()
-
-                        Divider()
-                        AniButton {
-                            print("add_audio")
-                        } label: {
-                            Image(systemName: "link")
-                        }.disabled(noteData.text.isEmpty)
-
-                        Divider()
-
-                        AniButton {
-                            child.taskData = child.taskData == nil ? TaskData() : nil
-                        } label: {
-                            Image(systemName: child.isTask ? "circle.fill" : "circle.dotted")
-                        }.disabled(noteData.text.isEmpty)
-                    }
-                }
-            }
-        }.toolbarBackgroundVisibility(.hidden, for: .automatic)
-    }
-}
-
-struct TestForm: View {
+struct ItemForm: View {
+    @Environment(Navigator.self) private var nav: Navigator
     @Environment(\.modelContext) private var modelContext: ModelContext
     @Environment(CalendarService.self) private var calendarService: CalendarService
     @FocusState var focus: FocusedField?
 
     @State var item: Item
 
-    @State private var title: String = ""
-    @State private var noteData: NoteData = .init(text: "")
-    @State private var children: [Item] = []
-    @State private var showTags: Bool = false
-    @State private var tags: [Tag] = []
+    @State private var text: String
+    @State private var taskData: TaskData?
+    @State private var eventData: EventData?
+    @State private var children: [Item]
+    @State private var tags: [Tag]
+    @State private var sheet: ItemFormSheets? = nil
+
+    init(item: Item? = nil) {
+        let i = item ?? Item.create(position: 0)
+        self.item = i
+        text = i.text
+        taskData = i.taskData
+        eventData = i.eventData
+        children = i.children
+        tags = i.tags
+    }
+
+    enum ItemFormSheets: String, Identifiable {
+        case tags, event
+        var id: Self { self }
+    }
+
+    @State var isExpanded = true
 
     var body: some View {
-        if showTags {
-            HStack {
-                TagSelector(selectedItemTags: $tags)
-            }
-        }
-
-        if item.isEvent {
-            HStack {
-                EventDataRow(item: $item, eventData: $item.eventData)
-            }
-        }
-
         List {
-            ForEach(children, id: \.self) { child in
-                TestChildRow(children: $children, child: child)
-                    .focused($focus, equals: .item(id: child.id))
-            }.onAppear {
-                children.sort { $0.position < $1.position }
-            }
+            DisclosureGroup(isExpanded: $isExpanded) {
+                ForEach(children, id: \.self) { child in
+                    Children(children: $children, child: child)
+                        .focused($focus, equals: .item(id: child.id))
+                        .fontWeight(.light)
+                }.onAppear {
+                    children.sort { $0.position < $1.position }
+                }
+            } label: {
+                TextField("...", text: $text, axis: .vertical)
+                    .focused($focus, equals: .item(id: item.id))
+                    .background(item.backgroundColor)
+                    .onChange(of: text) {
+                        guard focus != nil else { return }
+                        guard text.contains("\n") else { return }
+                        text = text.replacing("\n", with: "")
+
+                        if text.isEmpty {
+                            focus = .item(id: item.id)
+                            return
+                        }
+
+                        let child = item.addNewChild()
+                        focus = .item(id: child.id)
+                    }.submitScope()
+                    .onAppear {
+                        focus = .item(id: item.id)
+                    }
+            }.disclosureGroupStyle(ItemDetailsStack(hideExpandButton: true))
         }
+        .safeAreaPadding(.vertical, 20)
+        .defaultScrollAnchor(.top)
         .onAppear {
-            title = item.title
-            noteData = item.noteData
-            children = item.children
+            nav.selectedDate = item.timestamp
+        }
+        .onChange(of: nav.selectedDate) {
+            item.setTimestamp(nav.selectedDate)
         }
         .onDisappear {
-            item.title = title
-            item.noteData = noteData
-            item.children = children
+            item.commit(
+                modelContext,
+                text: text,
+                taskData: taskData,
+                eventData:
+                eventData,
+                tags: tags,
+                children: children
+            )
         }
-        .navigationBarBackButtonHidden()
-        .toolbarRole(.navigationStack)
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .sheet(item: $sheet) { sheetEnum in
+            switch sheetEnum {
+            case .tags:
+                VStack {
+                    TagSelector(selectedItemTags: $tags)
+                }
+            case .event:
+                VStack {
+                    DatePicker("", selection: $item.timestamp, displayedComponents: [.date]).datePickerStyle(.graphical)
+                        .onChange(of: item.timestamp) {
+                            sheet = nil
+                        }
+
+                    HStack {
+                        TimelineView(.everyMinute) { time in
+                            AniButton {
+                                toggleEventData(time: time.date)
+                            } label: {
+                                Image(systemName: "clock")
+                                    .background(item.isEvent ? .white : .black)
+                                    .foregroundStyle(item.isEvent ? .black : .white)
+                                    .clipShape(Circle())
+                            }
+                        }
+                        Spacer()
+
+                        if item.isEvent {
+                            EventDataRow(item: $item, eventData: $item.eventData)
+                        }
+                    }.padding()
+                }
+                .presentationBackground(.black)
+                .presentationDetents([.fraction(0.5)])
+            }
+        }
+        .toolbarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(text.isEmpty)
         .toolbar {
-            ToolbarItemGroup(placement: .topBarLeading) {
-                AniButton {
-                    print("")
-                } label: {
-                    Image(systemName: "chevron.left")
-                }
-
-                TextField("title...", text: $title)
-                    .focused($focus, equals: .item(id: item.id))
-                    .frame(minWidth: 40)
-                    .onSubmit {
-                        let newItem = Item(position: item.children.count)
-                        children.append(newItem)
-                        focus = .item(id: newItem.id)
-                    }.submitScope()
-
-                TimelineView(.everyMinute) { time in
-                    AniButton {
-                        toggleEventData(time: time.date)
-                    } label: {
-                        Image(systemName: item.eventData != nil ? "clock.fill" : "clock")
-                    }
-                }
-
-                AniButton {
-                    showTags.toggle()
-                } label: {
-                    Image(systemName: showTags ? "tag.fill" : "tag")
-                }
-            }
-
-            ToolbarItemGroup(placement: .topBarTrailing) {
-                AniButton {
-                    item.archivedAt = Date()
-                    item.archived = true
-                } label: {
-                    Image(systemName: "archivebox")
-                }
-
-                AniButton {
-                    modelContext.delete(item)
-                } label: {
-                    Image(systemName: "trash")
-                }
-            }
-
-            if focus == .item(id: item.id) {
-                ToolbarItem(placement: .keyboard) {
+            ToolbarItemGroup(placement: .keyboard) {
+                HStack {
                     AniButton {
                         focus = nil
                     } label: {
                         Image(systemName: "keyboard")
                     }
+
+                    Divider()
+
+                    Spacer()
                 }
             }
-        }
+        }.hideSystemBackground()
     }
 
     fileprivate func toggleEventData(time: Date) {
@@ -490,687 +698,164 @@ struct TestForm: View {
             )
         }
     }
-}
 
-struct ItemList: View {
-    @Environment(\.modelContext) private var modelContext: ModelContext
-    @Environment(DayDetailsConductor.self) private var conductor: DayDetailsConductor
-    @Environment(\.scenePhase) var scenePhase
-    @Environment(CalendarService.self) private var calendarService: CalendarService
+    struct Children: View {
+        @Environment(\.modelContext) private var modelContext: ModelContext
+        @Binding var children: [Item]
+        @State var child: Item
+        @FocusState var focus: Bool
+        @State var text: String
 
-    let namespace: Namespace.ID
-
-    @Query var items: [Item]
-    var start: Date {
-        Calendar.current.startOfDay(for: conductor.date)
-    }
-
-    var end: Date {
-        start.advanced(by: 86400)
-    }
-
-    @State var listId: UUID = .init()
-    @State var focusedItem: Item?
-    @State var flashError: Bool = false
-    @State var movedItem: Item?
-    @State var movedToItem: Item?
-    @FocusState var focus: FocusedField?
-    @FocusState var focusList: Bool
-
-    init(namespace: Namespace.ID, date: Date) {
-        let start = Calendar.current.startOfDay(for: date)
-        let end = Calendar.current.startOfDay(for: date.advanced(by: 86400))
-        _items = Query(filter: #Predicate<Item> { start <= $0.timestamp &&
-                $0.timestamp < end && $0.parent == nil && $0.archived == false
-        }, sort: \Item.position)
-        self.namespace = namespace
-    }
-
-    var body: some View {
-        ZStack {
-            list
-            if flashError {
-                errorFlash
-            }
+        init(children: Binding<[Item]>, child: Item) {
+            _children = children
+            self.child = child
+            text = child.text
         }
-    }
 
-    var allDayEvents: [Item] {
-        return items.filter {
-            if let event = $0.eventData {
-                return event.startDate == start && event.endDate ==
-                    end.advanced(by: -1)
-            }
-            return false
-        }
-    }
-
-    var filteredItems: [Item] {
-        items.filter {
-            if let editItem = conductor.editItem {
-                return $0.id == editItem.id
-            }
-
-            return !allDayEvents.contains($0)
-        }.sorted { $0.position < $1.position }
-    }
-
-    @ViewBuilder
-    var list: some View {
-        List {
-            if allDayEvents.isNotEmpty {
-                DisclosureGroup {
-                    ForEach(allDayEvents) { allDayEvent in
-                        HStack {
-                            Text(allDayEvent.noteData.text)
-                            Spacer()
-                        }
-                    }
-                } label: {
-                    HStack {
-                        Text("all_day")
-                        Spacer()
-                    }
-                }
-                .tint(.white)
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
-            }
-
-            ForEach(filteredItems) { item in
-                DisclosureGroup {
-                    ForEach(item.children) { child in
-                        Text(child.noteData.text)
-                    }
-                } label: {
-                    NavigationLink {
-                        TestForm(item: item)
-                            .navigationTransition(.zoom(sourceID: item.id, in: namespace))
+        var body: some View {
+            HStack {
+                if child.isTask {
+                    AniButton {
+                        child.toggleTaskData()
                     } label: {
-                        Text(item.title)
-                            .matchedTransitionSource(id: item.id, in: namespace)
+                        Image(systemName: child.isTaskCompleted ? "circle.dotted" : "circle.fill")
                     }
-                }.disclosureGroupStyle(ItemDetailsStack(hideExpandButton: item.children.isEmpty))
-            }
-        }
-        .opacity(flashError ? 0.1 : 1)
-    }
-
-    @ViewBuilder
-    var errorFlash: some View {
-        VStack {
-            Image(systemName: "xmark")
-                .font(.system(size: 128))
-            Text("Can't change event order!")
-        }
-        .frame(alignment: .center)
-    }
-
-    fileprivate func triggerFlashError() {
-        withAnimation {
-            flashError = true
-            listId = UUID()
-        }
-        DispatchQueue.main
-            .asyncAfter(deadline: .now() + 2) {
-                withAnimation {
-                    flashError = false
                 }
-            }
-    }
 
-    func handleMove(_ indexSet: IndexSet, _ newIndex: Int) {
-        for index in indexSet {
-            let count = filteredItems.count
-            if index > filteredItems.count { return }
-            let movedItem = filteredItems[index]
-            self.movedItem = movedItem
-
-            if let movedEventData = movedItem.eventData {
-                for i in 0 ..< newIndex {
-                    let item = filteredItems[i]
-                    if let itemEventData = item.eventData {
-                        if movedEventData.startDate < itemEventData.startDate {
-                            triggerFlashError()
-                            return
+                TextField("", text: $text, axis: .vertical)
+                    .onAppear {
+                        if text.isEmpty {
+                            focus = true
+                        }
+                    }.onChange(of: focus) {
+                        if !focus {
+                            child.text = text
+                            if text.isEmpty {
+                                children.removeAll { $0.id == child.id }
+                            }
                         }
                     }
-                }
+                    .focused($focus)
+                    .onChange(of: text) {
+                        guard focus else { return }
+                        guard text.contains("\n") else { return }
+                        text = text.replacing("\n", with: "")
 
-                for i in newIndex ..< count {
-                    let item = filteredItems[i]
-                    if let itemEventData = item.eventData {
-                        if movedEventData.startDate > itemEventData.startDate {
-                            triggerFlashError()
-                            return
+                        if text.isNotEmpty {
+                            child.text = text
+                            let newItem = Item.create(position: child.position + 1)
+                            newItem.taskData = child.taskData
+                            children.insert(newItem, at: newItem.position)
+                        } else {
+                            children.removeAll { $0.id == child.id }
+                        }
+                    }
+            }
+            .toolbar {
+                if focus {
+                    ToolbarItemGroup(placement: .keyboard) {
+                        HStack {
+                            Divider()
+                            AniButton {
+                                print("add_audio")
+                            } label: {
+                                Image(systemName: "link")
+                            }.disabled(text.isEmpty)
+
+                            Divider()
+
+                            AniButton {
+                                child.toggleTaskData()
+                            } label: {
+                                Image(systemName: child.isTask ? "circle.fill" : "circle.dotted")
+                            }.disabled(text.isEmpty)
                         }
                     }
                 }
             }
-        }
-
-        var itms = filteredItems
-        itms.move(fromOffsets: indexSet, toOffset: newIndex)
-
-        for (index, item) in itms.enumerated() {
-            item.position = index
-        }
-
-        try! modelContext.save()
-    }
-
-    func dynamicallyReorderList(item: Item) {
-        if allDayEvents.contains(item) {
-            return
-        }
-        guard let itemEventData = item.eventData else {
-            return
-        }
-
-        let oldIndex = items.firstIndex(of: item)!
-        if let newIndex = items.firstIndex(where: {
-            if let eventData = $0.eventData {
-                return $0.id != item.id && eventData.startDate > itemEventData.startDate
-            } else {
-                return false
-            }
-        }) {
-            var itms = items
-            itms.move(fromOffsets: [oldIndex], toOffset: newIndex)
-            for (index, itm) in itms.enumerated() {
-                itm.position = index
-            }
-        } else {
-            item.position = items.count
         }
     }
 }
 
 struct ItemDetailsStack: DisclosureGroupStyle {
     @Environment(\.modelContext) private var modelContext: ModelContext
+    var isAnimated: Bool = false
     let hideExpandButton: Bool
+    @State var opacity: CGFloat = 1
+    @State var blur: CGFloat = 0
 
     func makeBody(configuration: Configuration) -> some View {
-        HStack {
-            VStack {
-                configuration.label
-            }
-
-            if !hideExpandButton {
-                AniButton {
-                    configuration.isExpanded.toggle()
-                } label: {
-                    HStack {
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(.white)
-                            .opacity(configuration.isExpanded ? 1 : 0.5)
-                            .contentShape(Rectangle())
-                            .frame(width: 4, height: configuration.isExpanded ? 30 : 20)
+        label(configuration)
+            .listRowStyler(10)
+            .onTapGesture {
+                if !hideExpandButton {
+                    withAnimation {
+                        configuration.isExpanded.toggle()
                     }
-                }.contentShape(Rectangle())
-                    .buttonStyle(.plain)
+                }
             }
-        }
-        .listRowSeparator(.hidden)
-        .listRowBackground(Color.clear)
-        .listRowSpacing(4)
 
         if configuration.isExpanded {
             configuration.content
-                .listRowBackground(Color.clear)
-        }
-    }
-}
-
-struct ItemDetailsForm: View {
-    @Environment(\.modelContext) private var modelContext: ModelContext
-    @Environment(\.scenePhase) var scenePhase
-    @Environment(DayDetailsConductor.self) private var conductor: DayDetailsConductor
-    @Environment(CalendarService.self) private var calendarService: CalendarService
-
-    @Namespace var namespace
-    @State var item: Item
-
-    init(item: Item) {
-        self.item = item
-        noteData = item.noteData
-    }
-
-    @State var noteData: NoteData
-
-    @State var showTags: Bool = false
-    @State var showNewTag: Bool = false
-    @State var showTagDelete: Bool = false
-    @State var showAudio: Bool = false
-
-    var isEditItem: Bool {
-        item == conductor.editItem
-    }
-
-    @State var initialExpansion: Bool = false
-    @State var isExpanded: Bool = false
-    @FocusState var focusState: FocusedField?
-
-    var hideExpandButton: Bool {
-        isEditItem || item.children.isEmpty
-    }
-
-    var body: some View {
-        DisclosureGroup(isExpanded: $item.isExpanded) {
-            if item.children.isNotEmpty {
-                ForEach(item.children) { child in
-                    ChildRow(item: child, focusState: $focusState)
-                        .listRowBackground(Color.clear)
-                        .swipeActions(edge: .trailing) { deleteButton(child).tint(.black) }
-                }.onMove(perform: onChildMove)
-                    .listSectionSpacing(4)
-                    .padding(.leading, 40)
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
-                    .listRowSpacing(0)
-            }
-        } label: {
-            if isEditItem {
-                TagSelector(selectedItemTags: $item.tags, minimized: true)
-                    .listRowSeparator(.hidden)
-                    .listRowSpacing(0)
-                    .listSectionSpacing(0)
-                    .padding(6)
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                    .listRowBackground(Color.clear)
-            }
-            Section {
-                ParentRow(item: $item, focusState: $focusState)
-                    .listRowBackground(Color.clear)
-                    .toolbar {
-                        if isEditItem {
-                            ToolbarItemGroup(placement: .bottomBar) {
-                                HStack {
-                                    AniButton {
-                                        onExit()
-                                    } label: {
-                                        Image(systemName: "chevron.left")
-                                    }
-
-                                    Spacer()
-
-                                    archiveButton
-                                    deleteButton()
-                                }.tint(.white)
-                            }
-                        }
-                    }
-            }
-            .swipeActions(edge: .leading) { archiveButton.tint(.black) }
-            .swipeActions(edge: .trailing) { deleteButton().tint(.black) }
-        }.disclosureGroupStyle(
-            ItemDetailsStack(
-                hideExpandButton: hideExpandButton
-            )
-        )
-    }
-
-    @ViewBuilder
-    var archiveButton: some View {
-        AniButton {
-            item.archived = true
-            item.archivedAt = Date()
-            if conductor.editItem == item {
-                conductor.editItem = nil
-            }
-        } label: {
-            Image(systemName: "archivebox.fill")
+                .listRowStyler()
+                .padding(.leading, 24)
         }
     }
 
     @ViewBuilder
-    func deleteButton(_ item: Item? = nil) -> some View {
-        AniButton {
-            if let item {
-                delete(item)
+    func label(_ configuration: Configuration) -> some View {
+        if isAnimated {
+            animatedLabel(configuration)
+        } else {
+            staticLabel(configuration)
+        }
+    }
+
+    @ViewBuilder
+    func staticLabel(_ configuration: Configuration) -> some View {
+        HStack(alignment: .center) {
+            if !hideExpandButton {
+                Rectangle()
+                    .fill(.white)
+                    .frame(width: 2, height: 16)
+                    .rotationEffect(.degrees(configuration.isExpanded ? 90 : 18))
+                    .padding(0)
+                    .opacity(configuration.isExpanded ? 1 : 0.3)
             } else {
-                deleteParent()
+                Rectangle()
+                    .fill(.white)
+                    .frame(width: 2, height: 2)
+                    .padding(0)
+                    .opacity(0.3)
             }
-        } label: {
-            Image(systemName: "trash.fill")
+
+            configuration.label
+                .padding(0)
+            Spacer()
         }
     }
 
-    func onExit() {
-        conductor.editItem = nil
-        if item.noteData.text.isEmpty {
-            deleteParent()
+    @ViewBuilder
+    func animatedLabel(_ configuration: Configuration) -> some View {
+        GeometryReader { geo in
+            staticLabel(configuration)
+                .opacity(opacity)
+                .blur(radius: blur)
+                .onAppear {
+                    updateAnimation(geo)
+                }
+                .onChange(of: geo.frame(in: .global).minY) {
+                    updateAnimation(geo)
+                }
         }
     }
 
-    func delete(_ item: Item) {
-        item.parent?.children.removeAll { $0.id == item.id }
-        modelContext.delete(item)
-    }
-
-    func deleteParent() {
-        if let event = item.eventData {
-            let eh = EventHandler(item, event)
-            _ = eh.processEventData()
-        }
-
-        delete(item)
-        if conductor.editItem == item {
-            conductor.editItem = nil
-        }
-    }
-
-    struct ParentRow: View {
-        @Environment(\.modelContext) private var modelContext: ModelContext
-        @Environment(\.scenePhase) var scenePhase
-        @Environment(DayDetailsConductor.self) private var conductor: DayDetailsConductor
-        @Environment(FocusConductor.self) private var focusConductor: FocusConductor
-        @Environment(CalendarService.self) private var calendarService: CalendarService
-        @Binding var item: Item
-        @State var noteData: NoteData = .init(text: "")
-        var focusState: FocusState<FocusedField?>.Binding
-        @FocusState var textField: Bool
-
-        var isFocused: Bool {
-            focusState.wrappedValue == .item(id: item.id)
-        }
-
-        var body: some View {
-            @Bindable var focusConductor = focusConductor
-            HStack {
-                if var taskData = item.taskData {
-                    AniButton {
-                        taskData.completedAt = taskData.completedAt == nil ? Date() : nil
-                        item.taskData = taskData
-                    } label: {
-                        Image(systemName: taskData.completedAt == nil ? "circle.dotted" : "circle.fill")
-                    }.buttonStyle(.plain)
-                }
-
-                if conductor.editItem == item {
-                    TextField("...", text: $noteData.text, axis: .vertical)
-                        .focused(focusState, equals: .item(id: item.id))
-                        .onChange(of: noteData.text) {
-                            guard focusState.wrappedValue == .item(id: item.id) else { return }
-                            guard noteData.text.contains("\n") else { return }
-                            noteData.text = noteData.text.replacing("\n", with: "")
-                            submit(true)
-                        }
-                        .toolbar {
-                            if isFocused {
-                                ToolbarItemGroup(placement: .keyboard) {
-                                    if item.isParent {
-                                        parentToolbar
-                                    }
-                                }
-                            }
-                        }
-                        .onAppear { noteData = item.noteData }
-                } else {
-                    AniButton {
-                        conductor.editItem = item
-                        item.isExpanded = true
-                        focusState.wrappedValue = .item(id: item.id)
-                    } label: {
-                        HStack {
-                            Text(item.noteData.text)
-                                .lineLimit(1)
-                            Spacer()
-                        }
-                    }.buttonStyle(.plain)
-                }
-
-                if item.isEvent {
-                    EventDataRow(item: $item, eventData: $item.eventData)
-                }
-            }
-            .padding()
-            .background(item.colorMesh)
-            .clipShape(RoundedRectangle(cornerRadius: 20))
-        }
-
-        @ViewBuilder
-        var parentToolbar: some View {
-            HStack {
-                AniButton {
-                    submit()
-                } label: {
-                    Image(systemName: "keyboard.chevron.compact.down")
-                }.padding(.horizontal, 4)
-
-                Spacer()
-                HStack {
-                    AniButton {
-                        item.taskData = item.taskData == nil ? TaskData() : nil
-                        for child in item.children {
-                            child.taskData = item.taskData
-                        }
-                    } label: {
-                        Image(systemName: item.taskData == nil ?
-                            "circle.dotted" : "circle.fill")
-                    }
-
-                    TimelineView(.everyMinute) { time in
-                        AniButton {
-                            toggleEventData(time: time.date)
-                        } label: {
-                            Image(systemName: item.eventData != nil ? "clock.fill" : "clock")
-                        }
-                    }
-                }.disabled(noteData.text.isEmpty)
-                    .tint(noteData.text.isEmpty ? .gray : .white)
-            }
-        }
-
-        fileprivate func toggleEventData(time: Date) {
-            if let event = item.eventData {
-                if let id = event.eventIdentifier, let ekEvent =
-                    calendarService.eventStore.event(withIdentifier: id)
-                {
-                    calendarService.deleteEventInCalendar(event: ekEvent)
-                }
-                item.eventData = nil
-            } else {
-                item.eventData = .init(
-                    startDate: Calendar.current.combineDateAndTime(date: item.timestamp, time: time),
-                    endDate: Calendar.current.combineDateAndTime(date: item.timestamp, time: time.advanced(by: 3600))
-                )
-            }
-        }
-
-        func submit(_ addChild: Bool = false) {
-            if noteData.text.isEmpty {
-                deleteParent()
-                return
-            }
-
-            withAnimation {
-                item.noteData = noteData
-
-                if !addChild {
-                    focusState.wrappedValue = nil
-                    return
-                }
-
-                let newItem = Item()
-                newItem.taskData = item.taskData
-                newItem.position = item.children.count + 1
-                focusState.wrappedValue = .item(id: newItem.id)
-                item.children.append(newItem)
-            }
-        }
-
-        func delete(_ item: Item) {
-            item.parent?.children.removeAll { $0.id == item.id }
-            modelContext.delete(item)
-        }
-
-        func deleteParent() {
-            if let event = item.eventData {
-                let eh = EventHandler(item, event)
-                _ = eh.processEventData()
-            }
-
-            delete(item)
-            if conductor.editItem == item {
-                conductor.editItem = nil
-            }
-        }
-    }
-
-    struct ChildRow: View {
-        @Environment(\.modelContext) private var modelContext: ModelContext
-        @Environment(\.scenePhase) var scenePhase
-        @Environment(DayDetailsConductor.self) private var conductor: DayDetailsConductor
-        @Environment(CalendarService.self) private var calendarService: CalendarService
-
-        @State var item: Item
-        @State var noteData: NoteData = .init(text: "")
-        var focusState: FocusState<FocusedField?>.Binding
-        @FocusState var textField: Bool
-        @State var focused: Bool = false
-
-        var isFocused: Bool {
-            focusState.wrappedValue == .item(id: item.id)
-        }
-
-        var body: some View {
-            HStack {
-                if var taskData = item.taskData {
-                    AniButton {
-                        taskData.completedAt = taskData.completedAt == nil ? Date() : nil
-                        item.taskData = taskData
-                    } label: {
-                        Image(systemName: taskData.completedAt == nil ? "circle.dotted" : "circle.fill")
-                    }.buttonStyle(.plain)
-                }
-
-                if conductor.editItem == item.parent {
-                    TextField("", text: $noteData.text, axis: .vertical)
-                        .onChange(of: noteData.text) {
-                            guard focusState.wrappedValue == .item(id: item.id) else {
-                                if noteData.text.isEmpty {
-                                    modelContext.delete(item)
-                                }
-                                return
-                            }
-                            guard noteData.text.isNotEmpty else { return }
-                            guard noteData.text.contains("\n") else { return }
-                            noteData.text = noteData.text.replacing("\n", with: "")
-                            withAnimation {
-                                submit(true)
-                            }
-                        }
-                        .onAppear {
-                            noteData = item.noteData
-                        }
-                        .focused(focusState, equals: .item(id: item.id))
-                } else {
-                    Text(item.noteData.text)
-                }
-            }
-            .toolbar {
-                if isFocused {
-                    ToolbarItemGroup(placement: .keyboard) {
-                        childToolbar
-                    }
-                }
-            }
-        }
-
-        @ViewBuilder
-        var childToolbar: some View {
-            HStack {
-                AniButton {
-                    submit(false)
-                } label: {
-                    Image(systemName: "keyboard.chevron.compact.down")
-                }.padding(.horizontal, 4)
-
-                Spacer()
-                HStack {
-                    AniButton {
-                        item.taskData = item.taskData == nil ? TaskData() : nil
-                        for child in item.children {
-                            child.taskData = item.taskData
-                        }
-                    } label: {
-                        Image(systemName: item.taskData == nil ?
-                            "circle.dotted" : "circle.fill")
-                    }
-                }.disabled(noteData.text.isEmpty)
-                    .tint(noteData.text.isEmpty ? .gray : .white)
-            }
-        }
-
-        func submit(_ addChild: Bool = false) {
-            if noteData.text.isEmpty {
-                deleteChild(item)
-                return
-            }
-
-            item.noteData = noteData
-
-            if !addChild {
-                focusState.wrappedValue = nil
-                return
-            }
-            guard let parent = item.parent else { return }
-
-            let newItem = Item()
-            newItem.taskData = item.taskData
-            focusState.wrappedValue = .item(id: newItem.id)
-            let index = parent.children.firstIndex(of: item)
-            newItem.position = (index ?? parent.children.count) + 1
-            parent.children.insert(newItem, at: newItem.position)
-        }
-
-        func deleteChild(_ item: Item) {
-            item.parent?.children.removeAll { $0.id == item.id }
-            modelContext.delete(item)
-        }
-    }
-
-    func onChildMove(_ indexSet: IndexSet, _ newIndex: Int) {
-        if item.children.isEmpty { return }
-        item.children.move(fromOffsets: indexSet, toOffset: newIndex)
-
-        for (index, item) in item.children.enumerated() {
-            item.position = index
-        }
-    }
-}
-
-struct EventDataButton: View {
-    @Environment(\.modelContext) private var modelContext: ModelContext
-    @Environment(CalendarService.self) private var calendarService: CalendarService
-    @Binding var eventData: EventData?
-    @Binding var timestamp: Date
-
-    var body: some View {
-        TimelineView(.everyMinute) { time in
-            Button {
-                toggleEventData(time: time.date)
-            } label: { Image(systemName: eventData != nil ? "clock.fill" : "clock") }
-        }
-    }
-
-    fileprivate func toggleEventData(time: Date) {
-        withAnimation {
-            if let event = eventData {
-                if let id = event.eventIdentifier, let ekEvent =
-                    calendarService.eventStore.event(withIdentifier: id)
-                {
-                    calendarService.deleteEventInCalendar(event: ekEvent)
-                }
-                eventData = nil
-            } else {
-                eventData = .init(
-                    startDate: Calendar.current.combineDateAndTime(date: timestamp, time: time),
-                    endDate: Calendar.current.combineDateAndTime(date: timestamp, time: time.advanced(by: 3600))
-                )
-            }
-        }
+    func updateAnimation(_ geo: GeometryProxy) {
+        let globalY = geo.frame(in: .global).minY
+        let threshold: CGFloat = 200
+        let distance = max(globalY - threshold, 0)
+        opacity = min(distance / 100, 1)
+        blur = min(distance / 10, 0)
     }
 }
 
@@ -1234,9 +919,7 @@ struct EventDataRow: View {
                     interval = eventData.endDate.timeIntervalSince(startDate)
                     endDate = eventData.endDate
 
-                    let eventHandler = EventHandler(item, eventData)
-                    let e = eventHandler.processEventData()
-                    item.eventData = e
+                    item = EventHandler.handleItem(item, eventData)
                 }
             }.onChange(of: [startDate, endDate]) {
                 if var eventData {
@@ -1244,9 +927,7 @@ struct EventDataRow: View {
                     eventData.endDate = endDate
                     self.eventData = eventData
 
-                    let eventHandler = EventHandler(item, eventData)
-                    let e = eventHandler.processEventData()
-                    item.eventData = e
+                    item = EventHandler.handleItem(item, eventData)
                 }
             }
             .swipeActions(edge: .trailing) {
@@ -1328,21 +1009,6 @@ struct ImageDataButton: View {
                     }
                 }
             }
-        }
-    }
-}
-
-struct ImageDataListRow: View {
-    var imageData: ImageData
-    var namespace: Namespace.ID
-
-    var body: some View {
-        if let image = imageData.image {
-            image.resizable().scaledToFill()
-                .overlay {
-                    LinearGradient(gradient: Gradient(colors: [.clear, .black]),
-                                   startPoint: .bottomLeading, endPoint: .topTrailing)
-                }
         }
     }
 }
@@ -1671,135 +1337,6 @@ struct AudioPlayerRow: View {
         }
         withAnimation {
             isPlaying.toggle()
-        }
-    }
-}
-
-struct CustomTextField: UIViewRepresentable {
-    @Binding var item: Item
-    @Binding var text: String
-    @Binding var isFirstResponder: Bool
-
-    var placeholder: String = ""
-    var keyboardType: UIKeyboardType = .default
-    var textContentType: UITextContentType?
-    var autocorrectionType: UITextAutocorrectionType = .default
-
-    var onBeginEditing: (() -> Void)?
-    var onEndEditing: (() -> Void)?
-    var onTextChange: ((String) -> Void)?
-    var onSubmit: (() -> Void)?
-
-    func makeUIView(context: Context) -> UITextField {
-        let textField = UITextField()
-        textField.delegate = context.coordinator
-        textField.placeholder = placeholder
-        textField.keyboardType = keyboardType
-        textField.textContentType = textContentType
-        textField.autocorrectionType = autocorrectionType
-        textField.addTarget(context.coordinator, action: #selector(Coordinator.textFieldDidChange(_:)), for: .editingChanged)
-        return textField
-    }
-
-    func updateUIView(_ uiView: UITextField, context _: Context) {
-        uiView.text = text
-
-        if isFirstResponder && !uiView.isFirstResponder {
-            uiView.becomeFirstResponder()
-        } else if !isFirstResponder && uiView.isFirstResponder {
-            uiView.resignFirstResponder()
-        }
-
-        if uiView.text?.last == "\n" {
-            item.children.append(Item(position: item.children.count))
-        }
-    }
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-
-    class Coordinator: NSObject, UITextFieldDelegate {
-        var parent: CustomTextField
-
-        init(_ parent: CustomTextField) {
-            self.parent = parent
-        }
-
-        @objc func textFieldDidChange(_ textField: UITextField) {
-            parent.text = textField.text ?? ""
-            parent.onTextChange?(parent.text)
-        }
-
-        func textFieldDidBeginEditing(_: UITextField) {
-            parent.isFirstResponder = true
-            parent.onBeginEditing?()
-        }
-
-        func textFieldDidEndEditing(_: UITextField) {
-            parent.isFirstResponder = false
-            parent.onEndEditing?()
-        }
-
-        func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-            parent.onSubmit?()
-            textField.resignFirstResponder()
-            return true
-        }
-    }
-}
-
-struct ItemTextEditorIntrospect: View {
-    @Environment(\.modelContext) private var modelContext
-    @Binding var parentItem: Item
-
-    @State private var fullText: String = ""
-
-    var body: some View {
-        TextEditor(text: $fullText)
-            .padding()
-            .introspect(.textEditor, on: .iOS(.v14...)) { textView in
-                textView.delegate = makeCoordinator()
-            }
-            .onAppear {
-                assembleText()
-            }
-    }
-
-    private func assembleText() {
-        fullText = ([parentItem.noteData.text] + parentItem.children.map { $0.noteData.text })
-            .joined(separator: "\n")
-    }
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(parentItem: parentItem, modelContext: modelContext)
-    }
-
-    class Coordinator: NSObject, UITextViewDelegate {
-        var parentItem: Item
-        var modelContext: ModelContext
-
-        init(parentItem: Item, modelContext: ModelContext) {
-            self.parentItem = parentItem
-            self.modelContext = modelContext
-        }
-
-        func textViewDidChange(_ textView: UITextView) {
-            let lines = textView.text
-                .split(separator: "\n", omittingEmptySubsequences: false)
-                .map(String.init)
-
-            parentItem.noteData.text = lines.first ?? ""
-
-            for child in parentItem.children {
-                modelContext.delete(child)
-            }
-
-            for line in lines.dropFirst() {
-                let child = Item(noteData: NoteData(text: line))
-                child.parent = parentItem
-                modelContext.insert(child)
-            }
         }
     }
 }

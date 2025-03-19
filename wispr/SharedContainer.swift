@@ -11,6 +11,48 @@ import SwiftData
 import SwiftUI
 
 @MainActor
+enum SharedState {
+    static var sharedModelContainer: ModelContainer = {
+        let schema = Schema([
+            Item.self,
+            Tag.self,
+            Board.self,
+        ])
+        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+
+        do {
+            let urlApp = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).last
+            let url = urlApp!.appendingPathComponent("default.store")
+            if FileManager.default.fileExists(atPath: url.path) {
+                print("swiftdata db at \(url.absoluteString)")
+            }
+            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+        } catch {
+            let urlApp = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).last
+            let url = urlApp!.appendingPathComponent("default.store")
+            if FileManager.default.fileExists(atPath: url.path) {
+                print("swiftdata db at \(url.absoluteString)")
+            }
+
+            fatalError("Could not create ModelContainer: \(error)")
+        }
+    }()
+
+    static var calendarService: CalendarService = .init()
+    static var widgetConductor: WidgetConductor = .init()
+
+    static var syncedCalendar = false
+
+    static func deleteItem(_ item: Item) {
+        _ = DeleteHandler().delete(item)
+    }
+
+    static func rollbackItem() {
+        CommitHandler().rollback()
+    }
+}
+
+@MainActor
 class EventHandler {
     let calendarService = SharedState.calendarService
     var item: Item
@@ -19,6 +61,13 @@ class EventHandler {
     init(_ item: Item, _ event: EventData) {
         self.item = item
         self.event = event
+    }
+
+    static func handleItem(_ item: Item, _ eventData: EventData) -> Item {
+        let eventHandler = EventHandler(item, eventData)
+        let e = eventHandler.processEventData()
+        item.eventData = e
+        return item
     }
 
     public func processEventData() -> EventData? {
@@ -37,7 +86,7 @@ class EventHandler {
         }
 
         if let ek = calendarService.createEventInCalendar(
-            title: item.noteData.text,
+            title: item.text,
             start: event.startDate,
             end: event.endDate
         ) {
@@ -63,7 +112,7 @@ class EventHandler {
         deleteEventNotification()
         var e = event
         let content = UNMutableNotificationContent()
-        content.title = item.noteData.text
+        content.title = item.text
         content.body = event.startDate.formatted(date: .omitted, time: .shortened)
         let notifyAt = event.startDate.advanced(by: -1800)
         e.notifyAt = notifyAt
@@ -104,33 +153,8 @@ class CommitHandler {
     }
 
     func rollback() {
-        SharedState.dayDetailsConductor.editItem = nil
         context.rollback()
         try? context.save()
-    }
-
-    func commit(context: ModelContext, item: Item, _: Bool = false) -> Bool {
-        if !item.hasNote {
-            _ = DeleteHandler().delete(item)
-            return true
-        }
-
-        item.timestamp = SharedState.dayDetailsConductor.date
-
-        if let event = item.eventData {
-            let eventHandler = EventHandler(item, event)
-            let e = eventHandler.processEventData()
-            item.eventData = e
-        }
-
-        if itemExists(item) == nil {
-            context.insert(item)
-        }
-        try? context.save()
-
-        SharedState.dayDetailsConductor.editItem = nil
-        SharedState.dayDetailsConductor.rollbackItem = nil
-        return true
     }
 
     func itemExists(_ item: Item) -> Item? {
@@ -159,7 +183,6 @@ class DeleteHandler {
         withAnimation {
             context.delete(item)
             try? context.save()
-            SharedState.dayDetailsConductor.editItem = nil
         }
         return true
     }
@@ -170,111 +193,4 @@ class DeleteHandler {
 class WidgetConductor {
     var date: Date = .init()
     var parentItem: Item?
-}
-
-@Observable
-@MainActor
-class FocusConductor {
-    var focused: FocusedField?
-}
-
-@Observable
-@MainActor
-class DayDetailsConductor {
-    var showDatePicker: Bool = false
-    var showArchive: Bool = false
-    var editItem: Item?
-    var lastFocusedItem: Item?
-    var rollbackItem: Item?
-    var itemCount: Int = 0
-
-    var isEditingItem: Bool {
-        editItem != nil
-    }
-
-    func rollback(context: ModelContext) {
-        withAnimation {
-            SharedState.dayDetailsConductor.editItem = nil
-            context.rollback()
-            try? context.save()
-        }
-    }
-
-    var date: Date = .init()
-
-    init() {}
-}
-
-@MainActor
-enum SharedState {
-    static var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-            Tag.self,
-            Board.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
-        do {
-            let urlApp = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).last
-            let url = urlApp!.appendingPathComponent("default.store")
-            if FileManager.default.fileExists(atPath: url.path) {
-                print("swiftdata db at \(url.absoluteString)")
-            }
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            let urlApp = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).last
-            let url = urlApp!.appendingPathComponent("default.store")
-            if FileManager.default.fileExists(atPath: url.path) {
-                print("swiftdata db at \(url.absoluteString)")
-            }
-
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
-
-    static var dayDetailsConductor: DayDetailsConductor = .init()
-    static var focusConductor: FocusConductor = .init()
-    static var calendarService: CalendarService = .init()
-    static var widgetConductor: WidgetConductor = .init()
-
-    static var syncedCalendar = false
-
-    static func createNewItem(date: Date, position: Int) -> Item {
-        let timestamp = Calendar.current.combineDateAndTime(date: date, time: Date())
-
-        let newItem = Item(
-            position: position,
-            timestamp: timestamp
-        )
-
-        withAnimation {
-            if CommitHandler().create(newItem) {
-                SharedState.dayDetailsConductor.date = Calendar.current.startOfDay(for: newItem.timestamp)
-                SharedState.dayDetailsConductor.editItem = newItem
-            } else {
-                SharedState.dayDetailsConductor.editItem = nil
-            }
-        }
-
-        return newItem
-    }
-
-    static func commitItem(context: ModelContext, item: Item, _ rollback: Bool = false) {
-        _ = CommitHandler().commit(context: context, item: item, rollback)
-    }
-
-    static func commitEditItem(context: ModelContext, _ rollback: Bool = false) {
-        if let item = SharedState.dayDetailsConductor.editItem {
-            _ = CommitHandler().commit(context: context, item: item, rollback)
-        }
-    }
-
-    static func deleteItem(_ item: Item) {
-        _ = DeleteHandler().delete(item)
-    }
-
-    static func rollbackItem() {
-        CommitHandler().rollback()
-    }
 }

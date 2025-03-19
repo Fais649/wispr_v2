@@ -45,7 +45,7 @@ final class Tag: Identifiable, Selectable {
         HStack {
             Text(name)
         }
-        .font(.custom("GohuFont11NFM", size: minimized ? 12 : 16))
+        // .font(.custom("GohuFont11NFM", size: minimized ? 12 : 16))
         .frame(minWidth: 50, maxWidth: minimized ? 120 : 140)
         .scaleEffect(isEdit ? 1.02 : 1)
         .lineLimit(1)
@@ -92,6 +92,44 @@ final class Tag: Identifiable, Selectable {
 
     var searchable: String {
         return name
+    }
+
+    @ViewBuilder
+    static func composeLinearGradient(for tags: [Tag]) -> some View {
+        let colors = tags.map { $0.color } + [.clear]
+        LinearGradient(colors: colors, startPoint: .top, endPoint: .bottomTrailing)
+    }
+
+    @ViewBuilder
+    static func composeMeshGradient(for tags: [Tag]) -> some View {
+        let colors = tags.map { $0.color }
+
+        MeshGradient(width: 2, height: 2, points: [
+            [0, 0], [1, 0],
+            [0, 1], [1, 1],
+        ], colors: colors)
+            .blur(radius: 40)
+    }
+}
+
+struct InfiniteRotation: ViewModifier {
+    @State private var rotation: Angle = .zero
+    let duration: Double
+
+    func body(content: Content) -> some View {
+        content
+            .rotationEffect(rotation)
+            .onAppear {
+                withAnimation(Animation.linear(duration: duration).repeatForever(autoreverses: false)) {
+                    rotation = .degrees(360)
+                }
+            }
+    }
+}
+
+extension View {
+    func infiniteRotation(duration: Double = 20) -> some View {
+        modifier(InfiniteRotation(duration: duration))
     }
 }
 

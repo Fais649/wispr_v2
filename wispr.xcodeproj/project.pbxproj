@@ -22,17 +22,21 @@
 		A20619352D685377003FE91F /* SFSymbolsPicker in Frameworks */ = {isa = PBXBuildFile; productRef = A20619342D685377003FE91F /* SFSymbolsPicker */; };
 		A2174CE32D781AFE00BF4E86 /* Flow in Frameworks */ = {isa = PBXBuildFile; productRef = A2174CE22D781AFE00BF4E86 /* Flow */; };
 		A2174CE52D781D6900BF4E86 /* Flow in Frameworks */ = {isa = PBXBuildFile; productRef = A2174CE42D781D6900BF4E86 /* Flow */; };
-		A288E70D2D7A9FC400CB1218 /* SwiftUIIntrospect in Frameworks */ = {isa = PBXBuildFile; productRef = A288E70C2D7A9FC400CB1218 /* SwiftUIIntrospect */; };
-		A288E7132D7AA23C00CB1218 /* SwiftUIIntrospect in Frameworks */ = {isa = PBXBuildFile; productRef = A288E7122D7AA23C00CB1218 /* SwiftUIIntrospect */; };
+		A2215F412D88681C00A558C8 /* SwiftUIIntrospect in Frameworks */ = {isa = PBXBuildFile; productRef = A2215F402D88681C00A558C8 /* SwiftUIIntrospect */; };
+		A2215F452D88681C00A558C8 /* SwiftUIIntrospect-Static in Frameworks */ = {isa = PBXBuildFile; productRef = A2215F442D88681C00A558C8 /* SwiftUIIntrospect-Static */; };
+		A2215F472D88684900A558C8 /* SwiftUIIntrospect in Frameworks */ = {isa = PBXBuildFile; productRef = A2215F462D88684900A558C8 /* SwiftUIIntrospect */; };
+		A2215F4D2D88684900A558C8 /* SwiftUIIntrospect-Static in Frameworks */ = {isa = PBXBuildFile; productRef = A2215F4C2D88684900A558C8 /* SwiftUIIntrospect-Static */; };
+		A2215F502D886B1000A558C8 /* NavigationTransitions in Frameworks */ = {isa = PBXBuildFile; productRef = A2215F4F2D886B1000A558C8 /* NavigationTransitions */; };
+		A2215F522D886B1900A558C8 /* NavigationTransitions in Frameworks */ = {isa = PBXBuildFile; productRef = A2215F512D886B1900A558C8 /* NavigationTransitions */; };
+		A2215F552D896AE400A558C8 /* SwipeActions in Frameworks */ = {isa = PBXBuildFile; productRef = A2215F542D896AE400A558C8 /* SwipeActions */; };
+		A2215F572D896AEE00A558C8 /* SwipeActions in Frameworks */ = {isa = PBXBuildFile; productRef = A2215F562D896AEE00A558C8 /* SwipeActions */; };
 		A2B9ACF32D5B249C0087911B /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A28D87042D5A83D700421031 /* WidgetKit.framework */; };
 		A2B9ACF42D5B249C0087911B /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A28D87062D5A83D700421031 /* SwiftUI.framework */; };
 		A2B9AD052D5B249E0087911B /* widgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A2B9ACF22D5B249C0087911B /* widgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A2FE05B12D5B96260087AE41 /* AudioKit in Frameworks */ = {isa = PBXBuildFile; productRef = A2FE05B02D5B96260087AE41 /* AudioKit */; };
 		A2FE05B42D5B96350087AE41 /* SwiftWhisper in Frameworks */ = {isa = PBXBuildFile; productRef = A2FE05B32D5B96350087AE41 /* SwiftWhisper */; };
-		A2FE05B72D5B96400087AE41 /* SFSymbolsPicker in Frameworks */ = {isa = PBXBuildFile; productRef = A2FE05B62D5B96400087AE41 /* SFSymbolsPicker */; };
 		A2FE05B92D5B96480087AE41 /* AudioKit in Frameworks */ = {isa = PBXBuildFile; productRef = A2FE05B82D5B96480087AE41 /* AudioKit */; };
 		A2FE05BB2D5B96480087AE41 /* SwiftWhisper in Frameworks */ = {isa = PBXBuildFile; productRef = A2FE05BA2D5B96480087AE41 /* SwiftWhisper */; };
-		A2FE05BD2D5B96480087AE41 /* SFSymbolsPicker in Frameworks */ = {isa = PBXBuildFile; productRef = A2FE05BC2D5B96480087AE41 /* SFSymbolsPicker */; };
 		C4BD33E6D6F240B694779B20 /* Query.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B72413105B525634EC035D6 /* Query.swift */; };
 		D9A552DB3B3541D1AC321A3D /* TimeLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C44952C8CF97636BAC358E05 /* TimeLine.swift */; };
 /* End PBXBuildFile section */
@@ -62,6 +66,16 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		A2215F4A2D88684900A558C8 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A28D871D2D5A83D900421031 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -171,8 +185,6 @@
 				Util.swift,
 				View/Component/Selects.swift,
 				View/ContentView.swift,
-				View/Day.swift,
-				View/TimeLine.swift,
 				View/Widget.swift,
 			);
 			target = A2B9ACF12D5B249C0087911B /* widgetExtension */;
@@ -225,10 +237,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				A2174CE32D781AFE00BF4E86 /* Flow in Frameworks */,
+				A2215F502D886B1000A558C8 /* NavigationTransitions in Frameworks */,
 				A2FE05B12D5B96260087AE41 /* AudioKit in Frameworks */,
-				A2FE05B72D5B96400087AE41 /* SFSymbolsPicker in Frameworks */,
-				A288E70D2D7A9FC400CB1218 /* SwiftUIIntrospect in Frameworks */,
+				A2215F552D896AE400A558C8 /* SwipeActions in Frameworks */,
 				A2FE05B42D5B96350087AE41 /* SwiftWhisper in Frameworks */,
+				A2215F412D88681C00A558C8 /* SwiftUIIntrospect in Frameworks */,
+				A2215F452D88681C00A558C8 /* SwiftUIIntrospect-Static in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -256,13 +270,15 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A288E7132D7AA23C00CB1218 /* SwiftUIIntrospect in Frameworks */,
 				A2FE05B92D5B96480087AE41 /* AudioKit in Frameworks */,
 				A2B9ACF42D5B249C0087911B /* SwiftUI.framework in Frameworks */,
 				A2174CE52D781D6900BF4E86 /* Flow in Frameworks */,
+				A2215F522D886B1900A558C8 /* NavigationTransitions in Frameworks */,
+				A2215F4D2D88684900A558C8 /* SwiftUIIntrospect-Static in Frameworks */,
+				A2215F472D88684900A558C8 /* SwiftUIIntrospect in Frameworks */,
 				A2B9ACF32D5B249C0087911B /* WidgetKit.framework in Frameworks */,
+				A2215F572D896AEE00A558C8 /* SwipeActions in Frameworks */,
 				A2FE05BB2D5B96480087AE41 /* SwiftWhisper in Frameworks */,
-				A2FE05BD2D5B96480087AE41 /* SFSymbolsPicker in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -347,9 +363,11 @@
 			packageProductDependencies = (
 				A2FE05B02D5B96260087AE41 /* AudioKit */,
 				A2FE05B32D5B96350087AE41 /* SwiftWhisper */,
-				A2FE05B62D5B96400087AE41 /* SFSymbolsPicker */,
 				A2174CE22D781AFE00BF4E86 /* Flow */,
-				A288E70C2D7A9FC400CB1218 /* SwiftUIIntrospect */,
+				A2215F402D88681C00A558C8 /* SwiftUIIntrospect */,
+				A2215F442D88681C00A558C8 /* SwiftUIIntrospect-Static */,
+				A2215F4F2D886B1000A558C8 /* NavigationTransitions */,
+				A2215F542D896AE400A558C8 /* SwipeActions */,
 			);
 			productName = wispr;
 			productReference = A2A587862D3120F20000B20D /* wispr.app */;
@@ -404,6 +422,7 @@
 				A2B9ACEE2D5B249C0087911B /* Sources */,
 				A2B9ACEF2D5B249C0087911B /* Frameworks */,
 				A2B9ACF02D5B249C0087911B /* Resources */,
+				A2215F4A2D88684900A558C8 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -416,9 +435,11 @@
 			packageProductDependencies = (
 				A2FE05B82D5B96480087AE41 /* AudioKit */,
 				A2FE05BA2D5B96480087AE41 /* SwiftWhisper */,
-				A2FE05BC2D5B96480087AE41 /* SFSymbolsPicker */,
 				A2174CE42D781D6900BF4E86 /* Flow */,
-				A288E7122D7AA23C00CB1218 /* SwiftUIIntrospect */,
+				A2215F462D88684900A558C8 /* SwiftUIIntrospect */,
+				A2215F4C2D88684900A558C8 /* SwiftUIIntrospect-Static */,
+				A2215F512D886B1900A558C8 /* NavigationTransitions */,
+				A2215F562D896AEE00A558C8 /* SwipeActions */,
 			);
 			productName = widgetExtension;
 			productReference = A2B9ACF22D5B249C0087911B /* widgetExtension.appex */;
@@ -462,10 +483,10 @@
 			packageReferences = (
 				A2FE05AF2D5B96260087AE41 /* XCRemoteSwiftPackageReference "AudioKit" */,
 				A2FE05B22D5B96350087AE41 /* XCRemoteSwiftPackageReference "SwiftWhisper" */,
-				A2FE05B52D5B96400087AE41 /* XCRemoteSwiftPackageReference "SFSymbolsPicker" */,
-				A2FE05BE2D5B968E0087AE41 /* XCLocalSwiftPackageReference "../Formula" */,
 				A2174CE12D781AFE00BF4E86 /* XCRemoteSwiftPackageReference "SwiftUI-Flow" */,
-				A288E70B2D7A9FC400CB1218 /* XCRemoteSwiftPackageReference "swiftui-introspect" */,
+				A2215F3F2D88681C00A558C8 /* XCRemoteSwiftPackageReference "swiftui-introspect" */,
+				A2215F4E2D886B1000A558C8 /* XCRemoteSwiftPackageReference "swiftui-navigation-transitions" */,
+				A2215F532D896AE400A558C8 /* XCRemoteSwiftPackageReference "SwipeActions" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A2A587872D3120F20000B20D /* Products */;
@@ -706,7 +727,7 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -738,7 +759,7 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -931,13 +952,6 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		A2FE05BE2D5B968E0087AE41 /* XCLocalSwiftPackageReference "../Formula" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../Formula;
-		};
-/* End XCLocalSwiftPackageReference section */
-
 /* Begin XCRemoteSwiftPackageReference section */
 		A2174CE12D781AFE00BF4E86 /* XCRemoteSwiftPackageReference "SwiftUI-Flow" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -947,12 +961,28 @@
 				minimumVersion = 3.0.1;
 			};
 		};
-		A288E70B2D7A9FC400CB1218 /* XCRemoteSwiftPackageReference "swiftui-introspect" */ = {
+		A2215F3F2D88681C00A558C8 /* XCRemoteSwiftPackageReference "swiftui-introspect" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/siteline/swiftui-introspect.git";
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 1.3.0;
+			};
+		};
+		A2215F4E2D886B1000A558C8 /* XCRemoteSwiftPackageReference "swiftui-navigation-transitions" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/davdroman/swiftui-navigation-transitions.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.14.0;
+			};
+		};
+		A2215F532D896AE400A558C8 /* XCRemoteSwiftPackageReference "SwipeActions" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/aheze/SwipeActions.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.1.0;
 			};
 		};
 		A2FE05AF2D5B96260087AE41 /* XCRemoteSwiftPackageReference "AudioKit" */ = {
@@ -1022,15 +1052,45 @@
 			package = A2174CE12D781AFE00BF4E86 /* XCRemoteSwiftPackageReference "SwiftUI-Flow" */;
 			productName = Flow;
 		};
-		A288E70C2D7A9FC400CB1218 /* SwiftUIIntrospect */ = {
+		A2215F402D88681C00A558C8 /* SwiftUIIntrospect */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = A288E70B2D7A9FC400CB1218 /* XCRemoteSwiftPackageReference "swiftui-introspect" */;
+			package = A2215F3F2D88681C00A558C8 /* XCRemoteSwiftPackageReference "swiftui-introspect" */;
 			productName = SwiftUIIntrospect;
 		};
-		A288E7122D7AA23C00CB1218 /* SwiftUIIntrospect */ = {
+		A2215F442D88681C00A558C8 /* SwiftUIIntrospect-Static */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = A288E70B2D7A9FC400CB1218 /* XCRemoteSwiftPackageReference "swiftui-introspect" */;
+			package = A2215F3F2D88681C00A558C8 /* XCRemoteSwiftPackageReference "swiftui-introspect" */;
+			productName = "SwiftUIIntrospect-Static";
+		};
+		A2215F462D88684900A558C8 /* SwiftUIIntrospect */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A2215F3F2D88681C00A558C8 /* XCRemoteSwiftPackageReference "swiftui-introspect" */;
 			productName = SwiftUIIntrospect;
+		};
+		A2215F4C2D88684900A558C8 /* SwiftUIIntrospect-Static */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A2215F3F2D88681C00A558C8 /* XCRemoteSwiftPackageReference "swiftui-introspect" */;
+			productName = "SwiftUIIntrospect-Static";
+		};
+		A2215F4F2D886B1000A558C8 /* NavigationTransitions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A2215F4E2D886B1000A558C8 /* XCRemoteSwiftPackageReference "swiftui-navigation-transitions" */;
+			productName = NavigationTransitions;
+		};
+		A2215F512D886B1900A558C8 /* NavigationTransitions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A2215F4E2D886B1000A558C8 /* XCRemoteSwiftPackageReference "swiftui-navigation-transitions" */;
+			productName = NavigationTransitions;
+		};
+		A2215F542D896AE400A558C8 /* SwipeActions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A2215F532D896AE400A558C8 /* XCRemoteSwiftPackageReference "SwipeActions" */;
+			productName = SwipeActions;
+		};
+		A2215F562D896AEE00A558C8 /* SwipeActions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A2215F532D896AE400A558C8 /* XCRemoteSwiftPackageReference "SwipeActions" */;
+			productName = SwipeActions;
 		};
 		A2FE05B02D5B96260087AE41 /* AudioKit */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -1042,11 +1102,6 @@
 			package = A2FE05B22D5B96350087AE41 /* XCRemoteSwiftPackageReference "SwiftWhisper" */;
 			productName = SwiftWhisper;
 		};
-		A2FE05B62D5B96400087AE41 /* SFSymbolsPicker */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A2FE05B52D5B96400087AE41 /* XCRemoteSwiftPackageReference "SFSymbolsPicker" */;
-			productName = SFSymbolsPicker;
-		};
 		A2FE05B82D5B96480087AE41 /* AudioKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = A2FE05AF2D5B96260087AE41 /* XCRemoteSwiftPackageReference "AudioKit" */;
@@ -1056,11 +1111,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = A2FE05B22D5B96350087AE41 /* XCRemoteSwiftPackageReference "SwiftWhisper" */;
 			productName = SwiftWhisper;
-		};
-		A2FE05BC2D5B96480087AE41 /* SFSymbolsPicker */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A2FE05B52D5B96400087AE41 /* XCRemoteSwiftPackageReference "SFSymbolsPicker" */;
-			productName = SFSymbolsPicker;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

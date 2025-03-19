@@ -49,7 +49,6 @@ struct widget: Widget {
             WidgetView(entry: entry)
                 .font(.custom("GohuFont11NFM", size: 12))
                 .containerBackground(.black, for: .widget)
-                .environment(SharedState.dayDetailsConductor)
                 .modelContainer(SharedState.sharedModelContainer)
         }
     }

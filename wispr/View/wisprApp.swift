@@ -7,19 +7,21 @@
 
 import SwiftData
 import SwiftUI
+import UIKit
 
 @main
 struct wisprApp: App {
     @State var audioService: AudioService = .init()
+    @State var activeTheme: ActiveTheme = .init()
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environment(SharedState.calendarService)
-                .environment(SharedState.dayDetailsConductor)
-                .environment(SharedState.focusConductor)
                 .environment(audioService)
+                .environment(activeTheme)
                 .preferredColorScheme(.dark)
+                .accentColor(activeTheme.theme.toolbarForegroundColor)
         }
         .modelContainer(SharedState.sharedModelContainer)
     }

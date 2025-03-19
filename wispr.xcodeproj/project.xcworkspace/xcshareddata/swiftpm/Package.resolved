@@ -1,5 +1,5 @@
 {
-  "originHash" : "2c6a764f30e5810429e24988eccf874226ecfc5462c392138a1cc53ee193e50c",
+  "originHash" : "0a3ded7110ff388a7a99d35d19f4be90b1256587f9679fe2307679ccbcdb3137",
   "pins" : [
     {
       "identity" : "audiokit",
@@ -8,24 +8,6 @@
       "state" : {
         "revision" : "2ebd422855e4645d3169f83d1765d1c8196b4f46",
         "version" : "5.6.4"
-      }
-    },
-    {
-      "identity" : "sfsymbolspicker",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/alessiorubicini/SFSymbolsPicker",
-      "state" : {
-        "revision" : "73c909b8a7fc77a30dd04208e33f759f8b52c4c8",
-        "version" : "1.0.6"
-      }
-    },
-    {
-      "identity" : "swift-syntax",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/swiftlang/swift-syntax.git",
-      "state" : {
-        "revision" : "0687f71944021d616d34d922343dcef086855920",
-        "version" : "600.0.1"
       }
     },
     {
@@ -47,12 +29,30 @@
       }
     },
     {
+      "identity" : "swiftui-navigation-transitions",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/davdroman/swiftui-navigation-transitions.git",
+      "state" : {
+        "revision" : "76ae9c621422a1f38c30a07c8b7636994b669484",
+        "version" : "0.14.0"
+      }
+    },
+    {
       "identity" : "swiftwhisper",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/exPHAT/SwiftWhisper.git",
       "state" : {
         "revision" : "a192004db08de7c6eaa169eede77f1625e7d23fb",
         "version" : "1.2.0"
+      }
+    },
+    {
+      "identity" : "swipeactions",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/aheze/SwipeActions.git",
+      "state" : {
+        "revision" : "41e6f6dce02d8cfa164f8c5461a41340850ca3ab",
+        "version" : "1.1.0"
       }
     }
   ],

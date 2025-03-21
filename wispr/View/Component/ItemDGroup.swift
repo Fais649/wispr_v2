@@ -99,7 +99,7 @@ struct DGroup: View {
                                 e.startDate
                                     .formatted(.dateTime.hour().minute())
                             ).font(.system(size: 12)).fontWeight(.thin)
-                            Text("-") .font(.system(size: 12)).fontWeight(.thin)
+                            Text("-").font(.system(size: 12)).fontWeight(.thin)
                             Text(e.endDate.formatted(.dateTime.hour().minute()))
                                 .font(.system(size: 12)).fontWeight(.thin)
                         }

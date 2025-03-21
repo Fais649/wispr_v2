@@ -75,7 +75,6 @@ struct DayScreen: View {
         VStack {
             self.sectionHeader()
             if self.loaded {
-
                 GeometryReader { geo in
                     List {
                         DGroups(
@@ -92,12 +91,11 @@ struct DayScreen: View {
                         dayScreenReader.populate(geo)
                     }
                 }.overlay(alignment: .center) {
-
-                if self.filteredItems.isEmpty {
-                    Image(systemName: "plus.circle.dashed")
-                        .fontWeight(.ultraLight)
-                }
+                    if self.filteredItems.isEmpty {
+                        Image(systemName: "plus.circle.dashed")
+                            .fontWeight(.ultraLight)
                     }
+                }
             } else {
                 Spacer()
                 ProgressView().progressViewStyle(.circular)

@@ -9,16 +9,18 @@ import SwiftUI
 
 @Model
 final class Tag: Identifiable, Selectable {
-    var id: UUID = UUID()
+    var id = UUID()
     var name: String
     var colorHex: String
-    var symbol: String = "circle.fill"
-    var timestamp: Date = Date()
+    var symbol = "circle.fill"
+    var timestamp = Date()
     var lastClicked: Date?
 
     init(name: String, color: UIColor, symbol: String = "circle.fill") {
         self.name = name
         colorHex = color.toHex() ?? ""
+        if name == "lol" { return }
+
         self.symbol = symbol
     }
 
@@ -43,7 +45,7 @@ final class Tag: Identifiable, Selectable {
 
     func editButtonLabel(isEdit: Bool, minimized: Bool) -> some View {
         HStack {
-            Text(name)
+            Text(self.name)
         }
         // .font(.custom("GohuFont11NFM", size: minimized ? 12 : 16))
         .frame(minWidth: 50, maxWidth: minimized ? 120 : 140)
@@ -55,7 +57,7 @@ final class Tag: Identifiable, Selectable {
                 if isEdit {
                     RoundedRectangle(cornerRadius: 20).stroke(.white)
                 }
-                background
+                self.background
                     .padding(2)
             }
         }
@@ -85,8 +87,12 @@ final class Tag: Identifiable, Selectable {
         TimelineView(.animation) { timeline in
             let x = (sin(timeline.date.timeIntervalSince1970) + 1) / 4
 
-            LinearGradient(colors: colors, startPoint: .leading, endPoint: .trailing)
-                .blur(radius: 15 * (1 - x) + 10)
+            LinearGradient(
+                colors: colors,
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+            .blur(radius: 15 * (1 - x) + 10)
         }
     }
 
@@ -97,7 +103,11 @@ final class Tag: Identifiable, Selectable {
     @ViewBuilder
     static func composeLinearGradient(for tags: [Tag]) -> some View {
         let colors = tags.map { $0.color } + [.clear]
-        LinearGradient(colors: colors, startPoint: .top, endPoint: .bottomTrailing)
+        LinearGradient(
+            colors: colors,
+            startPoint: .top,
+            endPoint: .bottomTrailing
+        )
     }
 
     @ViewBuilder
@@ -120,23 +130,20 @@ struct InfiniteRotation: ViewModifier {
         content
             .rotationEffect(rotation)
             .onAppear {
-                withAnimation(Animation.linear(duration: duration).repeatForever(autoreverses: false)) {
-                    rotation = .degrees(360)
+                withAnimation(
+                    Animation.linear(duration: self.duration)
+                        .repeatForever(autoreverses: false)
+                ) {
+                    self.rotation = .degrees(360)
                 }
             }
-    }
-}
-
-extension View {
-    func infiniteRotation(duration: Double = 20) -> some View {
-        modifier(InfiniteRotation(duration: duration))
     }
 }
 
 struct TagSelector: View {
     @Binding var selectedItemTags: [Tag]
     @Query var allTags: [Tag]
-    var minimized: Bool = false
+    var minimized = false
 
     var body: some View {
         Selector(
@@ -152,10 +159,17 @@ struct TagSelector: View {
     }
 
     @ViewBuilder
-    func createView(_ selected: Binding<[Tag]>, _ selectAction:
-        Binding<SelectAction>, _ initialValue: Binding<Tag?>) -> some View
-    {
-        TagDetailsForm(selected: selected, initialValue: initialValue, selectAction: selectAction)
+    func createView(
+        _ selected: Binding<[Tag]>,
+        _ selectAction:
+        Binding<SelectAction>,
+        _ initialValue: Binding<Tag?>
+    ) -> some View {
+        TagDetailsForm(
+            selected: selected,
+            initialValue: initialValue,
+            selectAction: selectAction
+        )
     }
 }
 
@@ -165,7 +179,7 @@ struct TagDetailsForm: View {
     @Binding var initialValue: Tag?
 
     @Binding var selectAction: SelectAction
-    @State var name: String = ""
+    @State var name = ""
     @State var color: Color = .pink
 
     @FocusState var focus: Bool
@@ -173,69 +187,71 @@ struct TagDetailsForm: View {
     var body: some View {
         HStack {
             AniButton {
-                initialValue = nil
-                selectAction = .view
+                self.initialValue = nil
+                self.selectAction = .view
             } label: {
                 Image(systemName: "chevron.left")
             }.buttonStyle(.plain)
 
-            ColorPicker("Color", selection: $color)
+            ColorPicker("Color", selection: self.$color)
                 .onAppear {
                     if let initialValue {
-                        color = initialValue.color
+                        self.color = initialValue.color
                     }
                 }
                 .labelsHidden()
                 .padding(.horizontal, 5)
 
-            TextField("name...", text: $name)
-                .limitInputLength(value: $name, length: 15)
-                .focused($focus)
+            TextField("name...", text: self.$name)
+                .limitInputLength(value: self.$name, length: 15)
+                .focused(self.$focus)
                 .onAppear {
-                    focus = true
+                    self.focus = true
                     if let initialValue {
-                        name = initialValue.name
+                        self.name = initialValue.name
                     }
                 }.onSubmit {
-                    if name.isEmpty {
+                    if self.name.isEmpty {
                         initialValue = nil
-                        selectAction = .view
+                        self.selectAction = .view
                     }
 
                     if let initialValue {
-                        initialValue.name = name
-                        initialValue.colorHex = UIColor(color).toHex() ?? initialValue.colorHex
-                        modelContext.insert(initialValue)
+                        initialValue.name = self.name
+                        initialValue.colorHex = UIColor(self.color)
+                            .toHex() ?? initialValue.colorHex
+                        self.modelContext.insert(initialValue)
                         self.initialValue = nil
                     }
-                    selectAction = .view
+                    self.selectAction = .view
                 }.submitScope()
                 .submitLabel(.done)
 
             AniButton {
                 if let initialValue {
-                    modelContext.delete(initialValue)
-                    selected.removeAll { $0 == initialValue }
+                    self.modelContext.delete(initialValue)
+                    self.selected.removeAll { $0 == initialValue }
                     self.initialValue = nil
                 }
-                selectAction = .view
+                self.selectAction = .view
             } label: {
                 Image(systemName: "trash")
             }.buttonStyle(.plain)
-                .disabled(name.isEmpty)
+                .disabled(self.name.isEmpty)
 
             AniButton {
                 if let initialValue {
-                    initialValue.name = name
-                    initialValue.colorHex = UIColor(color).toHex() ?? initialValue.colorHex
-                    modelContext.insert(initialValue)
+                    initialValue.name = self.name
+                    initialValue.colorHex = UIColor(self.color)
+                        .toHex() ?? initialValue.colorHex
+                    self.modelContext.insert(initialValue)
                     self.initialValue = nil
                 }
-                selectAction = .view
+                self.selectAction = .view
             } label: {
                 Image(systemName: "checkmark")
             }.buttonStyle(.plain)
-                .disabled(name.isEmpty)
+                .disabled(self.name.isEmpty)
         }
     }
 }

@@ -17,7 +17,12 @@ final class Board: Identifiable, Equatable {
     var startDate: Date?
     var endDate: Date?
 
-    init(name: String, tags: [Tag], startDate: Date? = nil, endDate: Date? = nil) {
+    init(
+        name: String,
+        tags: [Tag],
+        startDate: Date? = nil,
+        endDate: Date? = nil
+    ) {
         self.name = name
         self.tags = tags
         self.startDate = startDate
@@ -44,9 +49,8 @@ final class Board: Identifiable, Equatable {
 }
 
 struct BoardForm: View {
-    @Environment(Navigator.self) private var nav: Navigator
-    @Environment(ActiveBoard.self) private var activeBoard: ActiveBoard
     @Environment(\.modelContext) private var modelContext: ModelContext
+    @Environment(NavigatorService.self) private var nav: NavigatorService
     @FocusState var focus: FocusedField?
 
     @State var board: Board
@@ -83,7 +87,7 @@ struct BoardForm: View {
             } else {
                 modelContext.delete(board)
             }
-            activeBoard.showBoard = true
+            nav.activeBoard.showBoard = true
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)

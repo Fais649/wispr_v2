@@ -45,38 +45,49 @@ protocol Detailable: Selectable {
 struct FlowLayout: Layout {
     var spacing: CGFloat = 8
 
-    func sizeThatFits(proposal: ProposedViewSize,
-                      subviews: Subviews,
-                      cache _: inout ()) -> CGSize
-    {
+    func sizeThatFits(
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache _: inout ()
+    ) -> CGSize {
         let containerWidth = proposal.width ?? .infinity
         let sizes = subviews.map { $0.sizeThatFits(.unspecified) }
-        return layout(sizes: sizes,
-                      spacing: spacing,
-                      containerWidth: containerWidth).size
+        return layout(
+            sizes: sizes,
+            spacing: spacing,
+            containerWidth: containerWidth
+        ).size
     }
 
-    func placeSubviews(in bounds: CGRect,
-                       proposal _: ProposedViewSize,
-                       subviews: Subviews,
-                       cache _: inout ())
-    {
+    func placeSubviews(
+        in bounds: CGRect,
+        proposal _: ProposedViewSize,
+        subviews: Subviews,
+        cache _: inout ()
+    ) {
         let sizes = subviews.map { $0.sizeThatFits(.unspecified) }
         let offsets =
-            layout(sizes: sizes,
-                   spacing: spacing,
-                   containerWidth: bounds.width).offsets
+            layout(
+                sizes: sizes,
+                spacing: spacing,
+                containerWidth: bounds.width
+            ).offsets
         for (offset, subview) in zip(offsets, subviews) {
-            subview.place(at: .init(x: offset.x + bounds.minX,
-                                    y: offset.y + bounds.minY),
-                          proposal: .unspecified)
+            subview.place(
+                at: .init(
+                    x: offset.x + bounds.minX,
+                    y: offset.y + bounds.minY
+                ),
+                proposal: .unspecified
+            )
         }
     }
 
-    func layout(sizes: [CGSize],
-                spacing: CGFloat = 8,
-                containerWidth: CGFloat) -> (offsets: [CGPoint], size: CGSize)
-    {
+    func layout(
+        sizes: [CGSize],
+        spacing: CGFloat = 8,
+        containerWidth: CGFloat
+    ) -> (offsets: [CGPoint], size: CGSize) {
         var result: [CGPoint] = []
         var currentPosition: CGPoint = .zero
         var lineHeight: CGFloat = 0
@@ -93,8 +104,10 @@ struct FlowLayout: Layout {
             currentPosition.x += spacing
             lineHeight = max(lineHeight, size.height)
         }
-        return (result,
-                .init(width: maxX, height: currentPosition.y + lineHeight))
+        return (
+            result,
+            .init(width: maxX, height: currentPosition.y + lineHeight)
+        )
     }
 }
 
@@ -114,30 +127,48 @@ enum SelectorStyle {
 
 struct ToolbarButton<Content: View, S: Shape>: View {
     @Environment(ActiveTheme.self) private var activeTheme
+    var toggle: Binding<Bool>? = nil
     var clipShape: S
 
     let action: () -> Void
     @ViewBuilder var label: () -> Content
 
     init(
+        toggle: Binding<Bool>? = nil,
         clipShape: S = Circle(),
         action: @escaping () -> Void,
         @ViewBuilder label: @escaping () -> Content
     ) {
+        self.toggle = toggle
         self.clipShape = clipShape
         self.action = action
         self.label = label
+    }
+
+    var t: Bool {
+        if let toggle {
+            return toggle.wrappedValue
+        }
+        return false
     }
 
     var body: some View {
         AniButton {
             action()
         } label: {
-            label()
-                .toolbarButtonLabelStyler()
+            if clipShape as? Circle != nil {
+                label()
+                    .toolbarButtonLabelStyler()
+            } else {
+                label()
+                    .toolbarButtonLabelStyler(padding: (x: 6, y: 6))
+            }
         }
-        .background(activeTheme.theme.headerMaterial)
-        .clipShape(clipShape)
+        .background {
+            clipShape.fill(activeTheme.theme.headerMaterial)
+                .blur(radius: t ? 50 : 0)
+        }
+        .animation(.smooth, value: t)
     }
 }
 
@@ -165,23 +196,23 @@ struct ToolbarToggle<Content: View, S: Shape>: View {
 
     var yOffset: CGFloat {
         switch anchor {
-        case .top:
-            10
-        case .bottom, .center:
-            -10
-        default:
-            0
+            case .top:
+                10
+            case .bottom, .center:
+                -10
+            default:
+                0
         }
     }
 
     var xOffset: CGFloat {
         switch anchor {
-        case .leading:
-            10
-        case .trailing:
-            -10
-        default:
-            0
+            case .leading:
+                10
+            case .trailing:
+                -10
+            default:
+                0
         }
     }
 
@@ -262,7 +293,10 @@ struct Selector<Content: View, T: Identifiable & Equatable & Selectable>: View {
     @Binding var selected: [T]
     var all: [T]
     var selectLimit: Int
-    var editTForm: ((Binding<[T]>, Binding<SelectAction>, Binding<T?>) -> Content)? = nil
+    var editTForm: (
+        (Binding<[T]>, Binding<SelectAction>, Binding<T?>)
+            -> Content
+    )? = nil
     var isEditable: Bool = true
     var isSearchable: Bool = true
     @State var minimized: Bool = false
@@ -277,35 +311,43 @@ struct Selector<Content: View, T: Identifiable & Equatable & Selectable>: View {
     var available: [T] { all.filter { !selected.contains($0) } }
 
     var body: some View {
-        if isSearchable || isEditable || available.isNotEmpty || selected.isNotEmpty {
+        if
+            isSearchable || isEditable || available.isNotEmpty || selected
+                .isNotEmpty
+        {
             switch style {
-            case .grid, .inlineGrid:
-                SelectorGrid(inline: true, emptyIcon: emptyIcon, minimized: $minimized) {
-                    topBar
-                } content: {
-                    if minimized, selected.isEmpty {
-                        Image(systemName: emptyIcon)
-                            .padding(8)
-                    } else {
-                        content
-                            .background {
-                                if minimized {
-                                    RoundedRectangle(cornerRadius: 20).stroke(.gray.opacity(0.2))
+                case .grid, .inlineGrid:
+                    SelectorGrid(
+                        inline: true,
+                        emptyIcon: emptyIcon,
+                        minimized: $minimized
+                    ) {
+                        topBar
+                    } content: {
+                        if minimized, selected.isEmpty {
+                            Image(systemName: emptyIcon)
+                                .padding(8)
+                        } else {
+                            content
+                                .background {
+                                    if minimized {
+                                        RoundedRectangle(cornerRadius: 20)
+                                            .stroke(.gray.opacity(0.2))
+                                    }
                                 }
-                            }
+                        }
+                    }.padding(.horizontal, 8)
+                case .list:
+                    List {
+                        topBar
+                        content
                     }
-                }.padding(.horizontal, 8)
-            case .list:
-                List {
-                    topBar
+                    .scrollContentBackground(.hidden)
+                case .inlineList:
+                    if !minimized {
+                        topBar
+                    }
                     content
-                }
-                .scrollContentBackground(.hidden)
-            case .inlineList:
-                if !minimized {
-                    topBar
-                }
-                content
             }
         }
     }
@@ -322,7 +364,10 @@ struct Selector<Content: View, T: Identifiable & Equatable & Selectable>: View {
             selectAction: $selectAction,
             search: $search
         )
-        .disabled(selectAction.isCreate || (selectAction.isEdit && editT != nil))
+        .disabled(
+            selectAction
+                .isCreate || (selectAction.isEdit && editT != nil)
+        )
         .listRowBackground(Color.clear)
     }
 
@@ -354,7 +399,10 @@ struct Selector<Content: View, T: Identifiable & Equatable & Selectable>: View {
     }
 }
 
-struct SelectorTopBar<Content: View, T: Identifiable & Equatable & Selectable>: View {
+struct SelectorTopBar<
+    Content: View,
+    T: Identifiable & Equatable & Selectable
+>: View {
     @Binding var style: SelectorStyle
     var styleButton: Bool = false
     @Binding var search: String
@@ -362,7 +410,10 @@ struct SelectorTopBar<Content: View, T: Identifiable & Equatable & Selectable>: 
     @Binding var selected: [T]
     var all: [T]
     @Binding var editT: T?
-    var editTForm: ((Binding<[T]>, Binding<SelectAction>, Binding<T?>) -> Content)? = nil
+    var editTForm: (
+        (Binding<[T]>, Binding<SelectAction>, Binding<T?>)
+            -> Content
+    )? = nil
     var isEditable: Bool
     var isSearchable: Bool
 
@@ -399,7 +450,11 @@ struct SelectorTopBar<Content: View, T: Identifiable & Equatable & Selectable>: 
                             selectAction = .selectEdit
                         }
                     } label: {
-                        Image(systemName: selectAction.isSelectEdit || selectAction.isEdit ? "xmark" : "pencil")
+                        Image(
+                            systemName: selectAction
+                                .isSelectEdit || selectAction
+                                .isEdit ? "xmark" : "pencil"
+                        )
                     }
                     .buttonStyle(.plain)
                 }
@@ -439,7 +494,10 @@ struct SelectorTopBar<Content: View, T: Identifiable & Equatable & Selectable>: 
                         AniButton {
                             style = style == .grid ? .list : .grid
                         } label: {
-                            Image(systemName: style == .grid ? "list.dash" : "square.grid.3x2")
+                            Image(
+                                systemName: style == .grid ? "list.dash" :
+                                    "square.grid.3x2"
+                            )
                         }
                         .buttonStyle(.plain)
                         .disabled(!selectAction.isView)
@@ -470,7 +528,10 @@ struct SelectorSection<T: Identifiable & Equatable & Selectable>: View {
             }
             return !selected.contains($0)
         }.sorted { first, second in
-            if let firstClick = first.lastClicked, let secondClick = second.lastClicked {
+            if
+                let firstClick = first.lastClicked,
+                let secondClick = second.lastClicked
+            {
                 return firstClick > secondClick
             }
 
@@ -485,7 +546,10 @@ struct SelectorSection<T: Identifiable & Equatable & Selectable>: View {
             }
             return true
         }.sorted { first, second in
-            if let firstClick = first.lastClicked, let secondClick = second.lastClicked {
+            if
+                let firstClick = first.lastClicked,
+                let secondClick = second.lastClicked
+            {
                 return firstClick > secondClick
             }
 
@@ -495,10 +559,10 @@ struct SelectorSection<T: Identifiable & Equatable & Selectable>: View {
 
     var body: some View {
         switch style {
-        case .inlineList, .inlineGrid:
-            content
-        case .list, .grid:
-            sectionContent
+            case .inlineList, .inlineGrid:
+                content
+            case .list, .grid:
+                sectionContent
         }
     }
 
@@ -515,7 +579,10 @@ struct SelectorSection<T: Identifiable & Equatable & Selectable>: View {
                 }
                 search = ""
             } label: {
-                a.editButtonLabel(isEdit: selectAction.isSelectEdit, minimized: minimized)
+                a.editButtonLabel(
+                    isEdit: selectAction.isSelectEdit,
+                    minimized: minimized
+                )
             }
             .buttonStyle(.plain)
             .background(a.selectedBackground)
@@ -534,7 +601,10 @@ struct SelectorSection<T: Identifiable & Equatable & Selectable>: View {
                     }
                     search = ""
                 } label: {
-                    a.editButtonLabel(isEdit: selectAction.isSelectEdit, minimized: minimized)
+                    a.editButtonLabel(
+                        isEdit: selectAction.isSelectEdit,
+                        minimized: minimized
+                    )
                 }
                 .background {
                     if selectAction.isSelectEdit {
@@ -604,14 +674,17 @@ struct RadialLayout: Layout {
         // Set the radius to fit within the available space.
         let radius = min(bounds.size.width, bounds.size.height) / 2.0
 
-        // Calculate the angle for each view, depending on the total number of views.
+        // Calculate the angle for each view, depending on the total number of
+        // views.
         let angle = Angle.degrees(360.0 / Double(subviews.count)).radians
 
-        // Place each view, rotating around the center of the space, with a decreasing radius to create a spiral effect.
+        // Place each view, rotating around the center of the space, with a
+        // decreasing radius to create a spiral effect.
         for (index, subview) in subviews.enumerated() {
             var place = CGPoint(x: 0, y: -radius * CGFloat(Float(index)) / 10)
                 .applying(CGAffineTransform(
-                    rotationAngle: angle * Double(index)))
+                    rotationAngle: angle * Double(index)
+                ))
             place.x += bounds.midX
             place.y += bounds.midY
             subview.place(at: place, anchor: .center, proposal: .unspecified)
@@ -636,7 +709,10 @@ struct SelectorGrid<TopBarContent: View, Content: View>: View {
             }
 
             HStack {
-                HFlow(horizontalAlignment: .leading, verticalAlignment: .center) {
+                HFlow(
+                    horizontalAlignment: .leading,
+                    verticalAlignment: .center
+                ) {
                     content()
                         .allowsHitTesting(!minimized)
                 }
@@ -650,7 +726,11 @@ struct SelectorGrid<TopBarContent: View, Content: View>: View {
                 AniButton {
                     minimized = false
                 } label: {
-                    HFlow(horizontalAlignment: .leading, verticalAlignment: .top, justified: !minimized) {
+                    HFlow(
+                        horizontalAlignment: .leading,
+                        verticalAlignment: .top,
+                        justified: !minimized
+                    ) {
                         content()
                             .allowsHitTesting(!minimized)
                     }

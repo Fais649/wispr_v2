@@ -1,0 +1,6 @@
+--exclude Pods,**/.build,**/Package.swift,vendor/bundle,scripts,fastlane,**/L10n.swift,**/Assets.swift,**/*.generated.swift,**/Generated,xcode-productivity/**/*.swift,**/Carthage/**/*.swift
+
+--maxwidth 80
+--indentcase true
+--wraparguments before-first
+--wrapconditions before-first

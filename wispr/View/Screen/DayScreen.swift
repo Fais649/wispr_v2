@@ -7,89 +7,63 @@
 import SwiftData
 import SwiftUI
 
-@Observable
-class DayScreenReader {
-    var minY: CGFloat = 0
-    var maxY: CGFloat = 0
-    var minX: CGFloat = 0
-    var maxX: CGFloat = 0
-
-    func populate(_ geo: GeometryProxy) {
-        minY = geo.frame(in: .global).minY
-        maxY = geo.frame(in: .global).maxY
-        minX = geo.frame(in: .global).minX
-        maxX = geo.frame(in: .global).maxX
-    }
-}
-
 struct DayScreen: View {
     @Environment(\.modelContext) private var modelContext: ModelContext
-    @Environment(NavigatorService.self) private var nav: NavigatorService
     @Environment(
-        DayScreenReader
+        NavigationStateService
             .self
-    ) private var dayScreenReader: DayScreenReader
+    ) private var navigationStateService: NavigationStateService
+    @Environment(FlashStateService.self) private var flashService: FlashStateService
     @Environment(\.dismiss) private var dismiss
-
     @Query var items: [Item]
-
-    var boardFilter: Board?
-
+    var bookFilter: Book?
     @State var filteredItems: [Item] = []
+    @State private var loaded = false
 
-    init(activeDate: Date, boardFilter: Board?) {
-        self.boardFilter = boardFilter
+    init(activeDate: Date, bookFilter: Book?) {
+        self.bookFilter = bookFilter
         _items = Query(
             filter: ItemStore.activeItemsPredicated(for: activeDate),
             sort: \.position
         )
     }
 
-    @State private var loaded = false
+    func titleDivider() -> some View {
+        SimpleDvider()
+    }
 
-    @ViewBuilder
-    func sectionHeader() -> some View {
-        HStack {
-            Image(systemName: "asterisk").font(.system(size: 16))
-                .foregroundStyle(.white).shadow(color: .white, radius: 2)
-
-            Text(self.nav.activeDate.formatted(
-                date: .abbreviated,
+    func title() -> some View {
+        DateTitle(
+            date: navigationStateService.activeDate,
+            scrollTransition: false,
+            dateStringLeading: navigationStateService.activeDate.formatted(
+                date: .long,
                 time: .omitted
-            ))
-            .font(.system(size: 16))
-            .foregroundStyle(.white)
-            .shadow(color: .white, radius: 2)
+            )
+        )
+    }
 
+    func subTitle() -> some View {
+        HStack {
+            DateSubTitleLabel(date: navigationStateService.activeDate)
             Spacer()
-
-            Text(self.nav.activeDate.formatted(.dateTime.weekday()))
-                .font(.system(size: 16))
-                .foregroundStyle(.white)
-                .shadow(color: .white, radius: 2)
         }
-        .padding(.vertical, 30)
+    }
+
+    func trailingTitle() -> some View {
+        Text(navigationStateService.activeDate.formatted(.dateTime.weekday(.wide)))
     }
 
     var body: some View {
-        VStack {
-            self.sectionHeader()
-            if self.loaded {
-                GeometryReader { geo in
-                    List {
-                        DGroups(
-                            items: filteredItems,
-                            animated: true,
-                            withSwipe: true
-                        )
-                    }
-                    .listStyle(.plain)
-                    .safeAreaPadding(.top, 30)
-                    .onAppear {
-                        dayScreenReader.populate(geo)
-                    }.onChange(of: geo.frame(in: .global).minY) {
-                        dayScreenReader.populate(geo)
-                    }
+        Screen(
+            divider: titleDivider,
+            title: title,
+            trailingTitle: trailingTitle,
+            subtitle: subTitle
+        ) {
+            if loaded {
+                Lst {
+                    ItemDisclosures(items: filteredItems)
                 }.overlay(alignment: .center) {
                     if self.filteredItems.isEmpty {
                         Image(systemName: "plus.circle.dashed")
@@ -103,12 +77,12 @@ struct DayScreen: View {
                 Spacer()
             }
         }
-        .onChange(of: nav.activeBoard.board) {
+        .onChange(of: navigationStateService.bookState.book) {
             Task {
                 await self.loadedFilteredItems()
             }
         }
-        .onChange(of: nav.activeDate) {
+        .onChange(of: navigationStateService.activeDate) {
             Task {
                 await self.loadedFilteredItems()
             }
@@ -118,7 +92,6 @@ struct DayScreen: View {
                 await self.loadedFilteredItems()
             }
         }
-        .hideSystemBackground()
     }
 
     func loadedFilteredItems() async {
@@ -132,9 +105,9 @@ struct DayScreen: View {
     }
 
     func filterItems() async {
-        filteredItems = ItemStore.filterByBoard(
+        filteredItems = ItemStore.filterByBook(
             items: items,
-            board: boardFilter
+            book: bookFilter
         )
     }
 }

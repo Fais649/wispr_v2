@@ -8,7 +8,7 @@ import SwiftData
 import SwiftUI
 
 @Model
-final class Tag: Identifiable, Selectable {
+final class Tag: Identifiable {
     var id = UUID()
     var name: String
     var colorHex: String
@@ -19,8 +19,6 @@ final class Tag: Identifiable, Selectable {
     init(name: String, color: UIColor, symbol: String = "circle.fill") {
         self.name = name
         colorHex = color.toHex() ?? ""
-        if name == "lol" { return }
-
         self.symbol = symbol
     }
 
@@ -119,139 +117,5 @@ final class Tag: Identifiable, Selectable {
             [0, 1], [1, 1],
         ], colors: colors)
             .blur(radius: 40)
-    }
-}
-
-struct InfiniteRotation: ViewModifier {
-    @State private var rotation: Angle = .zero
-    let duration: Double
-
-    func body(content: Content) -> some View {
-        content
-            .rotationEffect(rotation)
-            .onAppear {
-                withAnimation(
-                    Animation.linear(duration: self.duration)
-                        .repeatForever(autoreverses: false)
-                ) {
-                    self.rotation = .degrees(360)
-                }
-            }
-    }
-}
-
-struct TagSelector: View {
-    @Binding var selectedItemTags: [Tag]
-    @Query var allTags: [Tag]
-    var minimized = false
-
-    var body: some View {
-        Selector(
-            style: .inlineGrid,
-            emptyIcon: "tag",
-            selected: $selectedItemTags,
-            all: allTags,
-            selectLimit: 10,
-            editTForm: createView,
-            isEditable: true,
-            minimized: minimized
-        )
-    }
-
-    @ViewBuilder
-    func createView(
-        _ selected: Binding<[Tag]>,
-        _ selectAction:
-        Binding<SelectAction>,
-        _ initialValue: Binding<Tag?>
-    ) -> some View {
-        TagDetailsForm(
-            selected: selected,
-            initialValue: initialValue,
-            selectAction: selectAction
-        )
-    }
-}
-
-struct TagDetailsForm: View {
-    @Environment(\.modelContext) private var modelContext
-    @Binding var selected: [Tag]
-    @Binding var initialValue: Tag?
-
-    @Binding var selectAction: SelectAction
-    @State var name = ""
-    @State var color: Color = .pink
-
-    @FocusState var focus: Bool
-
-    var body: some View {
-        HStack {
-            AniButton {
-                self.initialValue = nil
-                self.selectAction = .view
-            } label: {
-                Image(systemName: "chevron.left")
-            }.buttonStyle(.plain)
-
-            ColorPicker("Color", selection: self.$color)
-                .onAppear {
-                    if let initialValue {
-                        self.color = initialValue.color
-                    }
-                }
-                .labelsHidden()
-                .padding(.horizontal, 5)
-
-            TextField("name...", text: self.$name)
-                .limitInputLength(value: self.$name, length: 15)
-                .focused(self.$focus)
-                .onAppear {
-                    self.focus = true
-                    if let initialValue {
-                        self.name = initialValue.name
-                    }
-                }.onSubmit {
-                    if self.name.isEmpty {
-                        initialValue = nil
-                        self.selectAction = .view
-                    }
-
-                    if let initialValue {
-                        initialValue.name = self.name
-                        initialValue.colorHex = UIColor(self.color)
-                            .toHex() ?? initialValue.colorHex
-                        self.modelContext.insert(initialValue)
-                        self.initialValue = nil
-                    }
-                    self.selectAction = .view
-                }.submitScope()
-                .submitLabel(.done)
-
-            AniButton {
-                if let initialValue {
-                    self.modelContext.delete(initialValue)
-                    self.selected.removeAll { $0 == initialValue }
-                    self.initialValue = nil
-                }
-                self.selectAction = .view
-            } label: {
-                Image(systemName: "trash")
-            }.buttonStyle(.plain)
-                .disabled(self.name.isEmpty)
-
-            AniButton {
-                if let initialValue {
-                    initialValue.name = self.name
-                    initialValue.colorHex = UIColor(self.color)
-                        .toHex() ?? initialValue.colorHex
-                    self.modelContext.insert(initialValue)
-                    self.initialValue = nil
-                }
-                self.selectAction = .view
-            } label: {
-                Image(systemName: "checkmark")
-            }.buttonStyle(.plain)
-                .disabled(self.name.isEmpty)
-        }
     }
 }

@@ -19,11 +19,9 @@ struct WidgetView: View {
         switch family {
             case .systemLarge:
                 LargeWidget()
-                    .font(.custom("GohuFont11NFM", size: 16))
 
             case .systemMedium:
                 MediumWidget()
-                    .font(.custom("GohuFont11NFM", size: 12))
 
             default:
                 SmallWidget()
@@ -38,15 +36,11 @@ struct SmallWidget: View {
 }
 
 struct LargeWidget: View {
-    @Environment(
-        WidgetConductor
-            .self
-    ) private var widgetConductor: WidgetConductor
     @Query var items: [Item]
 
     var todaysItems: [Item] {
         let cal = Calendar.current
-        let start = cal.startOfDay(for: widgetConductor.date)
+        let start = cal.startOfDay(for: Date())
         let end = start.advanced(by: 86400)
         return items
             .filter {
@@ -56,7 +50,7 @@ struct LargeWidget: View {
     }
 
     var activeDate: Date {
-        return Calendar.current.startOfDay(for: widgetConductor.date)
+        return Calendar.current.startOfDay(for: Date())
     }
 
     var todayDate: Date {
@@ -64,183 +58,7 @@ struct LargeWidget: View {
     }
 
     var body: some View {
-        Button(intent: OpenOnDateIntent(
-            date: widgetConductor.date
-                .defaultIntentParameter
-        )) {
-            VStack {
-                VStack {
-                    Spacer()
-                    if
-                        let parent = widgetConductor.parentItem,
-                        let itm = items.filter({ $0.id == parent.id }).first
-                    {
-                        HStack {
-                            VStack {
-                                WidgetItemRowLabel(item: itm)
-                                ForEach(itm.children.prefix(6)) { child in
-                                    WidgetItemRowLabel(item: child)
-                                        .padding(.leading, 40)
-                                }
-                            }
-                        }
-                    } else {
-                        HStack {
-                            if todaysItems.isEmpty {
-                                Spacer()
-                                Text(
-                                    """
-                                    Nothing planned...
-                                    (loser)
-                                    """
-                                )
-                                .foregroundStyle(.white)
-                                Spacer()
-                            } else {
-                                VStack {
-                                    ForEach(
-                                        todaysItems.prefix(6),
-                                        id: \.self
-                                    ) { item in
-                                        if item.children.isEmpty {
-                                            WidgetItemRowLabel(item: item)
-                                        } else {
-                                            Button(
-                                                intent: ShowItemChildren(
-                                                    item: item
-                                                        .defaultIntentParameter
-                                                )
-                                            ) {
-                                                HStack {
-                                                    WidgetItemRowLabel(
-                                                        item: item
-                                                    )
-                                                    Image(
-                                                        systemName: "arrow.up.left.and.arrow.down.right"
-                                                    )
-                                                    .rotationEffect(
-                                                        .degrees(90)
-                                                    )
-                                                }
-                                            }.buttonStyle(.plain)
-                                                .foregroundStyle(.white)
-                                        }
-                                    }
-                                    Spacer()
-                                }.padding()
-                            }
-                        }
-                        Spacer()
-                    }
-                }.overlay(alignment: .topLeading) {
-                    HStack {
-                        let formatter = RelativeDateTimeFormatter()
-                        Button(intent: ShowTodayIntent()) {
-                            Image("Logo")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 15, height: 15)
-                        }.buttonStyle(.plain).foregroundStyle(.white)
-
-                        Spacer()
-
-                        if activeDate < todayDate {
-                            Button(
-                                intent: OpenOnDateIntent(
-                                    date: widgetConductor
-                                        .date.defaultIntentParameter
-                                )
-                            ) {
-                                Text(
-                                    formatter.localizedString(
-                                        for:
-                                        Calendar.current.startOfDay(
-                                            for:
-                                            widgetConductor.date
-                                        ),
-                                        relativeTo:
-                                        Calendar.current.startOfDay(for: Date())
-                                    ) +
-                                        " ... "
-                                )
-                            }.buttonStyle(.plain).foregroundStyle(.white)
-                                .foregroundStyle(.white)
-                                .frame(alignment: .center)
-                        }
-
-                        Button(intent: ShowTodayIntent()) {
-                            if activeDate == todayDate {
-                                Text(Date().formatted(
-                                    date: .abbreviated,
-                                    time: .omitted
-                                ))
-                            } else {
-                                Image(systemName: "circle.fill")
-                            }
-                        }.buttonStyle(.plain).foregroundStyle(.white)
-                            .foregroundStyle(.white)
-                            .frame(alignment: .center)
-                            .onAppear {
-                                formatter.unitsStyle = .short
-                            }
-
-                        if activeDate > todayDate {
-                            Button(
-                                intent: OpenOnDateIntent(
-                                    date: widgetConductor
-                                        .date.defaultIntentParameter
-                                )
-                            ) {
-                                Text(" ... " + formatter.localizedString(for:
-                                    Calendar.current.startOfDay(
-                                        for:
-                                        widgetConductor.date
-                                    ), relativeTo:
-                                    Calendar.current.startOfDay(for: Date())))
-                            }.buttonStyle(.plain).foregroundStyle(.white)
-                                .foregroundStyle(.white)
-                                .frame(alignment: .center)
-                        }
-                    }
-                }
-
-                HStack {
-                    Button(intent: ShowYesterdayIntent(
-                        date: widgetConductor
-                            .date.defaultIntentParameter
-                    )) {
-                        Spacer()
-                        Image(systemName: "chevron.left")
-                            .padding()
-                        Spacer()
-                    }.buttonStyle(.plain).foregroundStyle(.white)
-                        .frame(alignment: .center)
-
-                    Button(intent: NewTaskIntent(
-                        date: widgetConductor.date
-                            .defaultIntentParameter
-                    )) {
-                        Spacer()
-                        Image(systemName: "plus")
-                            .padding()
-                        Spacer()
-                    }.buttonStyle(.plain).foregroundStyle(.white)
-                        .widgetURL(URL(string: "wispr//NewTask"))
-                        .frame(alignment: .trailing)
-
-                    Button(intent: ShowTomorrowIntent(
-                        date: widgetConductor.date
-                            .defaultIntentParameter
-                    )) {
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .padding()
-                        Spacer()
-                    }.buttonStyle(.plain).foregroundStyle(.white)
-                        .frame(alignment: .center)
-                }.padding()
-            }
-        }.buttonStyle(.plain)
+        Text("lol")
     }
 }
 
@@ -276,10 +94,6 @@ struct WidgetItemList: View {
 }
 
 struct MediumWidget: View {
-    @Environment(
-        WidgetConductor
-            .self
-    ) private var widgetConductor: WidgetConductor
     @Query var items: [Item]
     @State var date: Date = .init()
 
@@ -353,13 +167,6 @@ struct MediumWidget: View {
 
             HStack {
                 Spacer()
-                Button(intent: NewTaskIntent(
-                    date: widgetConductor.date
-                        .defaultIntentParameter
-                )) {
-                    Image(systemName: "plus")
-                }.buttonStyle(.plain).foregroundStyle(.white)
-                    .widgetURL(URL(string: "wispr//NewTask"))
             }
         }.padding(3)
             .padding(.horizontal, 6)
@@ -367,7 +174,7 @@ struct MediumWidget: View {
                 HStack(alignment: .top) {
                     Image("Logo")
                         .resizable()
-                        .scaledToFit() 
+                        .scaledToFit()
                         .frame(width: 8, height: 8) // Set desired frame
                     Text(date.formatted(date: .abbreviated, time: .omitted))
                         .frame(alignment: .top)
@@ -538,11 +345,6 @@ struct OpenOnDateIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        withAnimation {
-            SharedState.widgetConductor.parentItem = nil
-            SharedState.widgetConductor.date = Calendar.current
-                .startOfDay(for: date)
-        }
         return .result()
     }
 }
@@ -552,11 +354,6 @@ struct ShowTodayIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        withAnimation {
-            SharedState.widgetConductor.parentItem = nil
-            SharedState.widgetConductor.date = Calendar.current
-                .startOfDay(for: Date())
-        }
         return .result()
     }
 }
@@ -569,11 +366,6 @@ struct ShowTomorrowIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        withAnimation {
-            SharedState.widgetConductor.parentItem = nil
-            SharedState.widgetConductor.date = Calendar.current
-                .startOfDay(for: date.advanced(by: 86400))
-        }
         return .result()
     }
 }
@@ -586,10 +378,6 @@ struct ShowYesterdayIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        withAnimation {
-            SharedState.widgetConductor.date = Calendar.current
-                .startOfDay(for: date.advanced(by: -86400))
-        }
         return .result()
     }
 }
@@ -602,9 +390,6 @@ struct ShowItemChildren: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        withAnimation {
-            SharedState.widgetConductor.parentItem = item
-        }
         return .result()
     }
 }
@@ -618,8 +403,6 @@ struct NewTaskIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        SharedState.widgetConductor.parentItem = nil
-        createNewItem()
         return .result()
     }
 

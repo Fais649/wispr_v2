@@ -33,9 +33,9 @@ class ItemStore {
         }
     }
 
-    static func filterByBoard(items: [Item], board: Board?) -> [Item] {
-        if let board {
-            return items.filter { $0.tags.contains { board.tags.contains($0) } }
+    static func filterByBook(items: [Item], book: Book?) -> [Item] {
+        if let book {
+            return items.filter { $0.tags.contains { book.tags.contains($0) } }
         } else {
             return items
         }
@@ -99,7 +99,7 @@ class ItemStore {
     ) -> Item {
         let item = Item()
         item.id = id
-        item.timestamp = Calendar.current.startOfDay(for: timestamp)
+        item.timestamp = timestamp
         item.parent = parent
         item.archived = archived
         item.archivedAt = archivedAt
@@ -155,7 +155,6 @@ class ItemStore {
         for day: Date
     ) -> Int {
         let items = loadItems(for: day)
-
         return items.count
     }
 
@@ -210,7 +209,7 @@ class ItemStore {
 }
 
 @Model
-final class Item: Codable, Transferable, AppEntity {
+final class Item: Codable, Transferable, AppEntity, Listable {
     @Attribute(.unique) var id: UUID
     var timestamp: Date
     var position: Int
@@ -316,41 +315,55 @@ final class Item: Codable, Transferable, AppEntity {
 
     @MainActor
     func commit(
-        _ modelContext: ModelContext,
+        timestamp: Date? = nil,
         text: String = "",
         taskData: TaskData?,
-        eventData: EventData?,
+        eventFormData: EventData.FormData?,
         tags: [Tag],
         children: [Item]
     ) {
+        if let timestamp {
+            setTimestamp(timestamp)
+        }
         self.text = text
         self.taskData = taskData
-        self.eventData = eventData
+
+        if let eventFormData {
+            createEvent(eventFormData.startDate, eventFormData.endDate)
+        } else {
+            deleteEvent()
+        }
+
         if eventData != nil {
             updatePosition()
         }
         self.tags = tags
         self.children = children
 
-        if self.text.isNotEmpty {
+        commit()
+    }
+
+    @MainActor
+    func commit() {
+        if text.isNotEmpty {
             if !ItemStore.itemExists(id: id) {
                 updatePosition()
             }
-            modelContext.insert(self)
+            ItemStore.modelContext.insert(self)
         } else {
-            modelContext.delete(self)
+            ItemStore.modelContext.delete(self)
         }
     }
 
     func archive() {
-        deleteEventData()
+        deleteEvent()
         archived = true
         archivedAt = Date()
     }
 
     @MainActor
     func delete() {
-        deleteEventData()
+        deleteEvent()
         ItemStore.modelContext.delete(self)
     }
 
@@ -368,7 +381,7 @@ final class Item: Codable, Transferable, AppEntity {
 
     @MainActor
     func setTimestamp(_ date: Date) {
-        timestamp = Calendar.current.startOfDay(for: date)
+        timestamp = date
         updatePosition()
     }
 
@@ -389,53 +402,53 @@ final class Item: Codable, Transferable, AppEntity {
         taskData?.completedAt = taskData?.completedAt == nil ? Date() : nil
     }
 
-    func toggleEventData(_ startTime: Date? = nil, _ endTime: Date? = nil) {
+    func toggleEvent(_ startTime: Date? = nil, _ endTime: Date? = nil) {
         if eventData != nil {
-            deleteEventData()
+            deleteEvent()
         } else if let startTime, let endTime {
-            createEventData(startTime, endTime)
+            createEvent(startTime, endTime)
         } else {
-            deleteEventData()
+            deleteEvent()
         }
     }
 
-    func createEvent(_ startTime: Date, _ endTime: Date) {
-        createEventData(startTime, endTime)
-    }
-
-    func deleteEvent() {
-        if eventData != nil {
-            deleteEventData()
+    private func createEvent(_ startDate: Date, _ endDate: Date) {
+        if
+            var eventData,
+            let id = eventData.eventIdentifier,
+            let ek = CalendarSyncService.loadEkEventByIdentifier(id)
+        {
+            CalendarSyncService.update(ekEvent: ek, text, startDate, endDate)
+            eventData.startDate = startDate
+            eventData.endDate = endDate
+            self.eventData = eventData
+            return
         }
-    }
 
-    private func createEventData(_ startTime: Date, _ endTime: Date) {
-        let startDate = Calendar.current.combineDateAndTime(
-            date:
-            timestamp,
-            time: startTime
-        )
-
-        let endDate = Calendar.current.combineDateAndTime(
-            date:
-            timestamp,
-            time: endTime
-        )
-
-        let ek = CalendarUtil.create(
+        var ek = CalendarSyncService.create(
             text,
             startDate,
             endDate
         )
 
-        let eventData = EventData(from: ek)
-        createNotification(eventData)
+        ek = CalendarSyncService.commit(ek)
+        var eventData = EventData(from: ek)
+        eventData.eventIdentifier = ek.eventIdentifier
         self.eventData = eventData
+        createNotification(eventData)
     }
 
-    private func deleteEventData() {
+    private func deleteEvent() {
+        guard let eventData else {
+            return
+        }
+
+        if let id = eventData.eventIdentifier {
+            CalendarSyncService.deleteByIdentifier(id)
+        }
+
         deleteNotification()
-        eventData = nil
+        self.eventData = nil
     }
 
     private func createNotification(_ eventData: EventData) {
@@ -454,7 +467,7 @@ final class Item: Codable, Transferable, AppEntity {
             from: notifyAt
         )
 
-        NotificationUtil.create(
+        NotificationSyncService.create(
             identifier: id.uuidString,
             title: title,
             body: body,
@@ -469,172 +482,13 @@ final class Item: Codable, Transferable, AppEntity {
         }
 
         eventData.notifyAt = nil
-        NotificationUtil.delete(id.uuidString)
+        NotificationSyncService.delete(id.uuidString)
     }
 
     @ViewBuilder
     var backgroundColor: some View {
         Tag.composeLinearGradient(for: tags)
             .opacity(0.6)
-    }
-
-    struct EventDataRow: View {
-        var item: Item
-        @State var startTime: Date
-        @State var duration: TimeInterval
-        @State var endTime: Date
-        @State var isEvent: Bool
-        @State var panel: Panel = .hidden
-        enum Panel {
-            case hidden, startDate, endDate
-        }
-
-        init(item: Item) {
-            self.item = item
-            if let eventData = item.eventData {
-                startTime = eventData.startDate
-                endTime = eventData.endDate
-                duration = eventData.endDate
-                    .timeIntervalSince(eventData.startDate)
-                isEvent = true
-            } else {
-                startTime = Date()
-                endTime = Date().advanced(by: 3600)
-                duration = 3600
-                isEvent = false
-            }
-        }
-
-        var body: some View {
-            VStack {
-                if isEvent {
-                    VStack {
-                        switch panel {
-                            case .startDate:
-
-                                BindableDefaultDatePicker(
-                                    date: $startTime
-                                )
-                                .datePickerStyle(.graphical)
-                                .labelsHidden()
-                                Divider()
-
-                                DatePicker(
-                                    "",
-                                    selection: $startTime,
-                                    displayedComponents: [
-                                        .hourAndMinute,
-                                    ]
-                                ).datePickerStyle(.wheel)
-                                    .labelsHidden()
-                                    .frame(height: 35)
-                                    .clipShape(Capsule())
-
-                            case .endDate:
-                                BindableDefaultDatePicker(
-                                    date: $endTime
-                                )
-                                .datePickerStyle(.graphical)
-                                .labelsHidden()
-                                Divider()
-                                DatePicker(
-                                    "",
-                                    selection: $endTime,
-                                    displayedComponents: [
-                                        .hourAndMinute,
-                                    ]
-                                ).datePickerStyle(.wheel)
-                                    .labelsHidden()
-                                    .frame(height: 35)
-                                    .clipShape(Capsule())
-
-                            default:
-                                EmptyView()
-                        }
-                    }
-
-                } else {
-                    BindableDefaultDatePicker(date: $startTime)
-                }
-
-                Spacer().frame(height: 40)
-
-                HStack {
-                    if isEvent {
-                        ToolbarButton(clipShape: Capsule()) {
-                            panel = panel == .startDate ? .hidden :
-                                .startDate
-                        } label: {
-                            HStack {
-                                Text(
-                                    startTime
-                                        .formatted(
-                                            .dateTime.day().month()
-                                                .year(.twoDigits)
-                                        )
-                                )
-                                Divider().frame(height: 12)
-
-                                Text(
-                                    startTime
-                                        .formatted(
-                                            .dateTime.hour().minute()
-                                        )
-                                )
-                            }
-                        }.offset(y: panel == .startDate ? -10 : 0)
-
-                        ToolbarButton(clipShape: Capsule()) {
-                            panel = panel == .endDate ? .hidden :
-                                .endDate
-                        } label: {
-                            HStack {
-                                Text(
-                                    endTime
-                                        .formatted(
-                                            .dateTime.day().month()
-                                                .year(.twoDigits)
-                                        )
-                                )
-
-                                Divider().frame(height: 12)
-
-                                Text(
-                                    endTime
-                                        .formatted(
-                                            .dateTime.hour().minute()
-                                        )
-                                )
-                            }
-                        }.offset(y: panel == .endDate ? -10 : 0)
-                    } else {
-                        Spacer()
-                    }
-
-                    ToolbarButton {
-                        isEvent.toggle()
-                    } label: {
-                        Image(systemName: isEvent ? "clock.fill" : "clock")
-                    }
-                }
-            }
-            .onChange(of: startTime) {
-                endTime = startTime.advanced(by: abs(duration))
-            }.onChange(of: endTime) {
-                if endTime < startTime {
-                    startTime = endTime.advanced(by: -abs(duration))
-                } else {
-                    duration = endTime.timeIntervalSince(startTime)
-                }
-            }
-            .onDisappear {
-                if isEvent {
-                    item.createEvent(startTime, endTime)
-                } else {
-                    item.deleteEvent()
-                }
-            }
-        }
     }
 
     enum CodingKeys: String, CodingKey {
@@ -717,17 +571,18 @@ struct ItemQuery: EntityQuery {
     }
 }
 
-struct TaskData: Identifiable, Codable, Equatable, Hashable {
-    var id: UUID = .init()
-    var completedAt: Date?
-}
-
 struct LocationData: Identifiable, Codable {
     var id: UUID = .init()
     var link: String?
 }
 
-struct EventData: Identifiable, Codable, Equatable {
+protocol Formable {
+    associatedtype FormData
+    func formData() -> FormData
+    mutating func apply(formData: FormData)
+}
+
+struct EventData: Identifiable, Codable, Equatable, Formable {
     var id: UUID = .init()
     var eventIdentifier: String?
     var startDate: Date
@@ -735,12 +590,43 @@ struct EventData: Identifiable, Codable, Equatable {
     var notifyAt: Date?
     var calendarIdentifier: String?
 
+    struct FormData {
+        var startDate: Date
+        var endDate: Date
+    }
+
+    func formData() -> FormData {
+        FormData(startDate: startDate, endDate: endDate)
+    }
+
+    mutating func apply(formData: FormData) {
+        startDate = formData.startDate
+        endDate = formData.endDate
+    }
+
     init(from ekEvent: EKEvent) {
         startDate = ekEvent.startDate
         endDate = ekEvent.endDate
         eventIdentifier = ekEvent.eventIdentifier
         calendarIdentifier = ekEvent.calendar.calendarIdentifier
     }
+}
+
+struct TaskData: Identifiable, Codable, Equatable, Hashable, Formable {
+    struct FormData {
+        var completedAt: Date?
+    }
+
+    func formData() -> FormData {
+        FormData(completedAt: completedAt)
+    }
+
+    mutating func apply(formData: FormData) {
+        completedAt = formData.completedAt
+    }
+
+    var id: UUID = .init()
+    var completedAt: Date?
 }
 
 struct AudioData: Identifiable, Codable {
@@ -807,438 +693,597 @@ enum FocusedField: Hashable {
     case item(id: UUID), tag(id: UUID)
 }
 
-struct ImageDataButton: View {
-    @State private var imageItem: PhotosPickerItem?
-    @Binding var imageData: ImageData?
-
-    var body: some View {
-        if imageData?.data == nil {
-            PhotosPicker(selection: $imageItem, matching: .images) {
-                Image(systemName: "photo")
-            }.onChange(of: imageItem) {
-                self.saveImage()
-            }
-        } else {
-            Button {
-                self.deleteImage()
-            } label: {
-                Image(systemName: "photo.fill")
-            }
-        }
-    }
-
-    func deleteImage() {
-        imageItem = nil
-        imageData?.data = nil
-    }
-
-    fileprivate func saveImage() {
-        Task {
-            if
-                let image = try await imageItem?
-                    .loadTransferable(type: Data.self)
-            {
-                withAnimation {
-                    if var i = imageData {
-                        i.data = image
-                        self.imageData = i
-                    } else {
-                        self.imageData = ImageData(data: image)
-                    }
-                }
-            }
-        }
-    }
-}
-
-struct AudioRecordingRow: View {
-    @Environment(\.modelContext) private var modelContext: ModelContext
-    @Binding var audioData: AudioData?
-
-    @State private var audioRecorder: AVAudioRecorder?
-    @State private var audioSession: AVAudioSession?
-    @State var recordedURL: URL?
-    @State private var audioFile: AVAudioFile?
-
-    @State private var hasPermission = false
-    @State var isRecording = false
-    @State var recorderPrepared = false
-    @State private var doneLoading = false
-
-    @State var count = 0
-    @State var startDate: Date?
-    @State private var currentTime: TimeInterval = 0
-    @State private var transcript = ""
-
-    var showPlay: Bool {
-        if let url = audioData?.url {
-            return FileManager.default
-                .fileExists(atPath: url.path()) && !isRecording
-        }
-        return false
-    }
-
-    var body: some View {
-        HStack {
-            if self.showPlay {
-                AudioPlayerRow(
-                    doneLoading: self.$doneLoading,
-                    audioData: self.$audioData
-                )
-                .opacity(!self.doneLoading ? 0.5 : 1)
-                .onAppear {
-                    if let url = audioData?.url {
-                        self.doneLoading = FileManager.default
-                            .fileExists(atPath: url.path()) && !self
-                            .isRecording
-                    }
-                }
-                .disabled(!self.doneLoading)
-            } else {
-                Button {
-                    self.setupAudioRecorder()
-                    self.toggleRecording()
-                } label: {
-                    Image(
-                        systemName: self
-                            .isRecording ? "stop.circle.fill" : "circle.fill"
-                    )
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 25, height: 25)
-                    .foregroundStyle(.red)
-                    .tint(.red)
-                }.buttonStyle(.plain)
-                    .tint(.red)
-                    .foregroundStyle(.red)
-                Spacer()
-            }
-        }
-        .onDisappear { try? self.audioSession?.setActive(false) }
-        .multilineTextAlignment(.leading)
-    }
-
-    private func setupAudioRecorder() {
-        deleteCorruptedRecording()
-        if !hasPermission {
-            Task {
-                await self.requestRecordPermission()
-            }
-        }
-    }
-
-    func toggleRecording() {
-        if isRecording {
-            stopRecording()
-            if let url = recordedURL {
-                Task {
-                    self.extractTextFromAudio(url) { result in
-                        switch result {
-                            case let .success(string):
-                                if var audio = audioData {
-                                    audio.transcript = string
-                                    self.audioData = audio
-                                } else {
-                                    self.transcript = string
-                                    let newAudio = AudioData(
-                                        url: url,
-                                        transcript: transcript
-                                    )
-                                    self.audioData = newAudio
-                                }
-                                self.doneLoading = true
-                            case let .failure(error):
-                                print(error.localizedDescription)
-                        }
-                    }
-                }
-            }
-            try? audioSession?.setActive(false)
-        } else {
-            Task {
-                let documentPath = FileManager.default.urls(
-                    for: .documentDirectory,
-                    in: .userDomainMask
-                )[0]
-                let audioFilename = documentPath
-                    .appendingPathComponent(UUID().description + ".m4a")
-                self.recordedURL = audioFilename
-                let newAudio = AudioData(url: audioFilename)
-                self.audioData = newAudio
-                try? await self.setupRecorder(audioFilename: audioFilename)
-                self.startDate = Date()
-                withAnimation { self.startRecording() }
-            }
-        }
-    }
-
-    func deleteRecording() {
-        guard let audioData else {
-            return
-        }
-        if FileManager.default.fileExists(atPath: audioData.url.path()) {
-            try? FileManager.default.removeItem(at: audioData.url)
-        }
-
-        withAnimation { self.audioData = nil }
-    }
-
-    func deleteCorruptedRecording() {
-        if
-            let audioData,
-            !FileManager.default.fileExists(atPath: audioData.url.path())
-        {
-            try? FileManager.default.removeItem(at: audioData.url)
-            self.audioData = nil
-        }
-    }
-
-    func requestRecordPermission() async {
-        if await AVAudioApplication.requestRecordPermission() {
-            hasPermission = true
-        } else {
-            hasPermission = false
-        }
-    }
-
-    func setupAudioSession() async throws {
-        if !hasPermission {
-            await requestRecordPermission()
-        }
-
-        if audioSession == nil {
-            let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playAndRecord, mode: .spokenAudio)
-            try? audioSession
-                .overrideOutputAudioPort(AVAudioSession.PortOverride.speaker)
-            try audioSession.setActive(true)
-            self.audioSession = audioSession
-        }
-    }
-
-    func setupRecorder(audioFilename: URL) async throws {
-        try? await setupAudioSession()
-        let recordingSettings: [String: Any] = [
-            AVFormatIDKey: kAudioFormatMPEG4AAC,
-            AVSampleRateKey: 12000,
-            AVNumberOfChannelsKey: 1,
-            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue,
-        ]
-        recordedURL = audioFilename
-        audioRecorder = try AVAudioRecorder(
-            url: audioFilename,
-            settings: recordingSettings
-        )
-        audioRecorder?.prepareToRecord()
-    }
-
-    func startRecording() {
-        audioRecorder?.record()
-        withAnimation { self.isRecording = true }
-    }
-
-    func stopRecording() {
-        audioRecorder?.stop()
-
-        if isRecording {
-            withAnimation { self.isRecording = false }
-        }
-
-        try? audioSession?.setActive(false)
-    }
-
-    func extractTextFromAudio(
-        _ audioURL: URL,
-        completionHandler: @escaping (Result<String, Error>) -> Void
-    ) {
-        let modelURL = Bundle.main.url(
-            forResource: "tiny",
-            withExtension: "bin"
-        )!
-        let whisper = Whisper(fromFileURL: modelURL)
-        convertAudioFileToPCMArray(fileURL: audioURL) { result in
-            switch result {
-                case let .success(success):
-                    Task {
-                        do {
-                            let segments = try await whisper
-                                .transcribe(audioFrames: success)
-                            completionHandler(.success(
-                                segments.map(\.text)
-                                    .joined()
-                            ))
-                        } catch {
-                            completionHandler(.failure(error))
-                        }
-                    }
-                case let .failure(failure):
-                    completionHandler(.failure(failure))
-            }
-        }
-    }
-
-    func convertAudioFileToPCMArray(
-        fileURL: URL,
-        completionHandler: @escaping (Result<[Float], Error>) -> Void
-    ) {
-        var options = FormatConverter.Options()
-        options.format = .wav
-        options.sampleRate = 16000
-        options.bitDepth = 16
-        options.channels = 1
-        options.isInterleaved = false
-
-        let tempURL = URL(fileURLWithPath: NSTemporaryDirectory())
-            .appendingPathComponent(UUID().uuidString)
-        let converter = FormatConverter(
-            inputURL: fileURL,
-            outputURL: tempURL,
-            options: options
-        )
-        converter.start { error in
-            if let error {
-                completionHandler(.failure(error))
-                return
-            }
-
-            let data = try! Data(contentsOf: tempURL)
-
-            let floats = stride(from: 44, to: data.count, by: 2).map {
-                data[$0 ..< $0 + 2].withUnsafeBytes {
-                    let short = Int16(littleEndian: $0.load(as: Int16.self))
-                    return max(-1.0, min(Float(short) / 32767.0, 1.0))
-                }
-            }
-
-            try? FileManager.default.removeItem(at: tempURL)
-
-            completionHandler(.success(floats))
-        }
-    }
-}
-
-struct AudioPlayerRow: View {
-    @Binding var doneLoading: Bool
-    @Binding var audioData: AudioData?
-    @State private var player: AVPlayer?
-    @State private var isPlaying = false
-    @State private var audioSession: AVAudioSession?
-    @State private var transcript = ""
-    @FocusState private var transcriptFocus: Bool
-
-    var body: some View {
-        if let data = audioData {
-            HStack {
-                Button(action: self.togglePlayback) {
-                    Image(
-                        systemName: self
-                            .isPlaying ? "stop.circle.fill" : "play.circle.fill"
-                    )
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 20, height: 20)
-                    .padding(.horizontal, 5)
-                }.buttonStyle(.plain)
-
-                if !data.transcript.isEmpty {
-                    TextField(
-                        "[transcript]",
-                        text: self.$transcript,
-                        axis: .vertical
-                    )
-                    .focused(self.$transcriptFocus)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .onChange(of: self.transcriptFocus) {
-                        if !self.transcriptFocus {
-                            if self.transcript.isNotEmpty {
-                                self.audioData?.transcript = self.transcript
-                            }
-                        }
-                    }
-                    .onAppear {
-                        self.transcript = data.transcript
-                    }.onSubmit {
-                        if self.transcript.isNotEmpty {
-                            self.audioData?.transcript = self.transcript
-                        }
-                    }.submitScope()
-                } else {
-                    HStack {
-                        ProgressView("Transcribing...")
-                            .padding(.vertical)
-                    }
-                    .onChange(of: self.audioData?.transcript) {
-                        guard let d = audioData else {
-                            return
-                        }
-                        if
-                            d.transcript.isNotEmpty &&
-                            d.transcript != self.transcript
-                        {
-                            self.transcript = d.transcript
-                        }
-                    }
-                    .labelsHidden()
-                    .progressViewStyle(.linear)
-                }
-            }
-        }
-    }
-
-    func deleteRecording() {
-        guard let audioData else {
-            return
-        }
-        if FileManager.default.fileExists(atPath: audioData.url.path()) {
-            try? FileManager.default.removeItem(at: audioData.url)
-        }
-
-        self.audioData = nil
-    }
-
-    private func setupAudioPlayer() {
-        guard let data = audioData else {
-            return
-        }
-
-        if !FileManager.default.fileExists(atPath: data.url.path()) {
-            withAnimation {
-                self.audioData = nil
-            }
-        }
-
-        let audioSession = AVAudioSession.sharedInstance()
-        try? audioSession.setCategory(.playback, mode: .spokenAudio)
-        try? audioSession
-            .overrideOutputAudioPort(AVAudioSession.PortOverride.speaker)
-        try? audioSession.setActive(true)
-        self.audioSession = audioSession
-
-        player = AVPlayer(url: data.url)
-
-        NotificationCenter.default.addObserver(
-            forName: .AVPlayerItemDidPlayToEndTime,
-            object: player?.currentItem,
-            queue: .main
-        ) { _ in
-            self.isPlaying = false
-            self.player?.seek(to: .zero)
-        }
-    }
-
-    private func togglePlayback() {
-        setupAudioPlayer()
-        guard let player = player else {
-            return
-        }
-        if isPlaying {
-            player.seek(to: .zero)
-            player.pause()
-        } else {
-            player.play()
-        }
-        withAnimation {
-            self.isPlaying.toggle()
-        }
-    }
-}
+// struct EventDataRow: View {
+//    var item: Item
+//    @State var startTime: Date
+//    @State var duration: TimeInterval
+//    @State var endTime: Date
+//    @State var isEvent: Bool
+//    @State var panel: Panel = .hidden
+//    enum Panel {
+//        case hidden, startDate, endDate
+//    }
+//
+//    init(item: Item) {
+//        self.item = item
+//        if let eventData = item.eventData {
+//            startTime = eventData.startDate
+//            endTime = eventData.endDate
+//            duration = eventData.endDate
+//                .timeIntervalSince(eventData.startDate)
+//            isEvent = true
+//        } else {
+//            startTime = Date()
+//            endTime = Date().advanced(by: 3600)
+//            duration = 3600
+//            isEvent = false
+//        }
+//    }
+//
+//    var body: some View {
+//        VStack {
+//            if isEvent {
+//                VStack {
+//                    switch panel {
+//                        case .startDate:
+//
+//                            BindableDefaultDatePicker(
+//                                date: $startTime
+//                            )
+//                            .datePickerStyle(.graphical)
+//                            .labelsHidden()
+//                            Divider()
+//
+//                            DatePicker(
+//                                "",
+//                                selection: $startTime,
+//                                displayedComponents: [
+//                                    .hourAndMinute,
+//                                ]
+//                            ).datePickerStyle(.wheel)
+//                                .labelsHidden()
+//                                .frame(height: 35)
+//                                .clipShape(Capsule())
+//
+//                        case .endDate:
+//                            BindableDefaultDatePicker(
+//                                date: $endTime
+//                            )
+//                            .datePickerStyle(.graphical)
+//                            .labelsHidden()
+//                            Divider()
+//                            DatePicker(
+//                                "",
+//                                selection: $endTime,
+//                                displayedComponents: [
+//                                    .hourAndMinute,
+//                                ]
+//                            ).datePickerStyle(.wheel)
+//                                .labelsHidden()
+//                                .frame(height: 35)
+//                                .clipShape(Capsule())
+//
+//                        default:
+//                            EmptyView()
+//                    }
+//                }
+//
+//            } else {
+//                BindableDefaultDatePicker(date: $startTime)
+//            }
+//
+//            Spacer().frame(height: 40)
+//
+//            HStack {
+//                if isEvent {
+//                    ToolbarButton(clipShape: Capsule()) {
+//                        panel = panel == .startDate ? .hidden :
+//                            .startDate
+//                    } label: {
+//                        HStack {
+//                            Text(
+//                                startTime
+//                                    .formatted(
+//                                        .dateTime.day().month()
+//                                        .year(.twoDigits)
+//                                    )
+//                            )
+//                            Divider().frame(height: 12)
+//
+//                            Text(
+//                                startTime
+//                                    .formatted(
+//                                        .dateTime.hour().minute()
+//                                    )
+//                            )
+//                        }
+//                    }.offset(y: panel == .startDate ? -10 : 0)
+//
+//                    ToolbarButton(clipShape: Capsule()) {
+//                        panel = panel == .endDate ? .hidden :
+//                            .endDate
+//                    } label: {
+//                        HStack {
+//                            Text(
+//                                endTime
+//                                    .formatted(
+//                                        .dateTime.day().month()
+//                                        .year(.twoDigits)
+//                                    )
+//                            )
+//
+//                            Divider().frame(height: 12)
+//
+//                            Text(
+//                                endTime
+//                                    .formatted(
+//                                        .dateTime.hour().minute()
+//                                    )
+//                            )
+//                        }
+//                    }.offset(y: panel == .endDate ? -10 : 0)
+//                } else {
+//                    Spacer()
+//                }
+//
+//                ToolbarButton {
+//                    isEvent.toggle()
+//                } label: {
+//                    Image(systemName: isEvent ? "clock.fill" : "clock")
+//                }
+//            }
+//        }
+//        .onChange(of: startTime) {
+//            endTime = startTime.advanced(by: abs(duration))
+//        }.onChange(of: endTime) {
+//            if endTime < startTime {
+//                startTime = endTime.advanced(by: -abs(duration))
+//            } else {
+//                duration = endTime.timeIntervalSince(startTime)
+//            }
+//        }
+//        .onDisappear {
+//            if isEvent {
+//                item.createEvent(startTime, endTime)
+//            } else {
+//                item.deleteEvent()
+//            }
+//        }
+//    }
+// }
+// struct ImageDataButton: View {
+//    @State private var imageItem: PhotosPickerItem?
+//    @Binding var imageData: ImageData?
+//
+//    var body: some View {
+//        if imageData?.data == nil {
+//            PhotosPicker(selection: $imageItem, matching: .images) {
+//                Image(systemName: "photo")
+//            }.onChange(of: imageItem) {
+//                self.saveImage()
+//            }
+//        } else {
+//            Button {
+//                self.deleteImage()
+//            } label: {
+//                Image(systemName: "photo.fill")
+//            }
+//        }
+//    }
+//
+//    func deleteImage() {
+//        imageItem = nil
+//        imageData?.data = nil
+//    }
+//
+//    fileprivate func saveImage() {
+//        Task {
+//            if
+//                let image = try await imageItem?
+//                    .loadTransferable(type: Data.self)
+//            {
+//                withAnimation {
+//                    if var i = imageData {
+//                        i.data = image
+//                        self.imageData = i
+//                    } else {
+//                        self.imageData = ImageData(data: image)
+//                    }
+//                }
+//            }
+//        }
+//    }
+// }
+//
+// struct AudioRecordingRow: View {
+//    @Environment(\.modelContext) private var modelContext: ModelContext
+//    @Binding var audioData: AudioData?
+//
+//    @State private var audioRecorder: AVAudioRecorder?
+//    @State private var audioSession: AVAudioSession?
+//    @State var recordedURL: URL?
+//    @State private var audioFile: AVAudioFile?
+//
+//    @State private var hasPermission = false
+//    @State var isRecording = false
+//    @State var recorderPrepared = false
+//    @State private var doneLoading = false
+//
+//    @State var count = 0
+//    @State var startDate: Date?
+//    @State private var currentTime: TimeInterval = 0
+//    @State private var transcript = ""
+//
+//    var showPlay: Bool {
+//        if let url = audioData?.url {
+//            return FileManager.default
+//                .fileExists(atPath: url.path()) && !isRecording
+//        }
+//        return false
+//    }
+//
+//    var body: some View {
+//        HStack {
+//            if self.showPlay {
+//                AudioPlayerRow(
+//                    doneLoading: self.$doneLoading,
+//                    audioData: self.$audioData
+//                )
+//                .opacity(!self.doneLoading ? 0.5 : 1)
+//                .onAppear {
+//                    if let url = audioData?.url {
+//                        self.doneLoading = FileManager.default
+//                            .fileExists(atPath: url.path()) && !self
+//                            .isRecording
+//                    }
+//                }
+//                .disabled(!self.doneLoading)
+//            } else {
+//                Button {
+//                    self.setupAudioRecorder()
+//                    self.toggleRecording()
+//                } label: {
+//                    Image(
+//                        systemName: self
+//                            .isRecording ? "stop.circle.fill" : "circle.fill"
+//                    )
+//                    .resizable()
+//                    .scaledToFit()
+//                    .frame(width: 25, height: 25)
+//                    .foregroundStyle(.red)
+//                    .tint(.red)
+//                }.buttonStyle(.plain)
+//                    .tint(.red)
+//                    .foregroundStyle(.red)
+//                Spacer()
+//            }
+//        }
+//        .onDisappear { try? self.audioSession?.setActive(false) }
+//        .multilineTextAlignment(.leading)
+//    }
+//
+//    private func setupAudioRecorder() {
+//        deleteCorruptedRecording()
+//        if !hasPermission {
+//            Task {
+//                await self.requestRecordPermission()
+//            }
+//        }
+//    }
+//
+//    func toggleRecording() {
+//        if isRecording {
+//            stopRecording()
+//            if let url = recordedURL {
+//                Task {
+//                    self.extractTextFromAudio(url) { result in
+//                        switch result {
+//                            case let .success(string):
+//                                if var audio = audioData {
+//                                    audio.transcript = string
+//                                    self.audioData = audio
+//                                } else {
+//                                    self.transcript = string
+//                                    let newAudio = AudioData(
+//                                        url: url,
+//                                        transcript: transcript
+//                                    )
+//                                    self.audioData = newAudio
+//                                }
+//                                self.doneLoading = true
+//                            case let .failure(error):
+//                                print(error.localizedDescription)
+//                        }
+//                    }
+//                }
+//            }
+//            try? audioSession?.setActive(false)
+//        } else {
+//            Task {
+//                let documentPath = FileManager.default.urls(
+//                    for: .documentDirectory,
+//                    in: .userDomainMask
+//                )[0]
+//                let audioFilename = documentPath
+//                    .appendingPathComponent(UUID().description + ".m4a")
+//                self.recordedURL = audioFilename
+//                let newAudio = AudioData(url: audioFilename)
+//                self.audioData = newAudio
+//                try? await self.setupRecorder(audioFilename: audioFilename)
+//                self.startDate = Date()
+//                withAnimation { self.startRecording() }
+//            }
+//        }
+//    }
+//
+//    func deleteRecording() {
+//        guard let audioData else {
+//            return
+//        }
+//        if FileManager.default.fileExists(atPath: audioData.url.path()) {
+//            try? FileManager.default.removeItem(at: audioData.url)
+//        }
+//
+//        withAnimation { self.audioData = nil }
+//    }
+//
+//    func deleteCorruptedRecording() {
+//        if
+//            let audioData,
+//            !FileManager.default.fileExists(atPath: audioData.url.path())
+//        {
+//            try? FileManager.default.removeItem(at: audioData.url)
+//            self.audioData = nil
+//        }
+//    }
+//
+//    func requestRecordPermission() async {
+//        if await AVAudioApplication.requestRecordPermission() {
+//            hasPermission = true
+//        } else {
+//            hasPermission = false
+//        }
+//    }
+//
+//    func setupAudioSession() async throws {
+//        if !hasPermission {
+//            await requestRecordPermission()
+//        }
+//
+//        if audioSession == nil {
+//            let audioSession = AVAudioSession.sharedInstance()
+//            try audioSession.setCategory(.playAndRecord, mode: .spokenAudio)
+//            try? audioSession
+//                .overrideOutputAudioPort(AVAudioSession.PortOverride.speaker)
+//            try audioSession.setActive(true)
+//            self.audioSession = audioSession
+//        }
+//    }
+//
+//    func setupRecorder(audioFilename: URL) async throws {
+//        try? await setupAudioSession()
+//        let recordingSettings: [String: Any] = [
+//            AVFormatIDKey: kAudioFormatMPEG4AAC,
+//            AVSampleRateKey: 12000,
+//            AVNumberOfChannelsKey: 1,
+//            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue,
+//        ]
+//        recordedURL = audioFilename
+//        audioRecorder = try AVAudioRecorder(
+//            url: audioFilename,
+//            settings: recordingSettings
+//        )
+//        audioRecorder?.prepareToRecord()
+//    }
+//
+//    func startRecording() {
+//        audioRecorder?.record()
+//        withAnimation { self.isRecording = true }
+//    }
+//
+//    func stopRecording() {
+//        audioRecorder?.stop()
+//
+//        if isRecording {
+//            withAnimation { self.isRecording = false }
+//        }
+//
+//        try? audioSession?.setActive(false)
+//    }
+//
+//    func extractTextFromAudio(
+//        _ audioURL: URL,
+//        completionHandler: @escaping (Result<String, Error>) -> Void
+//    ) {
+//        let modelURL = Bundle.main.url(
+//            forResource: "tiny",
+//            withExtension: "bin"
+//        )!
+//        let whisper = Whisper(fromFileURL: modelURL)
+//        convertAudioFileToPCMArray(fileURL: audioURL) { result in
+//            switch result {
+//                case let .success(success):
+//                    Task {
+//                        do {
+//                            let segments = try await whisper
+//                                .transcribe(audioFrames: success)
+//                            completionHandler(.success(
+//                                segments.map(\.text)
+//                                    .joined()
+//                            ))
+//                        } catch {
+//                            completionHandler(.failure(error))
+//                        }
+//                    }
+//                case let .failure(failure):
+//                    completionHandler(.failure(failure))
+//            }
+//        }
+//    }
+//
+//    func convertAudioFileToPCMArray(
+//        fileURL: URL,
+//        completionHandler: @escaping (Result<[Float], Error>) -> Void
+//    ) {
+//        var options = FormatConverter.Options()
+//        options.format = .wav
+//        options.sampleRate = 16000
+//        options.bitDepth = 16
+//        options.channels = 1
+//        options.isInterleaved = false
+//
+//        let tempURL = URL(fileURLWithPath: NSTemporaryDirectory())
+//            .appendingPathComponent(UUID().uuidString)
+//        let converter = FormatConverter(
+//            inputURL: fileURL,
+//            outputURL: tempURL,
+//            options: options
+//        )
+//        converter.start { error in
+//            if let error {
+//                completionHandler(.failure(error))
+//                return
+//            }
+//
+//            let data = try! Data(contentsOf: tempURL)
+//
+//            let floats = stride(from: 44, to: data.count, by: 2).map {
+//                data[$0 ..< $0 + 2].withUnsafeBytes {
+//                    let short = Int16(littleEndian: $0.load(as: Int16.self))
+//                    return max(-1.0, min(Float(short) / 32767.0, 1.0))
+//                }
+//            }
+//
+//            try? FileManager.default.removeItem(at: tempURL)
+//
+//            completionHandler(.success(floats))
+//        }
+//    }
+// }
+//
+// struct AudioPlayerRow: View {
+//    @Binding var doneLoading: Bool
+//    @Binding var audioData: AudioData?
+//    @State private var player: AVPlayer?
+//    @State private var isPlaying = false
+//    @State private var audioSession: AVAudioSession?
+//    @State private var transcript = ""
+//    @FocusState private var transcriptFocus: Bool
+//
+//    var body: some View {
+//        if let data = audioData {
+//            HStack {
+//                Button(action: self.togglePlayback) {
+//                    Image(
+//                        systemName: self
+//                            .isPlaying ? "stop.circle.fill" :
+//                            "play.circle.fill"
+//                    )
+//                    .resizable()
+//                    .scaledToFit()
+//                    .frame(width: 20, height: 20)
+//                    .padding(.horizontal, 5)
+//                }.buttonStyle(.plain)
+//
+//                if !data.transcript.isEmpty {
+//                    TextField(
+//                        "[transcript]",
+//                        text: self.$transcript,
+//                        axis: .vertical
+//                    )
+//                    .focused(self.$transcriptFocus)
+//                    .fixedSize(horizontal: false, vertical: true)
+//                    .onChange(of: self.transcriptFocus) {
+//                        if !self.transcriptFocus {
+//                            if self.transcript.isNotEmpty {
+//                                self.audioData?.transcript = self.transcript
+//                            }
+//                        }
+//                    }
+//                    .onAppear {
+//                        self.transcript = data.transcript
+//                    }.onSubmit {
+//                        if self.transcript.isNotEmpty {
+//                            self.audioData?.transcript = self.transcript
+//                        }
+//                    }.submitScope()
+//                } else {
+//                    HStack {
+//                        ProgressView("Transcribing...")
+//                            .padding(.vertical)
+//                    }
+//                    .onChange(of: self.audioData?.transcript) {
+//                        guard let d = audioData else {
+//                            return
+//                        }
+//                        if
+//                            d.transcript.isNotEmpty &&
+//                            d.transcript != self.transcript
+//                        {
+//                            self.transcript = d.transcript
+//                        }
+//                    }
+//                    .labelsHidden()
+//                    .progressViewStyle(.linear)
+//                }
+//            }
+//        }
+//    }
+//
+//    func deleteRecording() {
+//        guard let audioData else {
+//            return
+//        }
+//        if FileManager.default.fileExists(atPath: audioData.url.path()) {
+//            try? FileManager.default.removeItem(at: audioData.url)
+//        }
+//
+//        self.audioData = nil
+//    }
+//
+//    private func setupAudioPlayer() {
+//        guard let data = audioData else {
+//            return
+//        }
+//
+//        if !FileManager.default.fileExists(atPath: data.url.path()) {
+//            withAnimation {
+//                self.audioData = nil
+//            }
+//        }
+//
+//        let audioSession = AVAudioSession.sharedInstance()
+//        try? audioSession.setCategory(.playback, mode: .spokenAudio)
+//        try? audioSession
+//            .overrideOutputAudioPort(AVAudioSession.PortOverride.speaker)
+//        try? audioSession.setActive(true)
+//        self.audioSession = audioSession
+//
+//        player = AVPlayer(url: data.url)
+//
+//        NotificationCenter.default.addObserver(
+//            forName: .AVPlayerItemDidPlayToEndTime,
+//            object: player?.currentItem,
+//            queue: .main
+//        ) { _ in
+//            self.isPlaying = false
+//            self.player?.seek(to: .zero)
+//        }
+//    }
+//
+//    private func togglePlayback() {
+//        setupAudioPlayer()
+//        guard let player = player else {
+//            return
+//        }
+//        if isPlaying {
+//            player.seek(to: .zero)
+//            player.pause()
+//        } else {
+//            player.play()
+//        }
+//        withAnimation {
+//            self.isPlaying.toggle()
+//        }
+//    }
+// }

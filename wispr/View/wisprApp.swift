@@ -11,19 +11,14 @@ import UIKit
 
 @main
 struct wisprApp: App {
-    @State var audioService: AudioService = .init()
-    @State var activeTheme: ActiveTheme = .init()
-    @State var dayScreenReader: DayScreenReader = .init()
+    @State var theme: ThemeStateService = .init()
 
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environment(SharedState.calendarService)
-                .environment(audioService)
-                .environment(dayScreenReader)
-                .environment(activeTheme)
+                .environment(theme)
                 .preferredColorScheme(.dark)
-                .accentColor(activeTheme.theme.toolbarForegroundColor)
+                .accentColor(theme.activeTheme.accentColor)
         }
         .modelContainer(SharedState.sharedModelContainer)
     }

@@ -9,8 +9,11 @@ import SwiftUI
 
 struct TimeLineScreen: View {
     @Environment(\.modelContext) private var modelContext: ModelContext
-    @Environment(ActiveTheme.self) private var activeTheme: ActiveTheme
-    @Environment(NavigatorService.self) private var nav: NavigatorService
+    @Environment(ThemeStateService.self) private var theme: ThemeStateService
+    @Environment(
+        NavigationStateService
+            .self
+    ) private var navigationStateService: NavigationStateService
 
     @Query(
         filter: ItemStore.allActiveItemsPredicate(),
@@ -26,80 +29,101 @@ struct TimeLineScreen: View {
 
     @State private var loaded = false
 
+    func title() -> some View {
+        Text("Timeline")
+    }
+
     var body: some View {
-        ScrollViewReader { proxy in
-            VStack {
-                if self.loaded {
-                    ScrollView {
-                        LazyVStack(pinnedViews: [.sectionHeaders]) {
-                            ForEach(
-                                self.days.sorted(by: { $0.key < $1.key }),
-                                id: \.key
-                            ) { key, value in
-                                Section(header: self.sectionHeader(key)) {
-                                    DGroups(items: value)
-                                        .padding(.leading, 20)
-                                        .scrollTransition(
-                                            .interactive
-                                                .threshold(
-                                                    .visible
-                                                        .inset(by: 75)
-                                                )
-                                        ) { content, phase in
-                                            content
-                                                .opacity(
-                                                    phase
-                                                        .isIdentity ? 1 : 0
-                                                )
-                                                .blur(
-                                                    radius: phase
-                                                        .isIdentity ? 0 : 40
-                                                )
-                                                .scaleEffect(
-                                                    x: 1,
-                                                    y: phase
-                                                        .isIdentity ?
-                                                        1 :
-                                                        0,
-                                                    anchor: .bottom
-                                                )
-                                        }
+        Screen(title: title) {
+            ScrollViewReader { proxy in
+                VStack {
+                    if loaded {
+                        ScrollView {
+                            LazyVStack(pinnedViews: [.sectionHeaders]) {
+                                VStack {
+                                    HStack {
+                                        Text("Once upon a wispr...")
+                                            .childItem()
+                                            .opacity(0.5)
+                                        Spacer()
+                                    }
+                                    Spacer()
                                 }
+                                .frame(height: Spacing.l)
+
+                                ForEach(
+                                    days.sorted(by: { $0.key < $1.key }),
+                                    id: \.key
+                                ) { key, value in
+                                    Section(
+                                        header: sectionHeader(key)
+                                            .padding(
+                                                .bottom,
+                                                Spacing.m
+                                            )
+                                    ) {
+                                        VStack {
+                                            ItemDisclosures(
+                                                items: value
+                                            )
+                                            .scrollTransition(Spacing.l)
+                                            Spacer()
+                                                .frame(height: Spacing.l)
+                                        }.padding(Spacing.m)
+                                    }.id(key)
+                                        .opacity(
+                                            key < navigationStateService
+                                                .activeDate ? 0.65 : 1
+                                        )
+                                }
+
+                                VStack {
+                                    HStack {
+                                        Text("...")
+                                            .childItem()
+                                            .opacity(0.5)
+                                        Spacer()
+                                    }
+                                    Spacer()
+                                }
+                                .frame(height: Spacing.l)
                             }
-                            Spacer().frame(height: 80)
+                            .id("timeline")
                         }
-                        .id(self.nav.activeBoard.board?.id.description ?? "all")
-                    }
-                    .onAppear {
-                        scrollToActiveDate(true, proxy: proxy)
-                    }
-                    .onChange(of: self.nav.activeDate) {
-                        scrollToActiveDate(proxy: proxy, true)
-                    }
-                    .defaultScrollAnchor(.top)
-                } else {
-                    ProgressView().progressViewStyle(.circular)
-                        .task {
-                            days = await self.loadFilteredDays()
+                        .onAppear {
+                            scrollToActiveDate(true, proxy: proxy)
                         }
+                        .onChange(of: navigationStateService.activeDate) {
+                            scrollToActiveDate(proxy: proxy, true)
+                        }
+                        .defaultScrollAnchor(.top)
+                    } else {
+                        ProgressView().progressViewStyle(.circular)
+                            .task {
+                                days = await loadFilteredDays()
+                            }
+                    }
                 }
             }
         }
-        .hideSystemBackground()
         .onChange(of: items) {
             Task {
-                days = await self.loadFilteredDays()
+                days = await loadFilteredDays()
             }
-        }.onChange(of: nav.activeBoard.board) {
+        }.onChange(of: navigationStateService.bookState.book) {
             Task {
-                days = await self.loadFilteredDays()
+                days = await loadFilteredDays()
             }
         }.task {
-            for i in self.items.filter({ $0.text.isEmpty }) {
-                self.modelContext.delete(i)
-            }
-            days = await self.loadFilteredDays()
+            days = await loadFilteredDays()
         }
+    }
+
+    @ViewBuilder
+    func sectionHeader(_ key: Date) -> some View {
+        DateTitleWithDivider(date: key)
+            .titleTextStyle()
+            .fontWeight(.regular)
     }
 
     func scrollToActiveDate(
@@ -108,27 +132,27 @@ struct TimeLineScreen: View {
         _ animated: Bool = false
     ) {
         Task {
-            if days[nav.activeDate] == nil {
+            if days[navigationStateService.activeDate] == nil {
                 let sortedKeys = days.keys.sorted()
                 if
                     let next = sortedKeys.first(where: { $0 >
-                            nav.activeDate
+                            navigationStateService.activeDate
                     })
                 {
-                    withAnimation {
+                    withAnimation(animated ? .smooth() : nil) {
                         proxy.scrollTo(next, anchor: .top)
                     }
                 }
 
-                if nav.onTimeline, !onAppear {
+                if navigationStateService.onTimeline, !onAppear {
                     withAnimation(animated ? .smooth : nil) {
-                        self.nav.goToDayScreen()
+                        navigationStateService.goToDayScreen()
                     }
                 }
             } else {
                 withAnimation(animated ? .smooth : nil) {
                     proxy.scrollTo(
-                        self.nav.activeDate,
+                        navigationStateService.activeDate,
                         anchor: .top
                     )
                 }
@@ -138,30 +162,32 @@ struct TimeLineScreen: View {
 
     func loadFilteredDays() async -> [Date: [Item]] {
         withAnimation {
-            self.loaded = false
+            loaded = false
         }
 
         let d = await filterDays()
 
         withAnimation {
-            self.loaded = true
+            loaded = true
         }
         return d
     }
 
     func filterDays() async -> [Date: [Item]] {
-        let days = Dictionary(
-            grouping: items,
+        let i = items.filter {
+            guard let book = navigationStateService.bookState.book else { return true }
+            return $0.tags.contains(where: book.tags.contains)
+        }
+        .sorted(by: {
+            $0.timestamp < $1.timestamp && $0.position < $1.position
+        })
+
+        return Dictionary(
+            grouping: i,
             by: {
                 Calendar.current.startOfDay(for: $0.timestamp)
             }
         )
-        return days.filter { _, items in
-            guard let board = nav.activeBoard.board else { return true }
-            return items.contains { item in
-                item.tags.contains(where: board.tags.contains)
-            }
-        }
     }
 
     func isToday(_ date: Date) -> Bool {
@@ -170,40 +196,6 @@ struct TimeLineScreen: View {
 
     func isFuture(_ date: Date) -> Bool {
         return date >= todayDate
-    }
-
-    @ViewBuilder
-    func sectionHeader(_ key: Date) -> some View {
-        AniButton {
-            self.nav.activeDate = key
-            self.nav.path.append(.dayScreen)
-        } label: {
-            HStack {
-                if key == self.nav.activeDate {
-                    Image(systemName: "asterisk")
-                        .headerLabelStyler()
-                }
-
-                Text(key.formatted(date: .abbreviated, time: .omitted))
-                    .headerLabelStyler()
-
-                Spacer()
-
-                Text(key.formatted(.dateTime.weekday()))
-                    .headerLabelStyler()
-            }
-            .padding(.vertical, 30)
-        }
-        .scrollTransition(.interactive.threshold(.visible)) { content, phase in
-            content.opacity(phase.isIdentity ? 1 : 0)
-                .blur(radius: phase.isIdentity ? 0 : 40)
-                .scaleEffect(
-                    x: 1,
-                    y: phase.isIdentity ? 1 : 0,
-                    anchor:
-                    phase.value > 0 ? .top : .bottom
-                )
-        }
     }
 
     @ViewBuilder

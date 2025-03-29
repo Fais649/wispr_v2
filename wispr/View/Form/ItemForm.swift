@@ -9,29 +9,29 @@ import SwiftData
 import SwiftUI
 
 struct ItemForm: View {
-    @Environment(NavigatorService.self) private var nav: NavigatorService
-    @Environment(\.modelContext) private var modelContext: ModelContext
     @Environment(
-        CalendarService
+        NavigationStateService
             .self
-    ) private var calendarService: CalendarService
+    ) private var navigationStateService: NavigationStateService
+    @Environment(\.modelContext) private var modelContext: ModelContext
     @FocusState var focus: FocusedField?
 
     var item: Item
 
+    @State private var timestamp: Date
     @State private var text: String
     @State private var taskData: TaskData?
-    @State private var eventData: EventData?
+    @State private var eventFormData: EventData.FormData?
     @State private var children: [Item]
     @State private var tags: [Tag]
-    @State private var sheet: ItemFormSheets? = nil
 
     init(item: Item) {
         let i = item
         self.item = i
+        timestamp = i.timestamp
         text = i.text
         taskData = i.taskData
-        eventData = i.eventData
+        eventFormData = i.eventData?.formData()
         children = i.children
         tags = i.tags
     }
@@ -43,93 +43,89 @@ struct ItemForm: View {
 
     @State var isExpanded = true
 
+    func title() -> some View {
+        VStack {
+            TxtField(
+                label: "...",
+                text: $text,
+                focusState: $focus,
+                focus: .item(id: item.id)
+            ) { isTextEmpty in
+                if isTextEmpty {
+                    focus = .item(id: item.id)
+                    return
+                }
+
+                let newChild = ItemStore.create(
+                    timestamp: item.timestamp,
+                    parent: item,
+                    position: children.count,
+                    taskData: item.taskData
+                )
+                children.append(newChild)
+                DispatchQueue.main.async {
+                    focus = .item(id: newChild.id)
+                }
+            }
+            .onChange(of: focus) {
+                if case let .item(id: id) = focus {
+                    let toDelete = children
+                        .filter { $0.text.isEmpty && $0.id != id }
+                    children
+                        .removeAll {
+                            toDelete.map { $0.id }.contains($0.id)
+                        }
+                }
+            }
+            .onAppear {
+                if text.isEmpty {
+                    focus = .item(id: item.id)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    func trailingTitle() -> some View {
+        Text(item.timestamp.formatted(.dateTime.day().month().year()))
+    }
+
+    @ViewBuilder
+    func subtitle() -> some View {
+        if let eventFormData {
+            Text(
+                eventFormData.startDate
+                    .formatted(.dateTime.hour().minute())
+            )
+            Text("-")
+            Text(eventFormData.endDate.formatted(.dateTime.hour().minute()))
+        }
+    }
+
     var body: some View {
-        List {
-            DisclosureGroup(isExpanded: $isExpanded) {
+        Screen(title: title, trailingTitle: trailingTitle, subtitle: subtitle) {
+            Lst {
                 ForEach(
                     children.sorted(by: { $0.position < $1.position }),
                     id: \.self
                 ) { child in
                     Child(children: $children, child: child, focus: $focus)
-                        .fontWeight(.light)
                 }
-            } label: {
-                TextField("...", text: $text, axis: .vertical)
-                    .focused($focus, equals: .item(id: item.id))
-                    .background(item.backgroundColor)
-                    .onChange(of: focus) {
-                        if case let .item(id: id) = focus {
-                            let toDelete = children
-                                .filter { $0.text.isEmpty && $0.id != id }
-                            children
-                                .removeAll {
-                                    toDelete.map { $0.id }.contains($0.id)
-                                }
-                        }
-                    }
-                    .onChange(of: text) {
-                        guard text.contains("\n") else { return }
-                        text = text.replacing("\n", with: "")
-
-                        if text.isEmpty {
-                            focus = .item(id: item.id)
-                            return
-                        }
-
-                        let newChild = ItemStore.create(
-                            timestamp: item.timestamp,
-                            parent: item,
-                            position: children.count,
-                            taskData: item.taskData
-                        )
-                        children.append(newChild)
-                        DispatchQueue.main.async {
-                            focus = .item(id: newChild.id)
-                        }
-                    }
-                    .onAppear {
-                        if text.isEmpty {
-                            focus = .item(id: item.id)
-                        }
-                    }
             }
-            .itemDisclosureGroupStyler(hideExpandButton: true)
         }
-        .defaultScrollAnchor(.top)
-        .navigatorDatePickerButtonLabel {
-            HStack {
-                DefaultDatePickerButtonLabel()
-                Image(systemName: item.isEvent ? "clock.fill" : "clock")
-
-                if let event = item.eventData {
-                    Text(
-                        event.startDate
-                            .formatted(.dateTime.hour().minute())
-                    )
-                    Divider().frame(height: 12)
-                    Text(event.endDate.formatted(.dateTime.hour().minute()))
-                }
-            }
+        .dateShelf {
+            ItemFormDateShelfView($eventFormData, item.timestamp)
         }
         .onDisappear {
             item.commit(
-                modelContext,
+                timestamp: timestamp,
                 text: text,
                 taskData: taskData,
-                eventData: eventData,
+                eventFormData: eventFormData,
                 tags: tags,
                 children: children.filter { $0.text.isNotEmpty }
             )
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .sheet(item: $sheet) { _ in
-            VStack {
-                TagSelector(selectedItemTags: $tags)
-            }
-        }
-        .toolbarTitleDisplayMode(.inline)
-        .navigationBarBackButtonHidden(text.isEmpty)
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 HStack {
@@ -144,7 +140,7 @@ struct ItemForm: View {
                     Spacer()
                 }
             }
-        }.hideSystemBackground()
+        }
     }
 
     struct Child: View {
@@ -170,45 +166,43 @@ struct ItemForm: View {
                     }
                 }
 
-                TextField("", text: $child.text, axis: .vertical)
-                    .focused($focus, equals: .item(id: child.id))
-                    .onChange(of: child.text) {
-                        guard isFocused() else { return }
-                        guard child.text.contains("\n") else { return }
-                        child.text = child.text.replacing(
-                            "\n",
-                            with: ""
-                        )
-
-                        if child.text.isNotEmpty {
-                            guard let i = children.firstIndex(of: child) else {
-                                return
-                            }
-
-                            let index = i + 1 <= children.endIndex
-                                ? i + 1
-                                : children.count
-
-                            let newChild = ItemStore.create(
-                                timestamp: child.timestamp,
-                                parent: child.parent,
-                                position: index,
-                                taskData: child.taskData
-                            )
-
-                            children.insert(
-                                newChild,
-                                at: index
-                            )
-
-                            DispatchQueue.main.async {
-                                focus = .item(id: newChild.id)
-                            }
-                        } else {
-                            children.removeAll { $0.id == child.id }
-                        }
+                TxtField(
+                    label: "",
+                    text: $child.text,
+                    focusState: $focus,
+                    focus: .item(id: child.id)
+                ) { textEmpty in
+                    if textEmpty {
+                        children.removeAll { $0.id == child.id }
+                        return
                     }
+
+                    guard let i = children.firstIndex(of: child) else {
+                        return
+                    }
+
+                    let index = i + 1 <= children.endIndex
+                        ? i + 1
+                        : children.count
+
+                    let newChild = ItemStore.create(
+                        timestamp: child.timestamp,
+                        parent: child.parent,
+                        position: index,
+                        taskData: child.taskData
+                    )
+
+                    children.insert(
+                        newChild,
+                        at: index
+                    )
+
+                    DispatchQueue.main.async {
+                        focus = .item(id: newChild.id)
+                    }
+                }
             }
+            .childItem()
             .toolbar {
                 if isFocused() {
                     ToolbarItemGroup(placement: .keyboard) {

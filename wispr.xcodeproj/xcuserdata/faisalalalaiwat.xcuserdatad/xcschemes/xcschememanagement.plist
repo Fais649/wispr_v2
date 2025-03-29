@@ -16,6 +16,8 @@
 		</dict>
 		<key>widgetExtension.xcscheme_^#shared#^_</key>
 		<dict>
+			<key>isShown</key>
+			<true/>
 			<key>orderHint</key>
 			<integer>1</integer>
 		</dict>
@@ -43,6 +45,11 @@
 			<true/>
 		</dict>
 		<key>A2A587A12D3120F30000B20D</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>A2B9ACF12D5B249C0087911B</key>
 		<dict>
 			<key>primary</key>
 			<true/>

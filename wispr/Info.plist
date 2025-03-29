@@ -7,6 +7,22 @@
 	<key>UIAppFonts</key>
 	<array>
 		<string>GohuFont11NerdFontMono-Regular.ttf</string>
+		<string>NotoSerif-Black.ttf</string>
+		<string>NotoSerif-BlackItalic.ttf</string>
+		<string>NotoSerif-ExtraBold.ttf</string>
+		<string>NotoSerif-ExtraBoldItalic.ttf</string>
+		<string>NotoSerif-SemiBold.ttf</string>
+		<string>NotoSerif-SemiBoldItalic.ttf</string>
+		<string>NotoSerif-Regular.ttf</string>
+		<string>NotoSerif-Italic.ttf</string>
+		<string>NotoSerif-Medium.ttf</string>
+		<string>NotoSerif-MediumItalic.ttf</string>
+		<string>NotoSerif-Thin.ttf</string>
+		<string>NotoSerif-ThinItalic.ttf</string>
+		<string>NotoSerif-Light.ttf</string>
+		<string>NotoSerif-LightItalic.ttf</string>
+		<string>NotoSerif-ExtraLight.ttf</string>
+		<string>NotoSerif-ExtraLightItalic.ttf</string>
 	</array>
 	<key>UTExportedTypeDeclarations</key>
 	<array>

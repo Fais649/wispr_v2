@@ -1,12 +1,11 @@
 import SwiftUI
 
 struct Shelf<Content: View>: View {
-    @ViewBuilder
-    var content: () -> Content
+    var content: Content
 
     var body: some View {
         VStack {
-            content()
+            content
                 .frame(width: 340, height: 340)
                 .padding(Spacing.m)
         }
@@ -17,61 +16,68 @@ struct Shelf<Content: View>: View {
     }
 }
 
+struct ShelfButton<Label: View, Content: View>: TestShelf {
+    @Environment(ShelfStateService.self) private var shelfStateService
+    var type: ShelfStateService.SType
+    var label: Label
+    var content: Content
+    
+    var body: some View {
+        AniButton(padding: Spacing.none) {
+            shelfStateService.toggle(type: type)
+        } label: {
+            label
+        }.clipShape(Capsule())
+    }
+}
 
+extension View {
+    func dateShelf<Label: View, Content: View>(
+        @ViewBuilder label: @escaping () -> Label,
+        @ViewBuilder content: @escaping () -> Content
+    ) -> some View {
+        modifier(DateShelfModifier(label: label, shelf: content))
+    }
+    
+    func bookShelf<Label: View, Content: View>(
+        @ViewBuilder label: @escaping () -> Label,
+        @ViewBuilder content: @escaping () -> Content
+    ) -> some View {
+        modifier(BookShelfModifier(label: label, shelf: content))
+    }
+}
+    
+struct DateShelfModifier<L: View, C: View>: ViewModifier {
+    @Environment(ShelfStateService.self) private var shelfState
+    var label:  () -> L
+    var shelf: () -> C
+    
+    func body(content: Content) -> some View {
+        content.onAppear {
+            withAnimation {
+                shelfState.setDateShelf(shelf, label)
+            }
+        }
+    }
+}
+
+struct BookShelfModifier<L: View, C: View>: ViewModifier {
+    @Environment(ShelfStateService.self) private var shelfState
+    var label:  () -> L
+    var shelf: () -> C
+    
+    func body(content: Content) -> some View {
+        content.onAppear {
+            withAnimation {
+                shelfState.setBookShelf(shelf, label)
+            }
+        }
+    }
+}
 // MARK: - testView Protocol
 protocol TestShelf: View {
     associatedtype Label: View
+    associatedtype Content: View
     var label: Label { get }
+    var content: Content { get }
 }
-
-// MARK: - Observable Shelf Manager
-class ShelfManager: ObservableObject {
-    @Published var currentShelf: AnyView?
-
-    func display<V: TestShelf>(_ shelf: V) {
-        currentShelf = AnyView(shelf)
-    }
-}
-
-// MARK: - ShelfViewModifier
-struct ShelfViewModifier<V: TestShelf>: ViewModifier {
-    @EnvironmentObject var shelfManager: ShelfManager
-    let shelf: () -> V
-
-    func body(content: Content) -> some View {
-        content
-            .onAppear {
-                shelfManager.display(shelf())
-            }
-    }
-}
-
-// MARK: - View Extension for Convenience
-extension View {
-    func shelfView<V: TestShelf>(_ shelf: @escaping () -> V) -> some View {
-        self.modifier(ShelfViewModifier(shelf: shelf))
-    }
-}
-
-// MARK: - Example TestShelf Implementation
-struct ExampleShelf: TestShelf {
-    var label: some View {
-        Text("Example Shelf")
-            .font(.headline)
-            .padding()
-            .background(Color.blue.opacity(0.1))
-            .cornerRadius(8)
-    }
-
-    var body: some View {
-        HStack {
-            label
-            Spacer()
-            Button("Action") {
-                print("Shelf action triggered")
-            }
-        }
-        .padding()
-    }
-}
-

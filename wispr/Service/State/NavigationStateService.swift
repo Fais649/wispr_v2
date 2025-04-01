@@ -89,19 +89,16 @@ final class NavigationStateService {
             _activeDate
         }
         set {
-            resetShelveState()
             _activeDate = Calendar.current.startOfDay(for: newValue)
         }
     }
 
     func goBack() {
-        resetShelveState()
         pathState.goBack()
     }
 
     @MainActor
     func goToItemForm(_ item: Item? = nil) {
-        resetShelveState()
         pathState
             .setActive(.itemForm(
                 item: item ?? ItemStore
@@ -115,41 +112,7 @@ final class NavigationStateService {
     }
 
     func goToDayScreen() {
-        resetShelveState()
         pathState.setActive(.dayScreen)
-    }
-
-    var datePicker: () -> AnyView = { AnyView(DefaultDatePicker()) }
-
-    var datePickerButton: () -> AnyView = { AnyView(DefaultDatePickerButton()) }
-    var datePickerButtonLabel: ()
-        -> AnyView = { AnyView(DefaultDatePickerButtonLabel()) }
-
-    func setDatePicker<Content: View>(
-        @ViewBuilder content: @escaping () -> Content
-    ) {
-        datePicker = { AnyView(content()) }
-    }
-
-    func setDatePickerButton<Content: View>(
-        @ViewBuilder content: @escaping ()
-            -> Content
-    ) {
-        datePickerButton = { AnyView(content()) }
-    }
-
-    func setDatePickerButtonLabel<Content: View>(
-        @ViewBuilder content: @escaping ()
-            -> Content
-    ) {
-        datePickerButtonLabel = { AnyView(content()) }
-    }
-
-    func resetShelveState() {
-        closeShelf()
-        datePicker = { AnyView(DefaultDatePicker()) }
-        datePickerButton = { AnyView(DefaultDatePickerButton()) }
-        datePickerButtonLabel = { AnyView(DefaultDatePickerButtonLabel()) }
     }
 
     @MainActor

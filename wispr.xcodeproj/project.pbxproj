@@ -225,7 +225,6 @@
 				View/Layout/AniButton.swift,
 				View/Shelf/BaseDateShelfView.swift,
 				View/Shelf/ItemFormDateShelfView.swift,
-				View/Shelf/ShelfView.swift,
 				View/Widget.swift,
 			);
 			target = A2B9ACF12D5B249C0087911B /* widgetExtension */;

@@ -7,6 +7,30 @@
 import SwiftData
 import SwiftUI
 
+protocol Store {
+    static var modelContext: ModelContext { get }
+}
+
+extension Store {
+    @MainActor
+    static var modelContext: ModelContext {
+        SharedState.sharedModelContainer.mainContext
+    }
+}
+
+class ChapterStore: Store {
+    @MainActor
+    static func create(
+        name: String,
+        color: UIColor,
+        symbol: String = "circle.fill"
+    ) -> Tag {
+        let tag = Tag(name: name, color: color, symbol: symbol)
+        modelContext.insert(tag)
+        return tag
+    }
+}
+
 @Model
 final class Tag: Identifiable {
     var id = UUID()

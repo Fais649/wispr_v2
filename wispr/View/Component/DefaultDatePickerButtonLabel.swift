@@ -1,12 +1,12 @@
 //
-//  DefaultDatePickerButtonLabel.swift
+//  DateShelfButtonLabel.swift
 //  wispr
 //
 //  Created by Faisal Alalaiwat on 25.03.25.
 //
 import SwiftUI
 
-struct DefaultDatePickerButtonLabel: View {
+struct DateShelfButtonLabel: View {
     @Environment(ThemeStateService.self) private var theme: ThemeStateService
     @Environment(NavigationStateService.self) var navigationStateService: NavigationStateService
 

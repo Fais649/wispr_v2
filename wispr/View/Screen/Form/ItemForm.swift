@@ -24,6 +24,7 @@ struct ItemForm: View {
     @State private var eventFormData: EventData.FormData?
     @State private var children: [Item]
     @State private var tags: [Tag]
+    @State private var initialBook: Book?
 
     init(item: Item) {
         let i = item
@@ -78,6 +79,7 @@ struct ItemForm: View {
                 }
             }
             .onAppear {
+                initialBook = navigationStateService.bookState.book
                 if text.isEmpty {
                     focus = .item(id: item.id)
                 }
@@ -87,7 +89,7 @@ struct ItemForm: View {
 
     @ViewBuilder
     func trailingTitle() -> some View {
-        Text(item.timestamp.formatted(.dateTime.day().month().year()))
+        Text(timestamp.formatted(.dateTime.day().month().year()))
     }
 
     @ViewBuilder
@@ -114,9 +116,15 @@ struct ItemForm: View {
             }
         }
         .dateShelf {
-            ItemFormDateShelfView($eventFormData, item.timestamp)
+            ItemFormDateShelfLabelView(date: $timestamp)
+        } content: {
+            ItemFormDateShelfView($eventFormData, $timestamp)
         }
         .onDisappear {
+            if let book = navigationStateService.bookState.book {
+                tags = book.tags
+            }
+
             item.commit(
                 timestamp: timestamp,
                 text: text,
@@ -125,6 +133,8 @@ struct ItemForm: View {
                 tags: tags,
                 children: children.filter { $0.text.isNotEmpty }
             )
+
+            navigationStateService.bookState.book = initialBook
         }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {

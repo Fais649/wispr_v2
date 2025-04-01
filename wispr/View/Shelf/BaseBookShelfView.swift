@@ -1,5 +1,5 @@
 //
-//  BookShelf.swift
+//  BaseBookShelfView.swift
 //  wispr
 //
 //  Created by Faisal Alalaiwat on 21.03.25.
@@ -8,17 +8,15 @@
 import SwiftData
 import SwiftUI
 
-struct BaseBookShelfView: BookShelfView {
-    @Environment(NavigationStateService.self) private var navigationStateService: NavigationStateService
+struct BaseBookShelfView: View {
+    @Environment(
+        NavigationStateService
+            .self
+    ) private var navigationStateService: NavigationStateService
     @Query var books: [Book]
     @State var editBooks = false
 
-    var label: some View {
-        Text(navigationStateService.activeDate.formatted())
-    }
-    
     var body: some View {
-        Shelf {
             Lst {
                 AniButton {
                     navigationStateService.bookState.book = nil
@@ -52,7 +50,8 @@ struct BaseBookShelfView: BookShelfView {
 
                         AniButton {
                             let book = Book(name: "", tags: [])
-                            navigationStateService.pathState.setActive(.bookForm(book: book))
+                            navigationStateService.pathState
+                                .setActive(.bookForm(book: book))
                         } label: {
                             Image(systemName: "plus")
                         }
@@ -70,7 +69,8 @@ struct BaseBookShelfView: BookShelfView {
                     })) { book in
                         AniButton {
                             if editBooks {
-                                navigationStateService.pathState.setActive(.bookForm(book: book))
+                                navigationStateService.pathState
+                                    .setActive(.bookForm(book: book))
                             } else {
                                 navigationStateService.bookState.book = book
                             }
@@ -92,6 +92,14 @@ struct BaseBookShelfView: BookShelfView {
                     }
                 }
             }.parentItem()
+    }
+}
+
+struct BaseBookShelfLabelView: View {
+    
+    var body: some View {
+        ToolbarButton {
+            LogoBookButton()
         }
     }
 }

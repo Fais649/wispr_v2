@@ -13,12 +13,10 @@ struct DefaultDatePicker: View {
     @Environment(NavigationStateService.self) var navigationStateService: NavigationStateService
 
     var body: some View {
-        Shelf {
             DatePicker(
                 "",
                 selection: Bindable(navigationStateService).activeDate,
                 displayedComponents: [.date]
             )
-        }
     }
 }

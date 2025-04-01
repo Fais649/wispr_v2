@@ -80,15 +80,6 @@ struct ContentView: View {
                         }
                     }
             }
-            .background {
-                // if showShelf {
-                //     Rectangle()
-                //         .fill(.ultraThinMaterial)
-                //         .frame(width: 500)
-                //         .blur(radius: 5)
-                //         .ignoresSafeArea()
-                // }
-            }
         }
         .background(GlobalBackground())
         .scrollIndicators(.hidden)

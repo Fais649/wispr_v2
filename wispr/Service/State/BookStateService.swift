@@ -14,5 +14,6 @@ final class BookStateService {
     }
 
     var book: Book?
+    var chapter: Tag?
     var showBook = false
 }

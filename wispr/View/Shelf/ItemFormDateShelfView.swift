@@ -6,10 +6,11 @@
 //
 import SwiftUI
 
-struct ItemFormDateShelfView: ItemDateShelfView {
+struct ItemFormDateShelfView: View {
     @Environment(\.modelContext) private var modelContext
     @Binding var eventFormData: EventData.FormData?
-
+    @Binding var timestamp: Date
+    
     @State var start: Date
     @State var duration: TimeInterval
     @State var end: Date
@@ -32,9 +33,10 @@ struct ItemFormDateShelfView: ItemDateShelfView {
         }
     }
 
-    init(_ eventFormData: Binding<EventData.FormData?>, _ timestamp: Date) {
+    init(_ eventFormData: Binding<EventData.FormData?>, _ timestamp: Binding<Date>) {
         _eventFormData = eventFormData
-        let st = timestamp
+        _timestamp = timestamp
+        let st = timestamp.wrappedValue
         let en = st.advanced(by: 3600)
         start = st
         end = en
@@ -61,6 +63,7 @@ struct ItemFormDateShelfView: ItemDateShelfView {
             .frame(width: 340, height: 380)
             .datePickerStyle(.graphical)
             .onChange(of: start) {
+                timestamp = start
                 end = start.advanced(by: duration)
             }.onChange(of: end) {
                 if end < start {
@@ -121,7 +124,12 @@ struct ItemFormDateShelfView: ItemDateShelfView {
         }
     }
 
-    var label: some View {
-        Text(start.formatted(date: .abbreviated, time: .omitted))
+}
+
+struct ItemFormDateShelfLabelView: View {
+    @Binding var date: Date
+
+    var body: some View {
+        Text(date.formatted(.dateTime.day().month(.twoDigits).year(.twoDigits)))
     }
 }

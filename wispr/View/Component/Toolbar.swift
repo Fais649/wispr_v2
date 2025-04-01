@@ -32,18 +32,9 @@ struct Toolbar: View {
                 Spacer()
             }
 
-            ToolbarButton(
-                toggledOn: navigationStateService.shelfState.isBook(),
-                clipShape: navigationStateService.shelfState.isBook()
-                    ? AnyShape(Circle())
-                    : AnyShape(Capsule())
-            ) {
-                navigationStateService.toggleBookShelf()
-            } label: {
-                LogoBookButton()
-            }
 
-            navigationStateService.datePickerButton()
+            navigationStateService.shelfState.dateShelfButtonView
+            navigationStateService.shelfState.bookShelfButtonView
 
             if !navigationStateService.onForm {
                 ToolbarButton {
@@ -61,6 +52,7 @@ struct Toolbar: View {
                 }
             }
         }
+        .frame(height: Spacing.xl)
         .padding(Spacing.s)
         .background {
             Color.clear
@@ -81,7 +73,7 @@ struct LogoBookButton: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 12, height: 12)
-                .padding(Spacing.xxs)
+                .padding(Spacing.s)
 
             if let book {
                 Text(book.name)

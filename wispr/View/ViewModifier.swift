@@ -43,22 +43,6 @@ public extension View {
         modifier(DecorationFontStyle())
     }
 
-    func navigationStateServiceDatePicker<Content: View>(
-        @ViewBuilder datePicker: @escaping () -> Content
-    ) -> some View {
-        modifier(NavigatorDatePickerSetter(datePicker: datePicker))
-    }
-
-    func navigationStateServiceDatePickerButtonLabel<Content: View>(
-        @ViewBuilder datePicker: @escaping () -> Content
-    ) -> some View {
-        modifier(NavigatorDatePickerButtonLabelSetter(datePicker: datePicker))
-    }
-
-    func resetDatePickerOnDisppear() -> some View {
-        modifier(NavigatorDatePickerResetter())
-    }
-
     func toolbarButtonLabelStyler(
         padding: (x: CGFloat, y: CGFloat) = (x: Spacing.s, y: Spacing.s),
         shadowRadius: CGFloat = Spacing.xxs
@@ -220,62 +204,6 @@ struct DecorationFontStyle: ViewModifier {
     @Environment(ThemeStateService.self) private var theme: ThemeStateService
     func body(content: Content) -> some View {
         content.environment(\.font, theme.activeTheme.h6.weight(.bold))
-    }
-}
-
-private struct NavigatorDatePickerButtonLabelSetter: ViewModifier {
-    @Environment(
-        NavigationStateService
-            .self
-    ) private var navigationStateService: NavigationStateService
-    private let datePicker: () -> AnyView
-
-    init<Content: View>(@ViewBuilder datePicker: @escaping () -> Content) {
-        self.datePicker = { AnyView(datePicker()) }
-    }
-
-    func body(content: Content) -> some View {
-        content
-            .onAppear {
-                navigationStateService.setDatePickerButtonLabel {
-                    datePicker()
-                }
-            }
-    }
-}
-
-private struct NavigatorDatePickerSetter: ViewModifier {
-    @Environment(
-        NavigationStateService
-            .self
-    ) private var navigationStateService: NavigationStateService
-    private let datePicker: () -> AnyView
-
-    init<Content: View>(@ViewBuilder datePicker: @escaping () -> Content) {
-        self.datePicker = { AnyView(datePicker()) }
-    }
-
-    func body(content: Content) -> some View {
-        content
-            .onAppear {
-                navigationStateService.setDatePicker {
-                    datePicker()
-                }
-            }
-    }
-}
-
-private struct NavigatorDatePickerResetter: ViewModifier {
-    @Environment(
-        NavigationStateService
-            .self
-    ) private var navigationStateService: NavigationStateService
-
-    func body(content: Content) -> some View {
-        content
-            .onDisappear {
-                navigationStateService.resetShelveState()
-            }
     }
 }
 

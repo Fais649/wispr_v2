@@ -3,6 +3,7 @@ import SwiftUI
 struct ToolbarButton<Content: View, S: Shape>: View {
     @Environment(ThemeStateService.self) private var theme
     var toggledOn: Bool? = nil
+    var background: Bool = true
     var padding: CGFloat
     var clipShape: S
 
@@ -12,12 +13,14 @@ struct ToolbarButton<Content: View, S: Shape>: View {
     init(
         padding: CGFloat = Spacing.s,
         toggledOn: Bool? = nil,
+        background: Bool = true,
         clipShape: S = Circle(),
         action: (() -> Void)? = nil,
         @ViewBuilder label: @escaping () -> Content
     ) {
         self.padding = padding
         self.toggledOn = toggledOn
+        self.background = background
         self.clipShape = clipShape
         self.action = action
         self.label = label
@@ -30,25 +33,42 @@ struct ToolbarButton<Content: View, S: Shape>: View {
         return false
     }
 
-    var body: some View {
-        AniButton(padding: padding) {
-            if let action {
+    @ViewBuilder
+    var l: some View {
+        if clipShape as? Circle != nil {
+            label()
+                .toolbarButtonLabelStyler()
+        } else {
+            label()
+                .toolbarButtonLabelStyler(padding: (x: 6, y: 6))
+        }
+    }
+    
+    @ViewBuilder
+    var b: some View {
+        if let action {
+            AniButton(padding: padding) {
                 action()
+            } label: {
+                l
             }
-        } label: {
-            if clipShape as? Circle != nil {
-                label()
-                    .toolbarButtonLabelStyler()
-            } else {
-                label()
-                    .toolbarButtonLabelStyler(padding: (x: 6, y: 6))
+        } else {
+            l
+        }
+    }
+    
+    var body: some View {
+        b
+            .background {
+                clipShape
+                    .fill(
+                        background
+                        ? AnyShapeStyle(theme.activeTheme.backgroundMaterialOverlay)
+                        : AnyShapeStyle(Color.clear)
+                    )
+                    .blur(radius: t ? 50 : 0)
+                    .blendMode(.luminosity)
             }
-        }
-        .background {
-            clipShape.fill(theme.activeTheme.backgroundMaterialOverlay)
-                .blur(radius: t ? 50 : 0)
-                .blendMode(.luminosity)
-        }
-        .animation(.smooth, value: t)
+            .animation(.smooth, value: t)
     }
 }

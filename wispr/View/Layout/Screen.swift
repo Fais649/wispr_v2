@@ -28,7 +28,7 @@ struct Screen<
                     .fade(.top, .bottom)
                     .ignoresSafeArea()
             }
-
+            
             content()
                 .baseShadowStyle()
         }
@@ -39,9 +39,22 @@ struct Screen<
             .slide.combined(with: .fade(.in))
         )
         .hideSystemBackground()
-        .dateShelf {
-            BaseDateShelfView()
-        }
+        .bookShelf(
+            label: {
+                BaseBookShelfLabelView()
+            },
+            content: {
+                BaseBookShelfView()
+            }
+        )
+        .dateShelf(
+            label: {
+                BaseDateShelfLabelView()
+            },
+           content: {
+                BaseDateShelfView()
+            }
+        )
     }
 }
 

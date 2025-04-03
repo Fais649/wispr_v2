@@ -26,6 +26,9 @@ struct ItemForm: View {
     @State private var tags: [Tag]
     @State private var initialBook: Book?
 
+    @State var showDateShelf: Bool = false
+    @State var showBookShelf: Bool = false
+
     init(item: Item) {
         let i = item
         self.item = i
@@ -105,7 +108,13 @@ struct ItemForm: View {
     }
 
     var body: some View {
-        Screen(title: title, trailingTitle: trailingTitle, subtitle: subtitle) {
+        Screen(
+            .itemForm(item: item),
+            title: title,
+            trailingTitle: trailingTitle,
+            subtitle: subtitle,
+            dateShelf: ItemFormDateShelfView($eventFormData, $timestamp)
+        ) {
             Lst {
                 ForEach(
                     children.sorted(by: { $0.position < $1.position }),
@@ -114,11 +123,6 @@ struct ItemForm: View {
                     Child(children: $children, child: child, focus: $focus)
                 }
             }
-        }
-        .dateShelf {
-            ItemFormDateShelfLabelView(date: $timestamp)
-        } content: {
-            ItemFormDateShelfView($eventFormData, $timestamp)
         }
         .onDisappear {
             if let book = navigationStateService.bookState.book {

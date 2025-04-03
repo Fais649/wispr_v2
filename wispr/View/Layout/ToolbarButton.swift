@@ -43,7 +43,7 @@ struct ToolbarButton<Content: View, S: Shape>: View {
                 .toolbarButtonLabelStyler(padding: (x: 6, y: 6))
         }
     }
-    
+
     @ViewBuilder
     var b: some View {
         if let action {
@@ -53,18 +53,22 @@ struct ToolbarButton<Content: View, S: Shape>: View {
                 l
             }
         } else {
-            l
+            l.padding(padding)
         }
     }
-    
+
     var body: some View {
         b
             .background {
                 clipShape
                     .fill(
                         background
-                        ? AnyShapeStyle(theme.activeTheme.backgroundMaterialOverlay)
-                        : AnyShapeStyle(Color.clear)
+                            ?
+                            AnyShapeStyle(
+                                theme.activeTheme
+                                    .backgroundMaterialOverlay
+                            )
+                            : AnyShapeStyle(Color.clear)
                     )
                     .blur(radius: t ? 50 : 0)
                     .blendMode(.luminosity)

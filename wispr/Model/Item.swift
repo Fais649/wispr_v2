@@ -41,8 +41,29 @@ class ItemStore {
         }
     }
 
+    static func filterByChapter(items: [Item], chapter: Tag?) -> [Item] {
+        if let chapter {
+            return items.filter { $0.tags.contains(chapter) }
+        } else {
+            return items
+        }
+    }
+
     static func idPredicate(id: UUID) -> Predicate<Item> {
         #Predicate<Item> { $0.id == id }
+    }
+
+    static func eventItemPredicated(for eventCalendar: EventCalendar)
+        -> Predicate<Item>
+    {
+        let id = eventCalendar.identifier
+        return #Predicate<Item> {
+            if let eventData = $0.eventData {
+               return eventData.calendarIdentifier == id
+            } else {
+                return false
+            }
+        }
     }
 
     static func idsPredicate(ids: [UUID]) -> Predicate<Item> {
@@ -65,6 +86,29 @@ class ItemStore {
             return []
         }
         return items
+    }
+
+    @MainActor
+    static func loadEventItems() -> [Item] {
+//        let desc = FetchDescriptor<Item>(predicate: #Predicate<Item> {
+//            $0.eventData != nil
+//        })
+
+        let desc = FetchDescriptor<Item>()
+        let items = try? modelContext.fetch(desc)
+        let res = items ?? []
+        return res.filter({$0.eventData != nil})
+    }
+
+    @MainActor
+    static func loadEventItems(by eventCalendar: EventCalendar) -> [Item] {
+        let desc =
+            FetchDescriptor<Item>(
+                predicate: eventItemPredicated(for: eventCalendar)
+            )
+
+        let items = try? modelContext.fetch(desc)
+        return items ?? []
     }
 
     @MainActor
@@ -110,6 +154,22 @@ class ItemStore {
         item.imageData = imageData
         item.audioData = audioData
         return item
+    }
+
+    @MainActor
+    static func deleteAllItems(for eventCalendar: EventCalendar) {
+        let id = eventCalendar.identifier
+//        try? modelContext.delete(
+//            model: Item.self,
+//            where:
+//                #Predicate {
+//                    if let e = $0.eventData {
+//                        return e.calendarIdentifier ?? "" == id
+//                    } else {
+//                        return false
+//                    }
+//                }
+//        )
     }
 
     @MainActor
@@ -210,6 +270,8 @@ class ItemStore {
 
 @Model
 final class Item: Codable, Transferable, AppEntity, Listable {
+    typealias Child = Item
+    
     @Attribute(.unique) var id: UUID
     var timestamp: Date
     var position: Int
@@ -222,7 +284,6 @@ final class Item: Codable, Transferable, AppEntity, Listable {
     var children: [Item] = []
     @Relationship(deleteRule: .noAction)
     var tags: [Tag] = []
-
     var text = ""
     var taskData: TaskData?
     var eventData: EventData?
@@ -265,7 +326,11 @@ final class Item: Codable, Transferable, AppEntity, Listable {
     var isParent: Bool {
         parent == nil
     }
-
+    
+    var hasEvent: Bool {
+        eventData != nil
+    }
+    
     var isEvent: Bool {
         parent == nil && eventData != nil
     }
@@ -320,7 +385,8 @@ final class Item: Codable, Transferable, AppEntity, Listable {
         taskData: TaskData?,
         eventFormData: EventData.FormData?,
         tags: [Tag],
-        children: [Item]
+        children: [Item],
+        syncEkEvent: Bool = true
     ) {
         if let timestamp {
             setTimestamp(timestamp)
@@ -329,7 +395,11 @@ final class Item: Codable, Transferable, AppEntity, Listable {
         self.taskData = taskData
 
         if let eventFormData {
-            createEvent(eventFormData.startDate, eventFormData.endDate)
+            createEvent(
+                eventFormData.startDate,
+                eventFormData.endDate,
+                syncEkEvent
+            )
         } else {
             deleteEvent()
         }
@@ -412,7 +482,18 @@ final class Item: Codable, Transferable, AppEntity, Listable {
         }
     }
 
-    private func createEvent(_ startDate: Date, _ endDate: Date) {
+    private func createEvent(
+        _ startDate: Date,
+        _ endDate: Date,
+        _ syncEkEvent: Bool = true
+    ) {
+        if !syncEkEvent {
+            if let eventData {
+                createNotification(eventData)
+            }
+            return
+        }
+
         if
             var eventData,
             let id = eventData.eventIdentifier,

@@ -15,14 +15,14 @@ struct Disclosure<
     ItemView: View
 >: View {
     let item: Item
-    var children: [Item] {
+    var children: [Item.Child] {
         item.children
     }
 
     var onMoveChild: ((Item, IndexSet, Int) -> Void)? = nil
 
     let itemRow: (Item) -> Label
-    let childRow: (Item) -> ItemView
+    let childRow: (Item.Child) -> ItemView
     @State var isExpanded = true
 
     var expandable: Bool {

@@ -14,6 +14,7 @@ struct ContentView: View {
 
     @State var navigationStateService: NavigationStateService = .init()
     @State var flashService: FlashStateService = .init()
+    @State var calendarSyncService: CalendarSyncService = CalendarSyncService()
     @Namespace var namespace
 
     var activePath: Path {
@@ -30,56 +31,10 @@ struct ContentView: View {
                     }
             }.overlay {
                 flashService.flashMessage
-
-                if showShelf {
-                    Rectangle()
-                        .fill(theme.activeTheme.backgroundMaterialOverlay)
-                        .mask {
-                            LinearGradient(
-                                gradient: Gradient(stops: [
-                                    .init(
-                                        color: .black,
-                                        location: 0
-                                    ),
-                                    .init(
-                                        color: .black,
-                                        location: 0.6
-                                    ),
-                                    .init(
-                                        color: .clear,
-                                        location: 1
-                                    ),
-                                ]),
-                                startPoint: .bottom,
-                                endPoint: .top
-                            )
-                        }
-                        .onTapGesture {
-                            if showShelf {
-                                withAnimation {
-                                    navigationStateService.shelfState
-                                        .dismissShelf()
-                                }
-                            }
-                        }
-                        .ignoresSafeArea()
-                }
             }
         }
         .overlay(alignment: .bottom) {
-            VStack {
-                if showShelf {
-                    navigationStateService.shelfState.display()
-                }
-
-                Toolbar()
-                    .onChange(of: navigationStateService.shelfState.isShown()) {
-                        withAnimation {
-                            showShelf = navigationStateService.shelfState
-                                .isShown()
-                        }
-                    }
-            }
+            Toolbar()
         }
         .background(GlobalBackground())
         .scrollIndicators(.hidden)
@@ -88,12 +43,27 @@ struct ContentView: View {
         .environment(navigationStateService.bookState)
         .environment(navigationStateService.shelfState)
         .environment(flashService)
+        .environment(calendarSyncService)
+        .task {
+            await calendarSyncService.sync()
+        }
     }
 }
 
 struct GlobalBackground: View {
     @Environment(ThemeStateService.self) private var theme: ThemeStateService
     @Environment(BookStateService.self) private var activeBook: BookStateService
+
+    @State var topRight: CGFloat = .random(in: 0 ... 1)
+    @State var topLeft: CGFloat = .random(in: 0 ... 1)
+    @State var top: CGFloat = .random(in: 0 ... 1)
+
+    @State var centerRight: CGFloat = .random(in: 0 ... 1)
+    @State var centerLeft: CGFloat = .random(in: 0 ... 1)
+    @State var center: CGFloat = .random(in: 0 ... 1)
+
+    @State var bottomRight: CGFloat = .random(in: 0 ... 1)
+    @State var bottomLeft: CGFloat = .random(in: 0 ... 1)
 
     var body: some View {
         VStack {
@@ -106,22 +76,22 @@ struct GlobalBackground: View {
                     [1, 0], [1, 0.5], [1, 1],
                 ], colors: [
                     theme.activeTheme.defaultBackgroundColor
-                        .opacity(.random(in: 0 ... 1)),
+                        .opacity(topRight),
                     theme.activeTheme.defaultBackgroundColor
-                        .opacity(.random(in: 0 ... 1)),
+                        .opacity(topLeft),
                     theme.activeTheme.defaultBackgroundColor
-                        .opacity(.random(in: 0 ... 1)),
+                        .opacity(top),
                     theme.activeTheme.defaultBackgroundColor
-                        .opacity(.random(in: 0 ... 1)),
+                        .opacity(center),
                     theme.activeTheme.defaultBackgroundColor
-                        .opacity(.random(in: 0 ... 1)),
+                        .opacity(centerLeft),
                     theme.activeTheme.defaultBackgroundColor,
                     theme.activeTheme.defaultBackgroundColor
-                        .opacity(.random(in: 0 ... 1)),
+                        .opacity(centerRight),
                     theme.activeTheme.defaultBackgroundColor
-                        .opacity(.random(in: 0 ... 1)),
+                        .opacity(bottomLeft),
                     theme.activeTheme.defaultBackgroundColor
-                        .opacity(.random(in: 0 ... 1)),
+                        .opacity(bottomRight),
                 ])
                 .blur(radius: 30)
             }

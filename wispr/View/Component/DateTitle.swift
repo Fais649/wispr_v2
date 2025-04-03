@@ -116,7 +116,6 @@ struct DateTitleWithDivider: View {
                 }
             DateTitle(date: date, scrollTransition: false)
         }
-        // .scrollTransition()
     }
 }
 

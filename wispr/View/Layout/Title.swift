@@ -59,3 +59,35 @@ extension Title
         trailingHeader = nil
     }
 }
+
+extension Title
+    where
+    Divider == Never,
+    TrailingHeader == Never,
+    SubHeader == Never
+{
+    init(
+        header: (() -> Header)?
+    ) {
+        divider = nil
+        self.header = header
+        subHeader = nil
+        trailingHeader = nil
+    }
+}
+
+extension Title
+    where
+    Divider == Never,
+    SubHeader == Never
+{
+    init(
+        header: (() -> Header)?,
+        trailingHeader: (() -> TrailingHeader)?
+    ) {
+        divider = nil
+        self.header = header
+        subHeader = nil
+        self.trailingHeader = trailingHeader
+    }
+}

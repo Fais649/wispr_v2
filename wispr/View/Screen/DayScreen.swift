@@ -13,15 +13,25 @@ struct DayScreen: View {
         NavigationStateService
             .self
     ) private var navigationStateService: NavigationStateService
-    @Environment(FlashStateService.self) private var flashService: FlashStateService
+    @Environment(
+        FlashStateService
+            .self
+    ) private var flashService: FlashStateService
     @Environment(\.dismiss) private var dismiss
     @Query var items: [Item]
-    var bookFilter: Book?
+
+    var bookFilter: Book? {
+        navigationStateService.bookState.book
+    }
+
+    var chapterFilter: Tag? {
+        navigationStateService.bookState.chapter
+    }
+
     @State var filteredItems: [Item] = []
     @State private var loaded = false
 
-    init(activeDate: Date, bookFilter: Book?) {
-        self.bookFilter = bookFilter
+    init(activeDate: Date) {
         _items = Query(
             filter: ItemStore.activeItemsPredicated(for: activeDate),
             sort: \.position
@@ -51,11 +61,15 @@ struct DayScreen: View {
     }
 
     func trailingTitle() -> some View {
-        Text(navigationStateService.activeDate.formatted(.dateTime.weekday(.wide)))
+        Text(
+            navigationStateService.activeDate
+                .formatted(.dateTime.weekday(.wide))
+        )
     }
 
     var body: some View {
         Screen(
+            .dayScreen,
             divider: titleDivider,
             title: title,
             trailingTitle: trailingTitle,
@@ -105,9 +119,17 @@ struct DayScreen: View {
     }
 
     func filterItems() async {
-        filteredItems = ItemStore.filterByBook(
-            items: items,
-            book: bookFilter
-        )
+        if let chapterFilter {
+            filteredItems = ItemStore.filterByChapter(
+                items: items,
+                chapter:
+                chapterFilter
+            )
+        } else {
+            filteredItems = ItemStore.filterByBook(
+                items: items,
+                book: bookFilter
+            )
+        }
     }
 }

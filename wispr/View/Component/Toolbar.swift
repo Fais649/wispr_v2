@@ -32,9 +32,8 @@ struct Toolbar: View {
                 Spacer()
             }
 
-
-            navigationStateService.shelfState.dateShelfButtonView
-            navigationStateService.shelfState.bookShelfButtonView
+            BaseBookShelfLabelView()
+            BaseDateShelfLabelView()
 
             if !navigationStateService.onForm {
                 ToolbarButton {
@@ -52,11 +51,12 @@ struct Toolbar: View {
                 }
             }
         }
-        .frame(height: Spacing.xl)
+        .frame(height: Spacing.l)
         .padding(Spacing.s)
         .background {
             Color.clear
         }
+        .safeAreaPadding(.bottom, Spacing.m)
     }
 }
 
@@ -72,11 +72,20 @@ struct LogoBookButton: View {
             Image("Logo")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 12, height: 12)
-                .padding(Spacing.s)
+                .contentShape(Rectangle())
+                .frame(width: 16, height: 16)
+                .foregroundStyle(.white)
+                .blendMode(.hardLight)
 
             if let book {
-                Text(book.name)
+                VStack(alignment: .leading) {
+                    Text(book.name)
+                        .fontWeight(.regular)
+                    if let chapter = activeBook.chapter {
+                        Text(chapter.name)
+                            .fontWeight(.ultraLight)
+                    }
+                }.decorationFontStyle()
             }
         }
     }

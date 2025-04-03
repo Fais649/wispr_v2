@@ -1,4 +1,3 @@
-import SwiftData
 import SwiftUI
 
 struct Screen<
@@ -6,13 +5,24 @@ struct Screen<
     MainTitle: View,
     SubTitle: View,
     TrailingTitle: View,
-    Content: View
+    Content: View,
+    DateShelf: View,
+    BookShelf: View
 >: View {
-    var divider: (() -> TitleDivider)? = nil
-    var title: (() -> MainTitle)? = nil
-    var trailingTitle: (() -> TrailingTitle)? = nil
-    var subtitle: (() -> SubTitle)? = nil
+    @Environment(NavigationStateService.self) private var navigationStateService
+    @Environment(ThemeStateService.self) private var theme
+
+    var path: Path = .dayScreen
+    var divider: () -> TitleDivider
+    var title: () -> MainTitle
+    var trailingTitle: () -> TrailingTitle
+    var subtitle: () -> SubTitle
     @ViewBuilder var content: () -> Content
+
+    var dateShelf: DateShelf
+    var bookShelf: BookShelf
+
+    @State private var showShelf = false
 
     var body: some View {
         VStack {
@@ -23,160 +33,63 @@ struct Screen<
                 trailingHeader: trailingTitle
             )
             .titleShadowStyle()
-            .background {
-                Rectangle().fill(.ultraThinMaterial)
-                    .fade(.top, .bottom)
-                    .ignoresSafeArea()
-            }
-            
+
             content()
                 .baseShadowStyle()
+                .safeAreaPadding(.bottom, Padding.screenTop)
+        }
+        .sheet(isPresented: $showShelf) {
+            navigationStateService.shelfState.display(
+                dateShelf,
+                bookShelf
+            )
+            .presentationDetents([.fraction(0.55)])
+            .presentationBackground(
+                theme.activeTheme
+                    .backgroundMaterialOverlay
+            )
         }
         .screenStyle()
         .toolbarBackground(.hidden)
         .navigationBarBackButtonHidden()
-        .navigationTransition(
-            .slide.combined(with: .fade(.in))
-        )
+        .navigationTransition(.slide.combined(with: .fade(.in)))
+        .onChange(of: navigationStateService.shelfState.isShown()) {
+            if !navigationStateService.shelfState.isShown() {
+                withAnimation {
+                    navigationStateService.shelfState.dismissShelf()
+                    showShelf = navigationStateService.shelfState.isShown()
+                }
+                return
+            }
+
+            if navigationStateService.pathState.active == path {
+                withAnimation {
+                    showShelf = navigationStateService.shelfState.isShown()
+                }
+            }
+        }
         .hideSystemBackground()
-        .bookShelf(
-            label: {
-                BaseBookShelfLabelView()
-            },
-            content: {
-                BaseBookShelfView()
-            }
-        )
-        .dateShelf(
-            label: {
-                BaseDateShelfLabelView()
-            },
-           content: {
-                BaseDateShelfView()
-            }
-        )
     }
 }
 
-extension Screen
-    where
-    TitleDivider == Never,
-    MainTitle == Never,
-    SubTitle == Never,
-    TrailingTitle == Never
-{
-    init(@ViewBuilder content: @escaping () -> Content) {
-        divider = nil
-        title = nil
-        trailingTitle = nil
-        subtitle = nil
-        self.content = content
-    }
-}
-
-extension Screen
-    where
-    TitleDivider == Never,
-    SubTitle == Never,
-    TrailingTitle == Never
-{
+extension Screen {
     init(
-        title: (() -> MainTitle)? = nil,
+        _ path: Path,
+        divider: @escaping () -> TitleDivider = { EmptyView() },
+        title: @escaping () -> MainTitle = { EmptyView() },
+        trailingTitle: @escaping () -> TrailingTitle = { EmptyView() },
+        subtitle: @escaping () -> SubTitle = { EmptyView() },
+        dateShelf: DateShelf = BaseDateShelfView(),
+        bookShelf: BookShelf = BaseBookShelfView(),
         @ViewBuilder content: @escaping () -> Content
     ) {
-        divider = nil
-        self.title = title
-        trailingTitle = nil
-        subtitle = nil
-        self.content = content
-    }
-}
-
-extension Screen
-    where
-    SubTitle == Never,
-    TrailingTitle == Never
-{
-    init(
-        divider: (() -> TitleDivider)? = nil,
-        title: (() -> MainTitle)? = nil,
-        @ViewBuilder content: @escaping () -> Content
-    ) {
-        self.divider = divider
-        self.title = title
-        trailingTitle = nil
-        subtitle = nil
-        self.content = content
-    }
-}
-
-extension Screen
-    where
-    TitleDivider == Never
-{
-    init(
-        title: (() -> MainTitle)? = nil,
-        trailingTitle: (() -> TrailingTitle)? = nil,
-        subtitle: (() -> SubTitle)? = nil,
-        @ViewBuilder content: @escaping () -> Content
-    ) {
-        divider = nil
-        self.title = title
-        self.trailingTitle = trailingTitle
-        self.subtitle = subtitle
-        self.content = content
-    }
-}
-
-extension Screen
-    where
-    TrailingTitle == Never
-{
-    init(
-        divider: (() -> TitleDivider)? = nil,
-        title: (() -> MainTitle)? = nil,
-        subtitle: (() -> SubTitle)? = nil,
-        @ViewBuilder content: @escaping () -> Content
-    ) {
-        self.divider = divider
-        self.title = title
-        trailingTitle = nil
-        self.subtitle = subtitle
-        self.content = content
-    }
-}
-
-extension Screen
-    where
-    TitleDivider == Never,
-    TrailingTitle == Never
-{
-    init(
-        title: (() -> MainTitle)? = nil,
-        subtitle: (() -> SubTitle)? = nil,
-        @ViewBuilder content: @escaping () -> Content
-    ) {
-        divider = nil
-        self.title = title
-        trailingTitle = nil
-        self.subtitle = subtitle
-        self.content = content
-    }
-}
-
-extension Screen
-    where
-    SubTitle == Never
-{
-    init(
-        divider: (() -> TitleDivider)? = nil,
-        title: (() -> MainTitle)? = nil,
-        trailingTitle: (() -> TrailingTitle)? = nil,
-        @ViewBuilder content: @escaping () -> Content
-    ) {
+        self.path = path
         self.divider = divider
         self.title = title
         self.trailingTitle = trailingTitle
+        self.subtitle = subtitle
         self.content = content
+        self.dateShelf = dateShelf
+        self.bookShelf = bookShelf
     }
 }

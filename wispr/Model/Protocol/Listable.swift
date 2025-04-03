@@ -6,6 +6,7 @@
 //
 
 protocol Listable: Identifiable, Equatable {
+    associatedtype Child: Identifiable
     var parent: Self? { get set }
-    var children: [Self] { get set }
+    var children: [Child] { get }
 }

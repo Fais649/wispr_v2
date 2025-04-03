@@ -7,8 +7,15 @@
 import SwiftData
 import SwiftUI
 
+class BookStore {
+    static func create() -> Book {
+        Book(name: "", tags: [])
+    }
+}
+
 @Model
-final class Book: Identifiable, Equatable {
+final class Book: Identifiable, Equatable, Listable {
+    typealias Child = Tag
     var id: UUID = UUID()
     var name: String
     @Relationship(deleteRule: .noAction) var tags: [Tag] = []
@@ -18,7 +25,7 @@ final class Book: Identifiable, Equatable {
     var endDate: Date?
 
     var parent: Book? = nil
-    var children: [Book] = []
+    var children: [Tag] { tags }
 
     init(
         name: String,

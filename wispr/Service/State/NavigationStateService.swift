@@ -111,6 +111,12 @@ final class NavigationStateService {
             ))
     }
 
+    @MainActor
+    func goToBookForm(_ book: Book? = nil) {
+        pathState
+            .setActive(.bookForm(book: book ?? BookStore.create()))
+    }
+
     func goToDayScreen() {
         pathState.setActive(.dayScreen)
     }
@@ -120,10 +126,7 @@ final class NavigationStateService {
     func destination(_ path: Path) -> some View {
         switch path {
             case .dayScreen:
-                DayScreen(
-                    activeDate: activeDate,
-                    bookFilter: bookState.book
-                )
+                DayScreen(activeDate: activeDate)
             case let .itemForm(item: item):
                 ItemForm(item: item)
             case let .bookForm(book: book):

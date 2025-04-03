@@ -34,7 +34,7 @@ struct TimeLineScreen: View {
     }
 
     var body: some View {
-        Screen(title: title) {
+        Screen(.timelineScreen, title: title) {
             ScrollViewReader { proxy in
                 VStack {
                     if loaded {
@@ -124,6 +124,7 @@ struct TimeLineScreen: View {
         DateTitleWithDivider(date: key)
             .titleTextStyle()
             .fontWeight(.regular)
+            .scrollTransition(Spacing.none)
     }
 
     func scrollToActiveDate(
@@ -175,7 +176,13 @@ struct TimeLineScreen: View {
 
     func filterDays() async -> [Date: [Item]] {
         let i = items.filter {
-            guard let book = navigationStateService.bookState.book else { return true }
+            guard let book = navigationStateService.bookState.book
+            else { return true }
+
+            if let chapter = navigationStateService.bookState.chapter {
+                return $0.tags.contains(chapter)
+            }
+
             return $0.tags.contains(where: book.tags.contains)
         }
         .sorted(by: {

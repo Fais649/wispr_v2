@@ -15,7 +15,7 @@ struct Disclosures<
     var onMove: ((IndexSet, Int) -> Void)? = nil
     var onMoveChild: ((Item, IndexSet, Int) -> Void)? = nil
     let itemRow: (Item) -> Label
-    let childRow: (Item) -> ItemView
+    let childRow: (Item.Child) -> ItemView
 
     func row(_ item: Item) -> some View {
         Disclosure(item: item, itemRow: itemRow, childRow: childRow)

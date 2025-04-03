@@ -8,24 +8,24 @@ import SwiftUI
 
 @Observable
 final class PathStateService {
-     var path: [Path] = [.dayScreen]
-    
+    var path: [Path] = [.dayScreen]
+
     var active: Path {
         if let last = path.last {
             return last
         }
-        
+
         return .timelineScreen
     }
-    
+
     var onDayScreen: Bool {
         active == .dayScreen
     }
-    
+
     var onTimeline: Bool {
         active == .timelineScreen
     }
-    
+
     var onForm: Bool {
         switch active {
             case .itemForm, .bookForm:
@@ -34,19 +34,19 @@ final class PathStateService {
                 return false
         }
     }
-    
+
     var onItemForm: Bool {
         if case .itemForm = active {
             return true
         }
         return false
     }
-    
-    func goBack() -> Void {
+
+    func goBack() {
         path.removeLast()
     }
-    
-    func setActive(_ path: Path) -> Void {
+
+    func setActive(_ path: Path) {
         self.path.append(path)
     }
 }
@@ -54,23 +54,25 @@ final class PathStateService {
 enum Path: Hashable {
     case dayScreen,
          timelineScreen,
-         bookForm(book: Book? = nil),
-         itemForm(item: Item)
-    
+         bookForm(book: Book),
+         itemForm(item: Item),
+         dateShelf,
+         bookShelf
+
     var isBookForm: Bool {
         if case .bookForm = self {
             return true
         }
         return false
     }
-    
+
     var isItemForm: Bool {
         if case .itemForm = self {
             return true
         }
         return false
     }
-    
+
     var isTimeline: Bool {
         self == .timelineScreen
     }

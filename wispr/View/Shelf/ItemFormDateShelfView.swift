@@ -10,7 +10,7 @@ struct ItemFormDateShelfView: View {
     @Environment(\.modelContext) private var modelContext
     @Binding var eventFormData: EventData.FormData?
     @Binding var timestamp: Date
-    
+
     @State var start: Date
     @State var duration: TimeInterval
     @State var end: Date
@@ -33,7 +33,10 @@ struct ItemFormDateShelfView: View {
         }
     }
 
-    init(_ eventFormData: Binding<EventData.FormData?>, _ timestamp: Binding<Date>) {
+    init(
+        _ eventFormData: Binding<EventData.FormData?>,
+        _ timestamp: Binding<Date>
+    ) {
         _eventFormData = eventFormData
         _timestamp = timestamp
         let st = timestamp.wrappedValue
@@ -123,13 +126,75 @@ struct ItemFormDateShelfView: View {
             }
         }
     }
-
 }
 
 struct ItemFormDateShelfLabelView: View {
+    @Environment(ThemeStateService.self) private var theme: ThemeStateService
+    @Environment(
+        NavigationStateService
+            .self
+    ) var navigationStateService: NavigationStateService
+
     @Binding var date: Date
 
+    var showActiveDayButton: Bool {
+        !Calendar.current.isDate(
+            navigationStateService.activeDate,
+            inSameDayAs:
+            date
+        )
+    }
+
+    var dateShelfShown: Bool {
+        navigationStateService.shelfState.isDatePicker()
+    }
+
     var body: some View {
-        Text(date.formatted(.dateTime.day().month(.twoDigits).year(.twoDigits)))
+        HStack {
+            if showActiveDayButton {
+                ToolbarButton(
+                    toggledOn: dateShelfShown
+                ) {
+                    date = navigationStateService.activeDate
+                } label: {
+                    Image(systemName: "dot.square")
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(.white, .clear)
+                        .buttonFontStyle()
+                }
+            }
+
+            ToolbarButton(
+                toggledOn: dateShelfShown,
+                clipShape: Capsule()
+            ) {
+                navigationStateService.toggleDatePickerShelf()
+            } label: {
+                Text(
+                    date
+                        .formatted(
+                            .dateTime.day().month(.twoDigits)
+                                .year(.twoDigits)
+                        )
+                )
+            }
+            .onChange(of: navigationStateService.activePath) {
+                withAnimation {
+                    navigationStateService.closeShelf()
+                }
+            }
+            .onChange(of: date) {
+                withAnimation {
+                    navigationStateService.closeShelf()
+                }
+            }
+        }
+        .background {
+            if !dateShelfShown {
+                Capsule().fill(theme.activeTheme.backgroundMaterialOverlay)
+                    .blur(radius: dateShelfShown ? 50 : 0)
+                    .blendMode(.luminosity)
+            }
+        }
     }
 }

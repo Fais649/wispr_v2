@@ -192,8 +192,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Extension/Misc.swift,
-				Model/Book.swift,
-				Model/Data/CalendarData.swift,
 				Model/Data/Theme/DefaultThemeData.swift,
 				Model/Item.swift,
 				Model/Tag.swift,

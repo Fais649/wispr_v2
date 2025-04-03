@@ -21,18 +21,17 @@ struct BookForm: View {
     @State private var name: String
     @State private var tags: [Tag]
 
-    init(book: Book? = nil) {
-        let i = book
-        self.book = i ?? Book(name: "", tags: [])
-        name = i?.name ?? ""
-        tags = i?.tags ?? []
+    init(book: Book) {
+        self.book = book
+        name = book.name
+        tags = book.tags
     }
 
     @State var isExpanded = true
     @State var color: Color = .pink
 
     fileprivate func title() -> some View {
-        return TxtField(
+        TxtField(
             label: "...",
             text: $name,
             focusState: $focus,
@@ -63,32 +62,34 @@ struct BookForm: View {
             }
         }
         .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                HStack {
-                    AniButton {
-                        focus = nil
-                    } label: {
-                        Image(systemName: "keyboard")
+            if focus == .item(id: book.id) {
+                ToolbarItemGroup(placement: .keyboard) {
+                    HStack {
+                        AniButton {
+                            focus = nil
+                        } label: {
+                            Image(systemName: "keyboard")
+                        }
+
+                        Divider()
+
+                        Spacer()
+
+                        Divider()
+                        ColorPicker("", selection: $color)
+                        // .onChange(of: color) {
+                        //     if let hex = UIColor(color).toHex() {
+                        //         tag.colorHex = hex
+                        //     }
+                        // } // ColorPicker
                     }
-
-                    Divider()
-
-                    Spacer()
-
-                    Divider()
-                    ColorPicker("", selection: $color)
-                    // .onChange(of: color) {
-                    //     if let hex = UIColor(color).toHex() {
-                    //         tag.colorHex = hex
-                    //     }
-                    // } // ColorPicker
                 }
             }
         }
     }
 
     var body: some View {
-        Screen(title: title) {
+        Screen(.bookForm(book: book), title: title) {
             Lst {
                 ForEach(tags) { tag in
                     Child(tags: $tags, tag: tag, focus: $focus)
@@ -155,8 +156,8 @@ struct BookForm: View {
                         focus = .item(id: newChapter.id)
                     }
                 }
-            }.background(tag.selectedBackground)
                 .childItem()
+            }.background(tag.selectedBackground)
                 .toolbar {
                     if isFocused() {
                         ToolbarItemGroup(placement: .keyboard) {

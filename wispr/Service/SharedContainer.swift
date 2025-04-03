@@ -17,6 +17,7 @@ enum SharedState {
             Item.self,
             Tag.self,
             Book.self,
+            EventCalendar.self,
         ])
         let modelConfiguration = ModelConfiguration(
             schema: schema,

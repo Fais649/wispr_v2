@@ -14,9 +14,9 @@
             filePath = "wispr/Model/Item.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "465"
-            endingLineNumber = "465"
-            landmarkName = "createNotification(_:)"
+            startingLineNumber = "483"
+            endingLineNumber = "483"
+            landmarkName = "toggleEvent(_:_:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -30,9 +30,9 @@
             filePath = "wispr/Model/Item.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "435"
-            endingLineNumber = "435"
-            landmarkName = "createEvent(_:_:)"
+            startingLineNumber = "453"
+            endingLineNumber = "453"
+            landmarkName = "setTimestamp(_:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -46,10 +46,316 @@
             filePath = "wispr/Model/Item.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "416"
-            endingLineNumber = "416"
-            landmarkName = "createEvent(_:_:)"
+            startingLineNumber = "434"
+            endingLineNumber = "434"
+            landmarkName = "delete()"
             landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "E76C0168-588C-41FD-8EE7-3B8472606A21"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "wispr/Service/Sync/CalendarSyncService.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "112"
+            endingLineNumber = "112"
+            landmarkName = "loadEKEvents(start:end:calendars:)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "1DD6DE32-E76E-49CD-8485-712D127547FA"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "wispr/Service/Sync/CalendarSyncService.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "114"
+            endingLineNumber = "114"
+            landmarkName = "loadEKEvents(start:end:calendars:)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "FE9E1521-64D3-4FF2-B1A8-D37E0E6348A7"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "wispr/Service/Sync/CalendarSyncService.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "208"
+            endingLineNumber = "208"
+            landmarkName = "sync(for:)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "9DC67A6C-76E6-4000-B7B0-17C14C9FACE6"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "wispr/Service/Sync/CalendarSyncService.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "62"
+            endingLineNumber = "62"
+            landmarkName = "requestAccessToCalendar()"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "FC403873-607B-4A2D-A07E-58B7468CFFDD"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "wispr/Service/Sync/CalendarSyncService.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "213"
+            endingLineNumber = "213"
+            landmarkName = "sync(for:)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "182756BF-CDB0-45CB-8C05-B542DE9A2508"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "wispr/Service/Sync/CalendarSyncService.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "216"
+            endingLineNumber = "216"
+            landmarkName = "sync(for:)"
+            landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "182756BF-CDB0-45CB-8C05-B542DE9A2508 - eb78e97614eab7fe"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(3) suspend resume partial function for wispr.CalendarSyncService.sync(for: wispr.EventCalendar) async -&gt; ()"
+                  moduleName = "wispr.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/faisalalalaiwat/punk.systems/code/swift/wispr/wispr/Service/Sync/CalendarSyncService.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "216"
+                  endingLineNumber = "216">
+               </Location>
+               <Location
+                  uuid = "182756BF-CDB0-45CB-8C05-B542DE9A2508 - 53741b304ef193f8"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(5) suspend resume partial function for wispr.CalendarSyncService.sync(for: wispr.EventCalendar) async -&gt; ()"
+                  moduleName = "wispr.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/faisalalalaiwat/punk.systems/code/swift/wispr/wispr/Service/Sync/CalendarSyncService.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "216"
+                  endingLineNumber = "216">
+               </Location>
+               <Location
+                  uuid = "182756BF-CDB0-45CB-8C05-B542DE9A2508 - 9b414dfd80974ffa"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(7) suspend resume partial function for wispr.CalendarSyncService.sync(for: wispr.EventCalendar) async -&gt; ()"
+                  moduleName = "wispr.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/faisalalalaiwat/punk.systems/code/swift/wispr/wispr/Service/Sync/CalendarSyncService.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "216"
+                  endingLineNumber = "216">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "29BAB194-213B-4BBF-8F39-D37F2854F7A6"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "wispr/Service/Sync/CalendarSyncService.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "184"
+            endingLineNumber = "184"
+            landmarkName = "sync()"
+            landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "29BAB194-213B-4BBF-8F39-D37F2854F7A6 - 35cc43a023e4ee6c"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(5) suspend resume partial function for wispr.CalendarSyncService.sync() async -&gt; ()"
+                  moduleName = "wispr.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/faisalalalaiwat/punk.systems/code/swift/wispr/wispr/Service/Sync/CalendarSyncService.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "184"
+                  endingLineNumber = "184">
+               </Location>
+               <Location
+                  uuid = "29BAB194-213B-4BBF-8F39-D37F2854F7A6 - 35cc43a023e4ee6c"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(5) suspend resume partial function for wispr.CalendarSyncService.sync() async -&gt; ()"
+                  moduleName = "wispr.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/faisalalalaiwat/punk.systems/code/swift/wispr/wispr/Service/Sync/CalendarSyncService.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "184"
+                  endingLineNumber = "184">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "B2E8987A-62FF-41F2-AFD2-61D41975705E"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "wispr/Service/Sync/CalendarSyncService.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "194"
+            endingLineNumber = "194"
+            landmarkName = "sync()"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "89AC2FE4-6606-473D-AC73-276DCEB6C9D1"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "wispr/Service/Sync/CalendarSyncService.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "183"
+            endingLineNumber = "183"
+            landmarkName = "sync()"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "D39A4139-73B9-4786-8B13-6197856B9350"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "wispr/Service/Sync/CalendarSyncService.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "232"
+            endingLineNumber = "232"
+            landmarkName = "sync(for:)"
+            landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "D39A4139-73B9-4786-8B13-6197856B9350 - 53741b304ef191c8"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(5) suspend resume partial function for wispr.CalendarSyncService.sync(for: wispr.EventCalendar) async -&gt; ()"
+                  moduleName = "wispr.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/faisalalalaiwat/punk.systems/code/swift/wispr/wispr/Service/Sync/CalendarSyncService.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "232"
+                  endingLineNumber = "232">
+               </Location>
+               <Location
+                  uuid = "D39A4139-73B9-4786-8B13-6197856B9350 - ff4ba41ead84ff8b"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(6) suspend resume partial function for wispr.CalendarSyncService.sync(for: wispr.EventCalendar) async -&gt; ()"
+                  moduleName = "wispr.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/faisalalalaiwat/punk.systems/code/swift/wispr/wispr/Service/Sync/CalendarSyncService.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "234"
+                  endingLineNumber = "234">
+               </Location>
+               <Location
+                  uuid = "D39A4139-73B9-4786-8B13-6197856B9350 - ff4ba41ead84ffc9"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(6) suspend resume partial function for wispr.CalendarSyncService.sync(for: wispr.EventCalendar) async -&gt; ()"
+                  moduleName = "wispr.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/faisalalalaiwat/punk.systems/code/swift/wispr/wispr/Service/Sync/CalendarSyncService.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "232"
+                  endingLineNumber = "232">
+               </Location>
+               <Location
+                  uuid = "D39A4139-73B9-4786-8B13-6197856B9350 - 9b414dfd80974ee3"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(7) suspend resume partial function for wispr.CalendarSyncService.sync(for: wispr.EventCalendar) async -&gt; ()"
+                  moduleName = "wispr.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/faisalalalaiwat/punk.systems/code/swift/wispr/wispr/Service/Sync/CalendarSyncService.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "223"
+                  endingLineNumber = "223">
+               </Location>
+               <Location
+                  uuid = "D39A4139-73B9-4786-8B13-6197856B9350 - 9b414dfd80974dca"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(7) suspend resume partial function for wispr.CalendarSyncService.sync(for: wispr.EventCalendar) async -&gt; ()"
+                  moduleName = "wispr.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/faisalalalaiwat/punk.systems/code/swift/wispr/wispr/Service/Sync/CalendarSyncService.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "232"
+                  endingLineNumber = "232">
+               </Location>
+            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

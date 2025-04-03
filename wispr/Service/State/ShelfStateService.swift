@@ -50,61 +50,30 @@ final class ShelfStateService {
         shelf = .none
     }
 
-    var dateShelfView: some View {
-        Shelf(content: _dateShelfContent)
-    }
-    
-    var bookShelfView: some View {
-        Shelf(content: _bookShelfContent)
-    }
-
-    var dateShelfButtonView: some View {
-        ShelfButton(
-            type: .date,
-            label: self._dateShelfLabel,
-            content: self._dateShelfContent
-        )
-    }
-    
-    var bookShelfButtonView: some View {
-        ShelfButton(
-            type: .book,
-            label: self._bookShelfLabel,
-            content: self._bookShelfContent
-        )
-    }
-
-    var _dateShelfContent: AnyView = AnyView(BaseDateShelfView())
-    var _dateShelfLabel:  AnyView = AnyView(BaseDateShelfLabelView())
-    var _bookShelfContent: AnyView = AnyView(BaseBookShelfView())
-    var _bookShelfLabel: AnyView = AnyView(BaseBookShelfLabelView())
-    
-    func setDateShelf<Content: View, Label: View>(_ content: () -> Content, _ label: () -> Label) {
-        _dateShelfContent = AnyView(content())
-        _dateShelfLabel = AnyView(label())
-    }
-    
-    func setBookShelf<Content: View, Label: View>(_ content: () -> Content, _ label: () -> Label) {
-        _bookShelfContent = AnyView(content())
-        _bookShelfLabel = AnyView(label())
-    }
-    
     func toggle(type: SType) {
         shelf = shelf == type ? .none : type
     }
-    
+
     @ViewBuilder
-    func display() -> some View {
-        switch shelf {
-            case .date:
-                dateShelfView
-                    .id("dateShelfView")
-            case .book:
-                bookShelfView
-                    .id("bookShelfView")
-            default:
-                EmptyView()
+    func display<DateShelf: View, BookShelf: View>(
+        _ dateShelfView: DateShelf,
+        _ bookShelfView: BookShelf
+    ) -> some View {
+        VStack {
+            switch shelf {
+                case .date:
+                    dateShelfView
+                        .id("dateShelfView")
+                case .book:
+                    bookShelfView
+                        .id("bookShelfView")
+                default:
+                    EmptyView()
+            }
+        }
+        .frame(height: 450)
+        .onDisappear {
+            self.dismissShelf()
         }
     }
 }
-

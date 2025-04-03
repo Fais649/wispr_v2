@@ -37,7 +37,7 @@ struct DateShelfButton: View {
             ) {
                 navigationStateService.toggleDatePickerShelf()
             } label: {
-                navigationStateService.shelfState._dateShelfLabel
+                Text(navigationStateService.activeDate.formatted())
             }
             .onChange(of: navigationStateService.activePath) {
                 if navigationStateService.onForm {

@@ -8,13 +8,22 @@
 import SwiftData
 import SwiftUI
 
+struct AllDay: Listable {
+    var id: UUID = .init()
+    typealias Child = Item
+
+    var children: [Child] = []
+}
+
 @MainActor
 struct Disclosure<
     Label: View,
     Item: Listable,
     ItemView: View
 >: View {
+    var reversed: Bool = false
     let item: Item
+
     var children: [Item.Child] {
         item.children
     }
@@ -29,17 +38,20 @@ struct Disclosure<
         children.isNotEmpty
     }
 
-    var body: some View {
+    func regular() -> some View {
         HStack {
             if expandable {
                 Image(systemName: "line.diagonal")
                     .buttonFontStyle()
+                    .foregroundStyle(.white)
                     .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                    .shadow(color: item.shadowTint, radius: 5)
             } else {
-                Image(systemName: "dot.square")
-                    .symbolRenderingMode(.palette)
-                    .foregroundStyle(.white, .clear)
+                Image(systemName: "square.fill")
+                    .scaleEffect(0.4)
+                    .foregroundStyle(.white)
                     .buttonFontStyle()
+                    .shadow(color: item.shadowTint, radius: 5)
             }
 
             VStack(alignment: .leading) {
@@ -58,11 +70,49 @@ struct Disclosure<
                 }
             }
         }
+    }
+
+    func reverse() -> some View {
+        HStack {
+            VStack(alignment: .trailing) {
+                itemRow(item)
+            }
+
+            if expandable {
+                Image(systemName: "line.diagonal")
+                    .buttonFontStyle()
+                    .rotationEffect(.degrees(isExpanded ? 90 : 0))
+            } else {
+                Image(systemName: "dot.square")
+                    .symbolRenderingMode(.palette)
+                    .foregroundStyle(.white, .clear)
+                    .buttonFontStyle()
+            }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if expandable {
+                withAnimation {
+                    isExpanded.toggle()
+                }
+            }
+        }
+    }
+
+    var body: some View {
+        if reversed {
+            reverse()
+        } else {
+            regular()
+        }
 
         if expandable, isExpanded {
             ForEach(children) { item in
                 childRow(item)
-                    .padding(.leading, Spacing.l + Spacing.m)
+                    .padding(
+                        .leading,
+                        reversed ? Spacing.none : Spacing.l + Spacing.m
+                    )
             }.onMove(perform: { indexSet, newIndex in
                 if let onMoveChild {
                     onMoveChild(

@@ -12,7 +12,10 @@ struct ItemDisclosures: View {
         NavigationStateService
             .self
     ) private var navigationStateService: NavigationStateService
-    @Environment(FlashStateService.self) private var flashService: FlashStateService
+    @Environment(
+        FlashStateService
+            .self
+    ) private var flashService: FlashStateService
     @Environment(\.modelContext) private var modelContext: ModelContext
     var items: [Item]
 
@@ -65,31 +68,33 @@ struct ItemDisclosures: View {
             navigationStateService.activeDate = item.timestamp
             navigationStateService.pathState.setActive(.itemForm(item: item))
         } label: {
-            VStack(alignment: .leading) {
-                Text(item.text)
-                    .truncationMode(.tail)
-                    .lineLimit(1)
+            HStack {
+                VStack(alignment: .leading) {
+                    Text(item.text)
+                        .truncationMode(.tail)
+                        .lineLimit(1)
 
-                if let e = item.eventData {
-                    HStack {
-                        Text(
-                            e.startDate
-                                .formatted(
-                                    .dateTime.hour()
-                                        .minute()
-                                )
-                        )
-                        .eventTimeFontStyle()
-                        Text("-")
+                    if let e = item.eventData, !e.allDay {
+                        HStack {
+                            Text(
+                                e.startDate
+                                    .formatted(
+                                        .dateTime.hour()
+                                            .minute()
+                                    )
+                            )
                             .eventTimeFontStyle()
-                        Text(
-                            e.endDate
-                                .formatted(
-                                    .dateTime.hour()
-                                        .minute()
-                                )
-                        )
-                        .eventTimeFontStyle()
+                            Text("-")
+                                .eventTimeFontStyle()
+                            Text(
+                                e.endDate
+                                    .formatted(
+                                        .dateTime.hour()
+                                            .minute()
+                                    )
+                            )
+                            .eventTimeFontStyle()
+                        }
                     }
                 }
             }

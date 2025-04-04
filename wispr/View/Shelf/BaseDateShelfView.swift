@@ -58,9 +58,13 @@ struct BaseDateShelfView: View {
                                             calendar.enabled.toggle()
                                             Task {
                                                 if calendar.enabled {
-                                                    await calendarSyncService.sync(for: calendar)
+                                                    await calendarSyncService
+                                                        .sync(for: calendar)
                                                 } else {
-                                                    await EventCalendarStore.deleteAllItems(for: calendar)
+                                                    await EventCalendarStore
+                                                        .deleteAllItems(
+                                                            for: calendar
+                                                        )
                                                 }
                                             }
                                         } label: {

@@ -25,6 +25,7 @@ struct ItemForm: View {
     @State private var children: [Item]
     @State private var tags: [Tag]
     @State private var initialBook: Book?
+    @State private var initialChapter: Tag?
 
     @State var showDateShelf: Bool = false
     @State var showBookShelf: Bool = false
@@ -81,12 +82,6 @@ struct ItemForm: View {
                         }
                 }
             }
-            .onAppear {
-                initialBook = navigationStateService.bookState.book
-                if text.isEmpty {
-                    focus = .item(id: item.id)
-                }
-            }
         }
     }
 
@@ -98,12 +93,15 @@ struct ItemForm: View {
     @ViewBuilder
     func subtitle() -> some View {
         if let eventFormData {
-            Text(
-                eventFormData.startDate
-                    .formatted(.dateTime.hour().minute())
-            )
-            Text("-")
-            Text(eventFormData.endDate.formatted(.dateTime.hour().minute()))
+            HStack {
+                Spacer()
+                Text(
+                    eventFormData.startDate
+                        .formatted(.dateTime.hour().minute())
+                )
+                Text("-")
+                Text(eventFormData.endDate.formatted(.dateTime.hour().minute()))
+            }
         }
     }
 
@@ -123,10 +121,24 @@ struct ItemForm: View {
                     Child(children: $children, child: child, focus: $focus)
                 }
             }
+        }.task {
+            if tags.isNotEmpty {
+                initialBook = navigationStateService.bookState.book
+                initialChapter = navigationStateService.bookState.chapter
+
+                await navigationStateService.bookState.setBook(from: tags)
+                if text.isEmpty {
+                    focus = .item(id: item.id)
+                }
+            }
         }
         .onDisappear {
             if let book = navigationStateService.bookState.book {
                 tags = book.tags
+            }
+
+            if let chapter = navigationStateService.bookState.chapter {
+                tags = [chapter]
             }
 
             item.commit(
@@ -138,7 +150,10 @@ struct ItemForm: View {
                 children: children.filter { $0.text.isNotEmpty }
             )
 
-            navigationStateService.bookState.book = initialBook
+            withAnimation {
+                navigationStateService.bookState.chapter = initialChapter
+                navigationStateService.bookState.book = initialBook
+            }
         }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {

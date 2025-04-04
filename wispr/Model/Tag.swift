@@ -69,7 +69,6 @@ final class Tag: Identifiable {
         HStack {
             Text(self.name)
         }
-        // .font(.custom("GohuFont11NFM", size: minimized ? 12 : 16))
         .frame(minWidth: 50, maxWidth: minimized ? 120 : 140)
         .scaleEffect(isEdit ? 1.02 : 1)
         .lineLimit(1)

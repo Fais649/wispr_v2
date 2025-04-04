@@ -59,7 +59,7 @@ class ItemStore {
         let id = eventCalendar.identifier
         return #Predicate<Item> {
             if let eventData = $0.eventData {
-               return eventData.calendarIdentifier == id
+                return eventData.calendarIdentifier == id
             } else {
                 return false
             }
@@ -97,18 +97,18 @@ class ItemStore {
         let desc = FetchDescriptor<Item>()
         let items = try? modelContext.fetch(desc)
         let res = items ?? []
-        return res.filter({$0.eventData != nil})
+        return res.filter { $0.eventData != nil }
     }
 
     @MainActor
     static func loadEventItems(by eventCalendar: EventCalendar) -> [Item] {
-        let desc =
-            FetchDescriptor<Item>(
-                predicate: eventItemPredicated(for: eventCalendar)
-            )
-
+        let desc = FetchDescriptor<Item>()
         let items = try? modelContext.fetch(desc)
-        return items ?? []
+        let res = items ?? []
+        let id = eventCalendar.identifier
+        return res.filter {
+            $0.eventData?.calendarIdentifier == id
+        }
     }
 
     @MainActor
@@ -158,18 +158,10 @@ class ItemStore {
 
     @MainActor
     static func deleteAllItems(for eventCalendar: EventCalendar) {
-        let id = eventCalendar.identifier
-//        try? modelContext.delete(
-//            model: Item.self,
-//            where:
-//                #Predicate {
-//                    if let e = $0.eventData {
-//                        return e.calendarIdentifier ?? "" == id
-//                    } else {
-//                        return false
-//                    }
-//                }
-//        )
+        let items = loadEventItems(by: eventCalendar)
+        for i in items {
+            modelContext.delete(i)
+        }
     }
 
     @MainActor
@@ -271,7 +263,7 @@ class ItemStore {
 @Model
 final class Item: Codable, Transferable, AppEntity, Listable {
     typealias Child = Item
-    
+
     @Attribute(.unique) var id: UUID
     var timestamp: Date
     var position: Int
@@ -290,6 +282,14 @@ final class Item: Codable, Transferable, AppEntity, Listable {
     @Attribute(.externalStorage)
     var imageData: ImageData?
     var audioData: AudioData?
+
+    var shadowTint: Color {
+        tags.first?.color ?? Color.clear
+    }
+
+    var fillTint: Color {
+        tags.first?.color ?? Color.white
+    }
 
     init(
         id: UUID = UUID(),
@@ -326,11 +326,11 @@ final class Item: Codable, Transferable, AppEntity, Listable {
     var isParent: Bool {
         parent == nil
     }
-    
+
     var hasEvent: Bool {
         eventData != nil
     }
-    
+
     var isEvent: Bool {
         parent == nil && eventData != nil
     }
@@ -409,6 +409,24 @@ final class Item: Codable, Transferable, AppEntity, Listable {
         }
         self.tags = tags
         self.children = children
+
+        commit()
+    }
+
+    @MainActor
+    func commit(
+        timestamp: Date? = nil,
+        text: String = "",
+        ekEvent: EKEvent
+    ) {
+        if let timestamp {
+            setTimestamp(timestamp)
+        }
+
+        self.text = text
+        taskData = taskData
+
+        createEvent(from: ekEvent)
 
         commit()
     }
@@ -515,6 +533,14 @@ final class Item: Codable, Transferable, AppEntity, Listable {
         ek = CalendarSyncService.commit(ek)
         var eventData = EventData(from: ek)
         eventData.eventIdentifier = ek.eventIdentifier
+        self.eventData = eventData
+        createNotification(eventData)
+    }
+
+    private func createEvent(
+        from ekEvent: EKEvent
+    ) {
+        let eventData = EventData(from: ekEvent)
         self.eventData = eventData
         createNotification(eventData)
     }
@@ -670,6 +696,12 @@ struct EventData: Identifiable, Codable, Equatable, Formable {
     var endDate: Date
     var notifyAt: Date?
     var calendarIdentifier: String?
+
+    var allDay: Bool {
+        let startOfDay = Calendar.current.startOfDay(for: startDate)
+        return startDate == startOfDay && endDate == startOfDay
+            .advanced(by: 86399)
+    }
 
     struct FormData {
         var startDate: Date

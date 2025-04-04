@@ -54,9 +54,32 @@ struct DayScreen: View {
     }
 
     func subTitle() -> some View {
-        HStack {
+        HStack(alignment: .firstTextBaseline) {
             DateSubTitleLabel(date: navigationStateService.activeDate)
             Spacer()
+
+            if allDay.isNotEmpty {
+                VStack(alignment: .trailing) {
+                    ForEach(allDay.sorted { first, second in
+                        first.text.count > second.text.count
+                    }) { item in
+                        Text(item.text)
+                    }
+                }
+            }
+        }
+    }
+
+    var allDay: [Item] {
+        items.filter {
+            if
+                let e =
+                $0.eventData
+            {
+                return e.allDay
+            } else {
+                return false
+            }
         }
     }
 
@@ -91,7 +114,12 @@ struct DayScreen: View {
                 Spacer()
             }
         }
-        .onChange(of: navigationStateService.bookState.book) {
+        .onChange(of: chapterFilter) {
+            Task {
+                await self.loadedFilteredItems()
+            }
+        }
+        .onChange(of: bookFilter) {
             Task {
                 await self.loadedFilteredItems()
             }
@@ -119,15 +147,24 @@ struct DayScreen: View {
     }
 
     func filterItems() async {
+        let i = items.filter {
+            if
+                let e =
+                $0.eventData
+            {
+                return !e.allDay
+            } else {
+                return true
+            }
+        }
         if let chapterFilter {
             filteredItems = ItemStore.filterByChapter(
-                items: items,
-                chapter:
-                chapterFilter
+                items: i,
+                chapter: chapterFilter
             )
         } else {
             filteredItems = ItemStore.filterByBook(
-                items: items,
+                items: i,
                 book: bookFilter
             )
         }

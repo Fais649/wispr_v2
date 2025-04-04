@@ -56,6 +56,7 @@ struct DateSubTitleLabel: View {
 
 struct DateTitleWithDivider: View {
     var date: Date
+    var trailing: () -> AnyView = { AnyView(EmptyView()) }
 
     var isToday: Bool {
         Calendar.current.isDateInToday(date)
@@ -114,7 +115,11 @@ struct DateTitleWithDivider: View {
                             .offset(x: -Spacing.m)
                     }
                 }
-            DateTitle(date: date, scrollTransition: false)
+            HStack(alignment: .firstTextBaseline) {
+                DateTitle(date: date, scrollTransition: false)
+                Spacer()
+                trailing()
+            }.multilineTextAlignment(.trailing)
         }
     }
 }

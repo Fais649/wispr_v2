@@ -2,9 +2,9 @@ import SwiftUI
 
 public enum Padding {
     static let screenTop: CGFloat = Spacing.m
-    static let screenBottom: CGFloat = Spacing.l
-    static let screenLeading: CGFloat = Spacing.m
-    static let screenTrailing: CGFloat = Spacing.m
+    static let screenBottom: CGFloat = Spacing.xl
+    static let screenLeading: CGFloat = Spacing.l
+    static let screenTrailing: CGFloat = Spacing.l
 
     static let toolbarPaddingBottom: CGFloat = Spacing.l
 }

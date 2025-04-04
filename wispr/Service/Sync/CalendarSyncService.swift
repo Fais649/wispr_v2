@@ -6,6 +6,7 @@ import SwiftUI
 @Observable
 class CalendarSyncService {
     private static let eventStore: EKEventStore = .init()
+    private var authorized: Bool = false
     private var synced: Bool = false
 
     static func create(_ title: String, _ start: Date, _ end: Date) -> EKEvent {
@@ -58,11 +59,12 @@ class CalendarSyncService {
     }
 
     func requestAccessToCalendar() async {
-        CalendarSyncService.eventStore.requestFullAccessToEvents { granted, error in
-            if granted, error == nil {
-                self.synced = true
+        CalendarSyncService.eventStore
+            .requestFullAccessToEvents { granted, error in
+                if granted, error == nil {
+                    self.authorized = true
+                }
             }
-        }
     }
 
     static func loadEKEventsPredicate(
@@ -165,48 +167,48 @@ class CalendarSyncService {
 
     @MainActor
     func sync() async {
-        await requestAccessToCalendar()
-        if !synced {
+        if synced {
             return
         }
 
-        await CalendarSyncService.syncCalendars()
-            let eventCalendars = EventCalendarStore.loadEnabledCalendars()
-            let ekEvents = CalendarSyncService
-                .loadAllEKEvents(for: eventCalendars)
-
-            let ekEventsDict: [Date: [EKEvent]] = Dictionary(
-                grouping: ekEvents,
-                by: { Calendar.current.startOfDay(for: $0.startDate) }
-            )
-
-            let items = ItemStore.loadEventItems()
-            for (date, ekEvents) in ekEventsDict {
-                for e in ekEvents {
-                    let item = items
-                        .filter {
-                            $0.eventData?.eventIdentifier == e
-                                .eventIdentifier
-                        }
-                        .first ?? Item()
-
-                    let eventData = EventData(from: e)
-                    item.commit(
-                        timestamp: date,
-                        text: e.title,
-                        taskData: nil,
-                        eventFormData: eventData.formData(),
-                        tags: [],
-                        children: [],
-                        syncEkEvent: false
-                    )
-                }
+        await requestAccessToCalendar()
+        if !authorized {
+            return
         }
+
+        // await CalendarSyncService.syncCalendars()
+        // let eventCalendars = EventCalendarStore.loadEnabledCalendars()
+        // let ekEvents = CalendarSyncService
+        //     .loadAllEKEvents(for: eventCalendars)
+        //
+        // let ekEventsDict: [Date: [EKEvent]] = Dictionary(
+        //     grouping: ekEvents,
+        //     by: { Calendar.current.startOfDay(for: $0.startDate) }
+        // )
+        //
+        // let items = ItemStore.loadEventItems()
+        // for (date, ekEvents) in ekEventsDict {
+        //     for e in ekEvents {
+        //         let item = items
+        //             .filter {
+        //                 $0.eventData?.eventIdentifier == e
+        //                     .eventIdentifier
+        //             }
+        //             .first ?? Item()
+        //
+        //         item.commit(
+        //             timestamp: date,
+        //             text: e.title,
+        //             ekEvent: e
+        //         )
+        //     }
+        // }
+        synced = true
     }
 
-     func sync(for eventCalendar: EventCalendar) async {
+    func sync(for eventCalendar: EventCalendar) async {
         await requestAccessToCalendar()
-        if !synced {
+        if !authorized {
             return
         }
 
@@ -228,15 +230,10 @@ class CalendarSyncService {
                     }
                     .first ?? Item()
 
-                let eventData = EventData(from: e)
                 await item.commit(
                     timestamp: date,
                     text: e.title,
-                    taskData: nil,
-                    eventFormData: eventData.formData(),
-                    tags: [],
-                    children: [],
-                    syncEkEvent: false
+                    ekEvent: e
                 )
             }
         }

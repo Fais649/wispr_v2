@@ -33,8 +33,17 @@ struct TimeLineScreen: View {
         Text("Timeline")
     }
 
+    fileprivate func load() {
+        Task {
+            days = await loadFilteredDays()
+        }
+    }
+
     var body: some View {
-        Screen(.timelineScreen, title: title) {
+        Screen(
+            .timelineScreen,
+            title: title
+        ) {
             ScrollViewReader { proxy in
                 VStack {
                     if loaded {
@@ -56,15 +65,38 @@ struct TimeLineScreen: View {
                                     id: \.key
                                 ) { key, value in
                                     Section(
-                                        header: sectionHeader(key)
-                                            .padding(
-                                                .bottom,
-                                                Spacing.m
-                                            )
+                                        header: sectionHeader(
+                                            key,
+                                            value.filter {
+                                                if
+                                                    let e =
+                                                    $0.eventData
+                                                {
+                                                    return e.allDay
+                                                } else {
+                                                    return false
+                                                }
+                                            }
+                                        )
+                                        .padding(
+                                            .bottom,
+                                            Spacing.m
+                                        )
                                     ) {
                                         VStack {
                                             ItemDisclosures(
-                                                items: value
+                                                items:
+                                                value
+                                                    .filter {
+                                                        if
+                                                            let e =
+                                                            $0.eventData
+                                                        {
+                                                            return !e.allDay
+                                                        } else {
+                                                            return true
+                                                        }
+                                                    }
                                             )
                                             .scrollTransition(Spacing.l)
                                             Spacer()
@@ -90,15 +122,30 @@ struct TimeLineScreen: View {
                             }
                             .id("timeline")
                         }
+                        .defaultScrollAnchor(.top)
                         .onAppear {
                             scrollToActiveDate(true, proxy: proxy)
                         }
                         .onChange(of: navigationStateService.activeDate) {
                             scrollToActiveDate(proxy: proxy, true)
                         }
-                        .defaultScrollAnchor(.top)
+                        .onChange(of: items) {
+                            load()
+                        }
+                        .onChange(
+                            of: navigationStateService.bookState
+                                .chapter
+                        ) {
+                            load()
+                            scrollToActiveDate(proxy: proxy, true)
+                        }
+                        .onChange(of: navigationStateService.bookState.book) {
+                            load()
+                            scrollToActiveDate(proxy: proxy, true)
+                        }
                     } else {
-                        ProgressView().progressViewStyle(.circular)
+                        ProgressView()
+                            .progressViewStyle(.circular)
                             .task {
                                 days = await loadFilteredDays()
                             }
@@ -106,25 +153,55 @@ struct TimeLineScreen: View {
                 }
             }
         }
-        .onChange(of: items) {
-            Task {
-                days = await loadFilteredDays()
-            }
-        }.onChange(of: navigationStateService.bookState.book) {
-            Task {
-                days = await loadFilteredDays()
-            }
-        }.task {
+        .task {
             days = await loadFilteredDays()
         }
     }
 
     @ViewBuilder
-    func sectionHeader(_ key: Date) -> some View {
-        DateTitleWithDivider(date: key)
+    func sectionHeader(_ key: Date, _ allDay: [Item]) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            DateTitleWithDivider(date: key, trailing: {
+                AnyView(
+                    VStack(alignment: .trailing) {
+                        ForEach(allDay.sorted { first, second in
+                            first.text.count > second.text.count
+                        }) { item in
+                            Text(item.text)
+                                .childItem()
+                                .fontWeight(.ultraLight)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                                .frame(width: 100, alignment: .trailing)
+                                .multilineTextAlignment(.trailing)
+                        }
+                    }
+                    .multilineTextAlignment(.trailing)
+                    .frame(width: 100)
+                )
+            })
             .titleTextStyle()
             .fontWeight(.regular)
             .scrollTransition(Spacing.none)
+        }
+    }
+
+    @ViewBuilder
+    func sub(_ allDay: [Item]) -> some View {
+        Disclosure(
+            item: AllDay(children: allDay),
+            itemRow: { _ in
+                Text("All Day")
+                    .parentItem().fontWeight(.ultraLight)
+            },
+            childRow: { child in
+                HStack {
+                    Text(child.text)
+                    Spacer()
+                }
+                .childItem().fontWeight(.ultraLight)
+            }
+        )
     }
 
     func scrollToActiveDate(

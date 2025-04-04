@@ -62,35 +62,40 @@ struct BookForm: View {
             }
         }
         .toolbar {
-            if focus == .item(id: book.id) {
-                ToolbarItemGroup(placement: .keyboard) {
-                    HStack {
-                        AniButton {
-                            focus = nil
-                        } label: {
-                            Image(systemName: "keyboard")
-                        }
+            ToolbarItemGroup(placement: .keyboard) {
+                HStack {
+                    AniButton {
+                        focus = nil
+                    } label: {
+                        Image(systemName: "keyboard")
+                    }
 
-                        Divider()
+                    Divider()
 
-                        Spacer()
+                    Spacer()
 
+                    if focus == .item(id: book.id) {
                         Divider()
                         ColorPicker("", selection: $color)
-                        // .onChange(of: color) {
-                        //     if let hex = UIColor(color).toHex() {
-                        //         tag.colorHex = hex
-                        //     }
-                        // } // ColorPicker
                     }
                 }
             }
         }
     }
 
+    func subtitle() -> some View {
+        EmptyView()
+    }
+
     var body: some View {
-        Screen(.bookForm(book: book), title: title) {
+        Screen(.bookForm(book: book), title: title, subtitle: subtitle) {
             Lst {
+                if tags.isNotEmpty {
+                    HStack {
+                        Text("Chapters")
+                        Spacer()
+                    }.subTitleFontStyle()
+                }
                 ForEach(tags) { tag in
                     Child(tags: $tags, tag: tag, focus: $focus)
                 }
@@ -99,6 +104,9 @@ struct BookForm: View {
         .onDisappear {
             book.name = name
             book.tags = tags
+            if let h = UIColor(color).toHex() {
+                book.colorHex = h
+            }
 
             if book.name.isNotEmpty {
                 modelContext.insert(book)
@@ -134,6 +142,7 @@ struct BookForm: View {
                 ) { textEmpty in
                     if textEmpty {
                         tags.removeAll { $0.id == tag.id }
+                        modelContext.delete(tag)
                         return
                     }
 
@@ -157,31 +166,7 @@ struct BookForm: View {
                     }
                 }
                 .childItem()
-            }.background(tag.selectedBackground)
-                .toolbar {
-                    if isFocused() {
-                        ToolbarItemGroup(placement: .keyboard) {
-                            HStack {
-                                AniButton {
-                                    focus = nil
-                                } label: {
-                                    Image(systemName: "keyboard")
-                                }
-
-                                Divider()
-
-                                Spacer()
-                                Divider()
-                                ColorPicker("", selection: $color)
-                                    .onChange(of: color) {
-                                        if let hex = UIColor(color).toHex() {
-                                            tag.colorHex = hex
-                                        }
-                                    } // ColorPicker
-                            }
-                        }
-                    }
-                }
+            }
         }
     }
 }

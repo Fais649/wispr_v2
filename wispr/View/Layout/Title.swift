@@ -6,88 +6,42 @@ struct Title<
     SubHeader: View,
     TrailingHeader: View
 >: View {
-    var divider: (() -> Divider)? = nil
-    var header: (() -> Header)? = nil
-    var subHeader: (() -> SubHeader)? = nil
-    var trailingHeader: (() -> TrailingHeader)? = nil
+    var divider: () -> Divider
+    var header: () -> Header
+    var subHeader: () -> SubHeader
+    var trailingHeader: () -> TrailingHeader
+
+    init(
+        divider: @escaping () -> Divider = { EmptyView() },
+        header: @escaping () -> Header = { EmptyView() },
+        subHeader: @escaping () -> SubHeader = { EmptyView() },
+        trailingHeader: @escaping () -> TrailingHeader = { EmptyView() }
+    ) {
+        self.divider = divider
+        self.header = header
+        self.subHeader = subHeader
+        self.trailingHeader = trailingHeader
+    }
 
     var body: some View {
-        if
-            divider != nil || header != nil || subHeader != nil ||
-            trailingHeader != nil
-        {
+        VStack {
             VStack {
-                VStack {
-                    if let divider {
-                        HStack { divider() }
-                    }
-                    HStack {
-                        if let header {
-                            header()
-                        }
-                        Spacer()
-                        if let trailingHeader {
-                            trailingHeader()
-                        }
-                    }
+                HStack {
+                    divider()
                 }
-                .titleTextStyle()
 
-                if let subHeader {
-                    HStack {
-                        subHeader()
-                        Spacer()
-                    }
-                    .subTitleTextStyle()
+                HStack {
+                    header()
+                    Spacer()
+                    trailingHeader()
                 }
             }
+            .titleTextStyle()
+
+            HStack {
+                subHeader()
+            }
+            .subTitleTextStyle()
         }
-    }
-}
-
-extension Title
-    where
-    Divider == Never,
-    SubHeader == Never,
-    Header == Never,
-    TrailingHeader == Never
-{
-    init() {
-        divider = nil
-        header = nil
-        subHeader = nil
-        trailingHeader = nil
-    }
-}
-
-extension Title
-    where
-    Divider == Never,
-    TrailingHeader == Never,
-    SubHeader == Never
-{
-    init(
-        header: (() -> Header)?
-    ) {
-        divider = nil
-        self.header = header
-        subHeader = nil
-        trailingHeader = nil
-    }
-}
-
-extension Title
-    where
-    Divider == Never,
-    SubHeader == Never
-{
-    init(
-        header: (() -> Header)?,
-        trailingHeader: (() -> TrailingHeader)?
-    ) {
-        divider = nil
-        self.header = header
-        subHeader = nil
-        self.trailingHeader = trailingHeader
     }
 }

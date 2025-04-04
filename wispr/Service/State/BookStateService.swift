@@ -16,4 +16,17 @@ final class BookStateService {
     var book: Book?
     var chapter: Tag?
     var showBook = false
+
+    func setBook(from chapters: [Tag]) async {
+        guard let chapter = chapters.first else {
+            return
+        }
+
+        guard let book = await BookStore.loadBook(by: chapter) else {
+            return
+        }
+
+        self.book = book
+        self.chapter = chapter
+    }
 }

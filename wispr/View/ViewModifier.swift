@@ -196,7 +196,7 @@ struct EventTimeFontStyle: ViewModifier {
 struct ButtonFontStyle: ViewModifier {
     @Environment(ThemeStateService.self) private var theme: ThemeStateService
     func body(content: Content) -> some View {
-        content.environment(\.font, theme.activeTheme.h3.weight(.black))
+        content.environment(\.font, theme.activeTheme.h3.weight(.regular))
     }
 }
 

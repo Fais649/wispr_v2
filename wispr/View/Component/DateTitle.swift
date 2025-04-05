@@ -13,20 +13,14 @@ struct DateTitle: View {
     var dateStringLeading: String? = nil
 
     var body: some View {
-        AniButton(padding: Spacing.none) {
-            navigationStateService.activeDate = date
-            navigationStateService.goToDayScreen()
-        } label: {
-            HStack {
-                Text(dateStringLeading ?? date.formatted(
-                    date: .abbreviated,
-                    time: .omitted
-                ))
+        HStack {
+            Text(dateStringLeading ?? date.formatted(
+                date: .abbreviated,
+                time: .omitted
+            ))
 
-                Spacer()
-            }
+            Spacer()
         }
-        .allowsHitTesting(!navigationStateService.onDayScreen)
         .scrollTransition(enabled: scrollTransition)
     }
 }
@@ -110,9 +104,10 @@ struct DateTitleWithDivider: View {
                 }
                 .overlay(alignment: .leading) {
                     if isToday {
-                        Image(systemName: "asterisk")
+                        Image(systemName: "circle.fill")
                             .decorationFontStyle()
                             .offset(x: -Spacing.m)
+                            .scaleEffect(0.6)
                     }
                 }
             HStack(alignment: .firstTextBaseline) {

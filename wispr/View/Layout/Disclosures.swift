@@ -13,7 +13,9 @@ struct Disclosures<
 >: View {
     let items: [Item]
     var onMove: ((IndexSet, Int) -> Void)? = nil
+    var onDelete: ((Item) -> Void)? = nil
     var onMoveChild: ((Item, IndexSet, Int) -> Void)? = nil
+    var onDeleteChild: ((Item.Child) -> Void)? = nil
     let itemRow: (Item) -> Label
     let childRow: (Item.Child) -> ItemView
 
@@ -25,9 +27,12 @@ struct Disclosures<
         ForEach(items) { item in
             Disclosure(
                 item: item,
+                onDelete: onDelete,
+                onDeleteChild: onDeleteChild,
                 itemRow: itemRow,
                 childRow: childRow
             ).id(item.id)
-        }.onMove(perform: onMove)
+        }
+        .onMove(perform: onMove)
     }
 }

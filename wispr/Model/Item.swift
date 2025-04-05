@@ -66,6 +66,34 @@ class ItemStore {
         }
     }
 
+    static func filterAllDayEvents(from items: [Item]) -> [Item] {
+        return items
+            .filter {
+                if
+                    let e =
+                    $0.eventData
+                {
+                    return !e.allDay
+                } else {
+                    return true
+                }
+            }
+    }
+
+    static func allDayEvents(from items: [Item]) -> [Item] {
+        return items
+            .filter {
+                if
+                    let e =
+                    $0.eventData
+                {
+                    return e.allDay
+                } else {
+                    return false
+                }
+            }
+    }
+
     static func idsPredicate(ids: [UUID]) -> Predicate<Item> {
         #Predicate<Item> {
             ids.contains($0.id)
@@ -275,6 +303,8 @@ final class Item: Codable, Transferable, AppEntity, Listable {
     @Relationship(deleteRule: .cascade, inverse: \Item.parent)
     var children: [Item] = []
     @Relationship(deleteRule: .noAction)
+    var book: Book? = nil
+    @Relationship(deleteRule: .noAction)
     var tags: [Tag] = []
     var text = ""
     var taskData: TaskData?
@@ -284,11 +314,11 @@ final class Item: Codable, Transferable, AppEntity, Listable {
     var audioData: AudioData?
 
     var shadowTint: Color {
-        tags.first?.color ?? Color.clear
+        book?.color ?? Color.clear
     }
 
     var fillTint: Color {
-        tags.first?.color ?? Color.white
+        book?.color ?? Color.white
     }
 
     init(
@@ -297,6 +327,7 @@ final class Item: Codable, Transferable, AppEntity, Listable {
         timestamp: Date = .init(),
         archived: Bool = false,
         archivedAt: Date? = nil,
+        book: Book? = nil,
         tags: [Tag] = [],
         taskData: TaskData? = nil,
         eventData: EventData? = nil,
@@ -308,6 +339,7 @@ final class Item: Codable, Transferable, AppEntity, Listable {
         self.archived = archived
         self.archivedAt = archivedAt
         self.position = position
+        self.book = book
         self.tags = tags
         self.taskData = taskData
         self.eventData = eventData
@@ -358,6 +390,7 @@ final class Item: Codable, Transferable, AppEntity, Listable {
         position: Int? = nil,
         archived: Bool = false,
         archivedAt: Date? = nil,
+        book: Book? = nil,
         tags: [Tag] = [],
         taskData: TaskData? = nil,
         eventData: EventData? = nil,
@@ -370,6 +403,7 @@ final class Item: Codable, Transferable, AppEntity, Listable {
         item.archived = archived
         item.archivedAt = archivedAt
         item.position = position ?? ItemStore.calculatePosition(for: timestamp)
+        item.book = book
         item.tags = tags
         item.taskData = taskData
         item.eventData = eventData
@@ -384,6 +418,7 @@ final class Item: Codable, Transferable, AppEntity, Listable {
         text: String = "",
         taskData: TaskData?,
         eventFormData: EventData.FormData?,
+        book: Book? = nil,
         tags: [Tag],
         children: [Item],
         syncEkEvent: Bool = true
@@ -407,6 +442,8 @@ final class Item: Codable, Transferable, AppEntity, Listable {
         if eventData != nil {
             updatePosition()
         }
+
+        self.book = book
         self.tags = tags
         self.children = children
 

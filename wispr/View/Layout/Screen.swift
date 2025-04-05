@@ -13,6 +13,7 @@ struct Screen<
     @Environment(ThemeStateService.self) private var theme
 
     var path: Path = .dayScreen
+    var loaded: Bool = true
     var divider: () -> TitleDivider
     var title: () -> MainTitle
     var trailingTitle: () -> TrailingTitle
@@ -27,32 +28,38 @@ struct Screen<
     var body: some View {
         VStack {
             Title(
-                divider: divider,
                 header: title,
                 subHeader: subtitle,
                 trailingHeader: trailingTitle
             )
-            .titleShadowStyle()
 
-            content()
-                .baseShadowStyle()
-                .safeAreaPadding(.bottom, Padding.screenTop)
+            if !loaded {
+                Spacer()
+                ProgressView()
+                    .progressViewStyle(.circular)
+                Spacer()
+            } else {
+                content()
+                    .baseShadowStyle()
+                    .safeAreaPadding(.bottom, Padding.screenTop)
+            }
         }
         .sheet(isPresented: $showShelf) {
-            navigationStateService.shelfState.display(
-                dateShelf,
-                bookShelf
-            )
-            .presentationDetents([.fraction(0.55)])
-            .presentationBackground(
-                theme.activeTheme
-                    .backgroundMaterialOverlay
-            )
+            if navigationStateService.pathState.active == path {
+                navigationStateService.shelfState.display(
+                    dateShelf,
+                    bookShelf
+                )
+                .presentationDetents([.fraction(0.55)])
+                .presentationBackground(
+                    theme.activeTheme
+                        .backgroundMaterialOverlay
+                )
+            }
         }
         .screenStyle()
         .toolbarBackground(.hidden)
         .navigationBarBackButtonHidden()
-        .navigationTransition(.slide.combined(with: .fade(.in)))
         .onChange(of: navigationStateService.shelfState.isShown()) {
             if !navigationStateService.shelfState.isShown() {
                 withAnimation {
@@ -68,13 +75,13 @@ struct Screen<
                 }
             }
         }
-        .hideSystemBackground()
     }
 }
 
 extension Screen {
     init(
         _ path: Path,
+        loaded: Bool = true,
         divider: @escaping () -> TitleDivider = { EmptyView() },
         title: @escaping () -> MainTitle = { EmptyView() },
         trailingTitle: @escaping () -> TrailingTitle = { EmptyView() },
@@ -84,6 +91,7 @@ extension Screen {
         @ViewBuilder content: @escaping () -> Content
     ) {
         self.path = path
+        self.loaded = loaded
         self.divider = divider
         self.title = title
         self.trailingTitle = trailingTitle

@@ -8,6 +8,7 @@ import SwiftUI
 
 struct ItemFormDateShelfView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(ThemeStateService.self) private var theme: ThemeStateService
     @Binding var eventFormData: EventData.FormData?
     @Binding var timestamp: Date
 
@@ -63,6 +64,7 @@ struct ItemFormDateShelfView: View {
                 selection: editingDate == .start ? $start : $end,
                 displayedComponents: isEvent ? [.date, .hourAndMinute] : [.date]
             )
+            .tint(theme.activeTheme.backgroundMaterialOverlay)
             .frame(width: 340, height: 380)
             .datePickerStyle(.graphical)
             .onChange(of: start) {

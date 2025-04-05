@@ -19,6 +19,15 @@ struct ItemDisclosures: View {
     @Environment(\.modelContext) private var modelContext: ModelContext
     var items: [Item]
 
+    @Environment(\.editMode) var editMode
+    var isEditing: Bool {
+        if let editMode {
+            return editMode.wrappedValue.isEditing
+        }
+
+        return false
+    }
+
     func onMove(_ indexSet: IndexSet, _ newIndex: Int) {
         let (success, message) = ItemStore.updatePositions(
             items: items,
@@ -48,7 +57,9 @@ struct ItemDisclosures: View {
         Disclosures(
             items: items,
             onMove: onMove,
-            onMoveChild: onMoveChild
+            onDelete: delete,
+            onMoveChild: onMoveChild,
+            onDeleteChild: delete
         ) { item in
             label(item)
                 .id(item.id)
@@ -102,17 +113,17 @@ struct ItemDisclosures: View {
         .parentItem()
         .padding(Spacing.s)
         .buttonStyle(.plain)
-        .swipeActions(edge: .leading) {
-            self.archiveButton(item)
-        }.swipeActions(edge: .trailing) {
-            self.deleteButton(item)
-        }
+        // .swipeActions(edge: .leading) {
+        //     self.archiveButton(item)
+        // }.swipeActions(edge: .trailing) {
+        //     self.deleteButton(item)
+        // }
     }
 
     func row(_ child: Item) -> some View {
         HStack {
             if var task = child.taskData {
-                AniButton(padding: Spacing.none) {
+                AniButton(padding: Spacing.s) {
                     task.completedAt = task
                         .completedAt == nil ? Date() : nil
                     child.taskData = task
@@ -131,15 +142,16 @@ struct ItemDisclosures: View {
             } label: {
                 Text(child.text)
                     .multilineTextAlignment(.leading)
-            }
+            }.buttonStyle(.plain)
 
             Spacer()
         }
+        .contentShape(Rectangle())
         .padding(Spacing.xxs)
         .childItem()
-        .swipeActions(edge: .trailing) {
-            self.deleteButton(child)
-        }
+        // .swipeActions(edge: .trailing) {
+        //     self.deleteButton(child)
+        // }
     }
 
     @ViewBuilder
@@ -154,8 +166,10 @@ struct ItemDisclosures: View {
 
     @ViewBuilder
     func deleteButton(_ item: Item) -> some View {
-        AniButton {
-            self.delete(item)
+        Button(role: .destructive) {
+            withAnimation {
+                self.delete(item)
+            }
         } label: {
             Image(systemName: "trash.fill")
         }
@@ -167,6 +181,18 @@ struct ItemDisclosures: View {
         withAnimation {
             item.archived = true
             item.archivedAt = Date()
+        }
+    }
+
+    func onDelete(_ indexSet: IndexSet) {
+        guard let index = indexSet.first else {
+            return
+        }
+
+        let item = items[index]
+        checkEventData(item)
+        withAnimation {
+            self.modelContext.delete(item)
         }
     }
 

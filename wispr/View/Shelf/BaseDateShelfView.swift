@@ -19,106 +19,28 @@ struct BaseDateShelfView: View {
     @State var eventCalendars: [String: [EventCalendar]] = [:]
 
     func title() -> some View {
-        Text(showCalendarShelf ? "Calendars" : "Date")
-    }
-
-    func calendarButton() -> some View {
-        AniButton {
-            showCalendarShelf.toggle()
-        } label: {
-            Image(
-                systemName: showCalendarShelf ? "calendar.circle.fill" :
-                    "calendar"
-            )
-        }
+        Text("Date")
     }
 
     var body: some View {
-        Screen(.dateShelf, title: title, trailingTitle: calendarButton) {
-            ScrollView {
-                LazyVStack(pinnedViews: [.sectionHeaders]) {
-                    if showCalendarShelf {
-                        if loaded {
-                            ForEach(
-                                eventCalendars
-                                    .sorted(by: { $0.key < $1.key }),
-                                id: \.key
-                            ) { key, calendars in
-                                Section(
-                                    header:
-                                    HStack {
-                                        Text(key)
-                                        Spacer()
-                                    }
-                                    .childItem()
-                                    .scrollTransition(Spacing.none)
-                                ) {
-                                    ForEach(calendars) { calendar in
-                                        AniButton {
-                                            calendar.enabled.toggle()
-                                            Task {
-                                                if calendar.enabled {
-                                                    await calendarSyncService
-                                                        .sync(for: calendar)
-                                                } else {
-                                                    await EventCalendarStore
-                                                        .deleteAllItems(
-                                                            for: calendar
-                                                        )
-                                                }
-                                            }
-                                        } label: {
-                                            HStack {
-                                                Image(
-                                                    systemName: calendar
-                                                        .enabled ?
-                                                        "circle.fill" :
-                                                        "circle.dotted"
-                                                )
-                                                Text(calendar.name)
-                                                Spacer()
-                                            }
-                                        }
-                                        .contentShape(Rectangle())
-                                        .parentItem()
-                                        .scrollTransition(Spacing.m)
-                                    }
-                                }
-                            }
-                        } else {
-                            ProgressView().progressViewStyle(.circular)
-                                .task {
-                                    await self.load()
-                                }
-                        }
-                    } else {
-                        DatePicker(
-                            "",
-                            selection: Bindable(navigationStateService)
-                                .activeDate,
-                            displayedComponents: [.date]
-                        ).datePickerStyle(.graphical)
-                            .tint(theme.activeTheme.backgroundMaterialOverlay)
-                    }
-                }
-            }.scrollDisabled(!showCalendarShelf)
+        Screen(
+            .dateShelf,
+            loaded: true,
+            title: title
+        ) {
+            DatePicker(
+                "",
+                selection:
+                Bindable(navigationStateService).activeDate,
+                displayedComponents: [.date]
+            )
+            .datePickerStyle(.graphical)
+            .tint(theme.activeTheme.backgroundMaterialOverlay)
         }
-    }
-
-    func load() async {
-        withAnimation {
-            self.loaded = false
+        .padding(.top, Spacing.m)
+        .onChange(of: navigationStateService.activeDate) {
+            navigationStateService.shelfState.dismissShelf()
         }
-        await loadCalendars()
-        withAnimation {
-            self.loaded = true
-        }
-    }
-
-    func loadCalendars() async {
-        await CalendarSyncService.syncCalendars()
-        eventCalendars = EventCalendarStore.loadGroupedCalendars()
-        loaded = true
     }
 }
 

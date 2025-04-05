@@ -17,6 +17,11 @@ final class BookStateService {
     var chapter: Tag?
     var showBook = false
 
+    func dismissBook() {
+        book = nil
+        chapter = nil
+    }
+
     func setBook(from chapters: [Tag]) async {
         guard let chapter = chapters.first else {
             return

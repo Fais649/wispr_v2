@@ -61,45 +61,56 @@ struct BookForm: View {
                 focus = .item(id: book.id)
             }
         }
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                HStack {
-                    AniButton {
-                        focus = nil
-                    } label: {
-                        Image(systemName: "keyboard")
-                    }
-
-                    Divider()
-
-                    Spacer()
-
-                    if focus == .item(id: book.id) {
-                        Divider()
-                        ColorPicker("", selection: $color)
-                    }
-                }
-            }
-        }
+        // .toolbar {
+        //     ToolbarItemGroup(placement: .keyboard) {
+        //         HStack {
+        //             AniButton {
+        //                 focus = nil
+        //             } label: {
+        //                 Image(systemName: "keyboard")
+        //             }
+        //
+        //             Divider()
+        //
+        //             Spacer()
+        //
+        //             if focus == .item(id: book.id) {
+        //                 Divider()
+        //                 ColorPicker("", selection: $color)
+        //             }
+        //         }
+        //     }
+        // }
     }
 
     func subtitle() -> some View {
         EmptyView()
     }
 
+    @State var colors: [Color] = [.blue, .red, .yellow, .green, .orange, .pink,
+                                  .purple, .teal, .cyan, .mint, .indigo, .black]
     var body: some View {
         Screen(.bookForm(book: book), title: title, subtitle: subtitle) {
             Lst {
-                if tags.isNotEmpty {
-                    HStack {
-                        Text("Chapters")
-                        Spacer()
-                    }.subTitleFontStyle()
-                }
-                ForEach(tags) { tag in
-                    Child(tags: $tags, tag: tag, focus: $focus)
+                ForEach(colors, id: \.self) { color in
+                    AniButton {
+                        self.color = color
+                    } label: {
+                        color.clipShape(Circle())
+                    }
                 }
             }
+            // Lst {
+            //     if tags.isNotEmpty {
+            //         HStack {
+            //             Text("Chapters")
+            //             Spacer()
+            //         }.subTitleFontStyle()
+            //     }
+            //     ForEach(tags) { tag in
+            //         Child(tags: $tags, tag: tag, focus: $focus)
+            //     }
+            // }
         }
         .onDisappear {
             book.name = name

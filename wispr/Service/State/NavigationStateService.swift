@@ -13,6 +13,14 @@ final class NavigationStateService {
     var bookState: BookStateService = .init()
     var shelfState: ShelfStateService = .init()
     var pathState: PathStateService = .init()
+    var days: [Date: [Item]] = [:]
+    var activeDay: ActiveDay = .init()
+
+    var background: GlobalBackground {
+        GlobalBackground()
+    }
+
+    
 
     var activePath: Path {
         pathState.active
@@ -23,11 +31,15 @@ final class NavigationStateService {
     }
 
     var onTimeline: Bool {
-        pathState.onTimeline
+        pathState.onTimelineScreen
     }
 
     var onForm: Bool {
         pathState.onForm
+    }
+
+    var onBookForm: Bool {
+        pathState.onBookForm
     }
 
     var onItemForm: Bool {
@@ -56,6 +68,10 @@ final class NavigationStateService {
 
     func toggleBookShelf() {
         shelfState.toggleBookShelf()
+    }
+
+    func toggleSettingShelf() {
+        shelfState.toggleSettingShelf()
     }
 
     private var _activeDate: Date = Calendar.current.startOfDay(for: Date())
@@ -111,6 +127,10 @@ final class NavigationStateService {
             ))
     }
 
+    func setDays(_ days: [Date: [Item]]) {
+        self.days = days
+    }
+
     @MainActor
     func goToBookForm(_ book: Book? = nil) {
         pathState
@@ -118,15 +138,23 @@ final class NavigationStateService {
     }
 
     func goToDayScreen() {
-        pathState.setActive(.dayScreen)
+        pathState.setActiveTab(.dayScreen)
+    }
+
+    func setActiveDay(activeDay: ActiveDay) {
+        self.activeDay = activeDay
+        activeDate = activeDay.date
+    }
+
+    func goToActiveDay(activeDay: ActiveDay) {
+        setActiveDay(activeDay: activeDay)
+        pathState.setActiveTab(.dayScreen)
     }
 
     @MainActor
     @ViewBuilder
     func destination(_ path: Path) -> some View {
         switch path {
-            case .dayScreen:
-                DayScreen(activeDate: activeDate)
             case let .itemForm(item: item):
                 ItemForm(item: item)
             case let .bookForm(book: book):

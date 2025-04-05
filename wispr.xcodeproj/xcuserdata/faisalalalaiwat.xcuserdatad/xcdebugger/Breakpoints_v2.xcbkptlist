@@ -16,8 +16,8 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "484"
             endingLineNumber = "484"
-            landmarkName = "Item"
-            landmarkType = "3">
+            landmarkName = "archive()"
+            landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -32,7 +32,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "454"
             endingLineNumber = "454"
-            landmarkName = "delete()"
+            landmarkName = "commit(timestamp:text:ekEvent:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -48,7 +48,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "435"
             endingLineNumber = "435"
-            landmarkName = "commit()"
+            landmarkName = "commit(timestamp:text:taskData:eventFormData:book:tags:children:syncEkEvent:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -192,7 +192,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "161"
             endingLineNumber = "161"
-            landmarkName = "deleteAllItems(for:)"
+            landmarkName = "create(id:timestamp:parent:position:archived:archivedAt:tags:taskData:eventData:imageData:audioData:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -208,7 +208,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "109"
             endingLineNumber = "109"
-            landmarkName = "loadEventItems(by:)"
+            landmarkName = "byIds(ids:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -224,7 +224,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "162"
             endingLineNumber = "162"
-            landmarkName = "deleteAllItems(for:)"
+            landmarkName = "create(id:timestamp:parent:position:archived:archivedAt:tags:taskData:eventData:imageData:audioData:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -240,7 +240,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "110"
             endingLineNumber = "110"
-            landmarkName = "loadEventItems(by:)"
+            landmarkName = "byIds(ids:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -256,8 +256,8 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "108"
             endingLineNumber = "108"
-            landmarkName = "loadEventItems(by:)"
-            landmarkType = "7">
+            landmarkName = "ItemStore"
+            landmarkType = "3">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

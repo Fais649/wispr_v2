@@ -59,20 +59,20 @@ struct ToolbarButton<Content: View, S: Shape>: View {
 
     var body: some View {
         b
-            .background {
-                clipShape
-                    .fill(
-                        background
-                            ?
-                            AnyShapeStyle(
-                                theme.activeTheme
-                                    .backgroundMaterialOverlay
-                            )
-                            : AnyShapeStyle(Color.clear)
-                    )
-                    .blur(radius: t ? 50 : 0)
-                    .blendMode(.luminosity)
-            }
+            // .background {
+            //     clipShape
+            //         .fill(
+            //             background
+            //                 ?
+            //                 AnyShapeStyle(
+            //                     theme.activeTheme
+            //                         .backgroundMaterialOverlay
+            //                 )
+            //                 : AnyShapeStyle(Color.clear)
+            //         )
+            //         .blur(radius: t ? 50 : 0)
+            //         .blendMode(.luminosity)
+            // }
             .animation(.smooth, value: t)
     }
 }

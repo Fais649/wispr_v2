@@ -50,7 +50,12 @@ struct BaseBookShelfView: View {
     }
 
     var body: some View {
-        Screen(.bookShelf, title: title, trailingTitle: trailingTitle) {
+        Screen(
+            .bookShelf,
+            loaded: true,
+            title: title,
+            trailingTitle: trailingTitle
+        ) {
             Lst {
                 ForEach(self.books.sorted(by: {
                     if
@@ -62,70 +67,37 @@ struct BaseBookShelfView: View {
                         return $0.timestamp < $1.timestamp
                     }
                 })) { book in
-                    Disclosure(
-                        item: book,
-                        itemRow: { book in
-                            AniButton {
-                                if editBooks {
-                                    navigationStateService.goToBookForm(book)
-                                } else {
-                                    navigationStateService.bookState
-                                        .book = book
-                                    navigationStateService.bookState
-                                        .chapter = nil
-                                }
 
-                                if
-                                    navigationStateService
-                                        .shelfState
-                                        .isShown()
-                                {
-                                    navigationStateService
-                                        .shelfState
-                                        .dismissShelf()
-                                }
-                            } label: {
-                                HStack {
-                                    Text(book.name)
-                                }
-                            }
-                            .buttonStyle(.plain)
-                            .background(
-                                book.globalBackground
-                                    .clipShape(
-                                        RoundedRectangle(cornerRadius: 10)
-                                    )
-                            )
-                        },
-                        childRow: { chapter in
-                            AniButton {
-                                if editBooks {
-                                    navigationStateService.pathState
-                                        .setActive(
-                                            .bookForm(book: book)
-                                        )
-                                } else {
-                                    navigationStateService.bookState
-                                        .book = book
-                                    navigationStateService.bookState
-                                        .chapter = chapter
-                                }
-
-                                if
-                                    navigationStateService
-                                        .shelfState
-                                        .isShown()
-                                {
-                                    navigationStateService
-                                        .shelfState
-                                        .dismissShelf()
-                                }
-                            } label: {
-                                HStack {
-                                    Text(chapter.name)
-                                }
-                            }
+                    AniButton {
+                        if editBooks {
+                            navigationStateService.goToBookForm(book)
+                        } else {
+                            navigationStateService.bookState
+                                .book = book
+                            navigationStateService.bookState
+                                .chapter = nil
                         }
+
+                        if
+                            navigationStateService
+                                .shelfState
+                                .isShown()
+                        {
+                            navigationStateService
+                                .shelfState
+                                .dismissShelf()
+                        }
+                    } label: {
+                        HStack {
+                            Text(book.name)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .background(
+                        book.globalBackground
+                            .clipShape(
+                                RoundedRectangle(cornerRadius: 10)
+                            )
                     )
                 }
             }
@@ -138,8 +110,21 @@ struct BaseBookShelfLabelView: View {
         NavigationStateService
             .self
     ) private var navigationStateService: NavigationStateService
+
+    var date: Date {
+        navigationStateService.activeDate
+    }
+
+    var isToday: Bool {
+        navigationStateService.isTodayActive
+    }
+
     var book: Book? {
         navigationStateService.bookState.book
+    }
+
+    var chapter: Tag? {
+        navigationStateService.bookState.chapter
     }
 
     var clipShape: AnyShape {
@@ -155,23 +140,80 @@ struct BaseBookShelfLabelView: View {
     }
 
     var body: some View {
-        HStack {
-            ToolbarButton(
-                padding: Spacing.s + Spacing.xxs,
-                toggledOn: bookShelfShown,
-                clipShape: clipShape
-            ) {
-                navigationStateService.toggleBookShelf()
-            } label: {
-                LogoBookButton()
-            }
-            .onChange(of: navigationStateService.activePath) {
-                if navigationStateService.onForm {
-                    withAnimation {
-                        navigationStateService.closeShelf()
-                    }
+        ToolbarButton(
+            padding: -8,
+            toggledOn: bookShelfShown,
+            clipShape: clipShape
+        ) {
+            navigationStateService.toggleSettingShelf()
+        } label: {
+            Logo()
+        }
+        .onChange(of: navigationStateService.activePath) {
+            if navigationStateService.onForm {
+                withAnimation {
+                    navigationStateService.closeShelf()
                 }
             }
         }
+
+        ToolbarButton(padding: -16) {
+            navigationStateService.toggleBookShelf()
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "line.diagonal")
+                    .opacity(book == nil ? 0.4 : 1)
+                    .scaleEffect(book == nil ? 0.6 : 1, anchor: .center)
+                if let book {
+                    Text(book.name)
+                } else {
+                    Image(systemName: "asterisk")
+                        .scaleEffect(0.8)
+                }
+            }
+        }
+        .onTapGesture(count: book == nil ? 1 : 2) {
+            withAnimation {
+                if book == nil {
+                    navigationStateService.toggleBookShelf()
+                } else {
+                    navigationStateService.bookState.dismissBook()
+                }
+            }
+        }
+
+        ToolbarButton(padding: -16) {
+            navigationStateService.toggleDatePickerShelf()
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "line.diagonal")
+                    .opacity(isToday ? 0.4 : 1)
+                    .scaleEffect(isToday ? 0.6 : 1, anchor: .center)
+
+                if !isToday {
+                    Text(
+                        date
+                            .formatted(
+                                .dateTime.day(.twoDigits).month(.twoDigits)
+                                    .year(.twoDigits)
+                            )
+                    )
+                } else {
+                    Image(systemName: "circle.fill")
+                        .scaleEffect(0.6)
+                }
+            }
+        }
+        .onTapGesture(count: isToday ? 1 : 2) {
+            withAnimation {
+                if isToday {
+                    navigationStateService.toggleDatePickerShelf()
+                } else {
+                    navigationStateService.goToToday()
+                }
+            }
+        }
+
+        Spacer()
     }
 }

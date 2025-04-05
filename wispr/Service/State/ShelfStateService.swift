@@ -9,7 +9,7 @@ import SwiftUI
 @Observable
 final class ShelfStateService {
     enum SType {
-        case date, book, none
+        case date, book, setting, none
     }
 
     var shelf: SType = .none
@@ -24,6 +24,10 @@ final class ShelfStateService {
 
     func isBook() -> Bool {
         shelf == .book
+    }
+
+    func isSetting() -> Bool {
+        shelf == .setting
     }
 
     func openBookShelf() {
@@ -44,6 +48,10 @@ final class ShelfStateService {
 
     func toggleBookShelf() {
         shelf = isBook() ? .none : .book
+    }
+
+    func toggleSettingShelf() {
+        shelf = isSetting() ? .none : .setting
     }
 
     func dismissShelf() {
@@ -67,6 +75,8 @@ final class ShelfStateService {
                 case .book:
                     bookShelfView
                         .id("bookShelfView")
+                case .setting:
+                    BaseSettingShelfView()
                 default:
                     EmptyView()
             }

@@ -13,19 +13,16 @@ struct DateTitle: View {
     var dateStringLeading: String? = nil
 
     var body: some View {
-        HStack {
-            Text(dateStringLeading ?? date.formatted(
-                date: .abbreviated,
-                time: .omitted
-            ))
+        Text(dateStringLeading ?? date.formatted(
+            date: .abbreviated,
+            time: .omitted
+        ))
 
-            Spacer()
-        }
         .scrollTransition(enabled: scrollTransition)
     }
 }
 
-struct DateSubTitleLabel: View {
+struct DateTrailingTitleLabel: View {
     @Environment(
         NavigationStateService
             .self
@@ -51,70 +48,35 @@ struct DateSubTitleLabel: View {
 struct DateTitleWithDivider: View {
     var date: Date
     var trailing: () -> AnyView = { AnyView(EmptyView()) }
+    var subtitle: () -> AnyView = { AnyView(EmptyView()) }
 
     var isToday: Bool {
         Calendar.current.isDateInToday(date)
     }
 
     var body: some View {
-        VStack {
-            SimpleDvider()
-                .frame(height: isToday ? 1 : 0.5)
-                .mask {
-                    if isToday {
-                        LinearGradient(
-                            gradient: Gradient(stops: [
-                                .init(
-                                    color: .black,
-                                    location: 0
-                                ),
-                                .init(
-                                    color: .black,
-                                    location: 0.8
-                                ),
-                                .init(
-                                    color: .clear,
-                                    location: 1.0
-                                ),
-                            ]),
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    } else {
-                        LinearGradient(
-                            gradient: Gradient(stops: [
-                                .init(
-                                    color: .black,
-                                    location: 0
-                                ),
-
-                                .init(
-                                    color: .black,
-                                    location: 0.5
-                                ),
-                                .init(
-                                    color: .clear,
-                                    location: 0.7
-                                ),
-                            ]),
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    }
-                }
-                .overlay(alignment: .leading) {
-                    if isToday {
-                        Image(systemName: "circle.fill")
-                            .decorationFontStyle()
-                            .offset(x: -Spacing.m)
-                            .scaleEffect(0.6)
-                    }
-                }
+        VStack(spacing: Spacing.none) {
             HStack(alignment: .firstTextBaseline) {
                 DateTitle(date: date, scrollTransition: false)
                 Spacer()
                 trailing()
             }.multilineTextAlignment(.trailing)
+
+            SimpleDvider()
+                .background(.ultraThinMaterial)
+                .overlay(alignment: .trailing) {
+                    if isToday {
+                        Image(systemName: "circle.fill")
+                            .toolbarFontStyle()
+                            .offset(x: Spacing.l + Spacing.m)
+                            .scaleEffect(0.4)
+                    }
+                }
+
+            HStack {
+                subtitle()
+                Spacer()
+            }
         }
     }
 }

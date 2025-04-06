@@ -48,11 +48,15 @@ final class Book: Identifiable, Equatable, Listable {
     var endDate: Date?
 
     var parent: Book? = nil
-    var children: [Tag] { tags }
+    var children: [Tag] { [] }
 
     var colorHex: String = UIColor.systemPink.toHex() ?? ""
     var color: Color {
         return Color(uiColor: UIColor(hex: colorHex))
+    }
+
+    var shadowTint: Color {
+        color
     }
 
     init(
@@ -74,43 +78,6 @@ final class Book: Identifiable, Equatable, Listable {
     }
 
     var globalBackground: some View {
-        Background(book: self)
-    }
-
-    struct Background: View {
-        var book: Book
-        @State var topRight: CGFloat = .random(in: 0 ... 1)
-        @State var topLeft: CGFloat = .random(in: 0 ... 1)
-        @State var top: CGFloat = .random(in: 0 ... 1)
-
-        @State var centerRight: CGFloat = .random(in: 0 ... 1)
-        @State var centerLeft: CGFloat = .random(in: 0 ... 1)
-        @State var center: CGFloat = .random(in: 0 ... 1)
-
-        @State var bottomRight: CGFloat = .random(in: 0 ... 1)
-        @State var bottomLeft: CGFloat = .random(in: 0 ... 1)
-
-        var body: some View {
-            VStack {
-                let first = book.color
-
-                MeshGradient(width: 3, height: 3, points: [
-                    [0, 0], [0, 0.5], [0, 1],
-                    [0.5, 0], [0.5, 0.5], [0.5, 1],
-                    [1, 0], [1, 0.5], [1, 1],
-                ], colors: [
-                    first.opacity(topRight),
-                    first.opacity(topLeft),
-                    first.opacity(top),
-                    first.opacity(centerRight),
-                    first.opacity(centerLeft),
-                    first, // bottom center
-                    first.opacity(bottomRight),
-                    first.opacity(bottomLeft),
-                    first.opacity(center),
-                ])
-                .blur(radius: 30)
-            }
-        }
+        RandomMeshBackground(color: color)
     }
 }

@@ -22,6 +22,7 @@ struct Disclosure<
     ItemView: View
 >: View {
     @Environment(\.editMode) var editMode
+    @State var isExpanded = false
     var isEditing: Bool {
         if let editMode {
             return editMode.wrappedValue.isEditing
@@ -43,7 +44,6 @@ struct Disclosure<
 
     let itemRow: (Item) -> Label
     let childRow: (Item.Child) -> ItemView
-    @State var isExpanded = true
 
     var expandable: Bool {
         children.isNotEmpty
@@ -60,36 +60,7 @@ struct Disclosure<
                 }
                 .buttonStyle(.plain)
             }
-
-            if expandable {
-                Image(systemName: "line.diagonal")
-                    .buttonFontStyle()
-                    .foregroundStyle(.white)
-                    .rotationEffect(.degrees(isExpanded ? 90 : 0))
-                    .background {
-                        RadialGradient(
-                            colors: [.clear, item.shadowTint],
-                            center: .center,
-                            startRadius: 5,
-                            endRadius: 10
-                        ).blur(radius: 10)
-                    }
-            } else {
-                Image(systemName: "square.fill")
-                    .scaleEffect(0.4)
-                    .foregroundStyle(.white)
-                    .buttonFontStyle()
-                    .background {
-                        RadialGradient(
-                            colors: [.clear, item.shadowTint],
-                            center: .center,
-                            startRadius: 5,
-                            endRadius: 10
-                        ).blur(radius: 10)
-                    }
-            }
         }
-        .padding(.leading, Spacing.m)
 
         VStack(alignment: .leading) {
             itemRow(item)
@@ -118,9 +89,15 @@ struct Disclosure<
     }
 
     var body: some View {
-        HStack {
+        HStack(spacing: -Spacing.s) {
             if reversed {
                 reverse()
+                item.shadowTint
+                    .frame(width: 2)
+                    .clipShape(
+                        RoundedRectangle(cornerRadius: 1)
+                    )
+                    .opacity(0.4)
             } else {
                 regular()
             }
@@ -133,15 +110,26 @@ struct Disclosure<
                 }
             }
         }
-
-        // .background {
-        //     RoundedRectangle(
-        //         cornerRadius:
-        //         10
-        //     ).fill(item.shadowTint.gradient)
-        //         .overlay(.ultraThinMaterial)
-        //         .opacity(0.4)
-        // }
+        .background {
+            UnevenRoundedRectangle(cornerRadii: .init(
+                topLeading: 4,
+                bottomLeading: isExpanded ? 0 : 4,
+                bottomTrailing: !expandable ? 4 : isExpanded ? 20 : 30,
+                topTrailing: 4
+            )).fill(
+                expandable ? AnyShapeStyle(item.shadowTint) :
+                    AnyShapeStyle(item.shadowTint.gradient)
+            )
+            .overlay(alignment: .bottomTrailing) {
+                if expandable {
+                    Circle().fill(item.shadowTint).frame(width: Spacing.xs)
+                        .padding(isExpanded ? .top : .vertical, Spacing.xs)
+                        .offset(y: isExpanded ? Spacing.xxs : 0)
+                }
+            }
+            .opacity(0.2)
+            .padding(isExpanded ? .top : .vertical, Spacing.xs)
+        }
 
         if expandable, isExpanded {
             ForEach(children) { item in
@@ -158,8 +146,39 @@ struct Disclosure<
                 }
                 .padding(
                     .leading,
-                    reversed ? Spacing.none : Spacing.l + Spacing.m
+                    reversed ? Spacing.none : Spacing.l
                 )
+                .background {
+                    UnevenRoundedRectangle(cornerRadii: .init(
+                        topLeading: 0,
+                        bottomLeading: item == children.last ? 2 : 0,
+                        bottomTrailing: item == children.last ? 2 : 0,
+                        topTrailing: item == children.first ? 20 : 0
+                    )).fill(self.item.shadowTint)
+                        .opacity(0.2)
+                }
+                .padding(
+                    .bottom,
+                    item == children.last ? Spacing.xs : Spacing.none
+                )
+                .mask {
+                    LinearGradient(
+                        gradient: Gradient(stops: [
+                            .init(
+                                color: .black,
+                                location: 0.7
+                            ),
+                            .init(
+                                color: item == children.last ? .clear :
+                                    .black,
+                                location: 1
+                            ),
+                        ]),
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                }
+
             }.onMove(perform: { indexSet, newIndex in
                 if let onMoveChild {
                     onMoveChild(

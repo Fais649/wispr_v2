@@ -7,7 +7,7 @@
 import SwiftUI
 
 protocol Listable: Identifiable, Equatable {
-    associatedtype Child: Identifiable
+    associatedtype Child: Identifiable, Equatable
     var children: [Child] { get }
     var shadowTint: Color { get }
     var fillTint: Color { get }

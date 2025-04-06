@@ -89,28 +89,96 @@ struct BookForm: View {
 
     @State var colors: [Color] = [.blue, .red, .yellow, .green, .orange, .pink,
                                   .purple, .teal, .cyan, .mint, .indigo, .black]
+
+    let columns = [
+        GridItem(.flexible()),
+        GridItem(.flexible()),
+        GridItem(.flexible()),
+        GridItem(.flexible()),
+    ]
+
     var body: some View {
         Screen(.bookForm(book: book), title: title, subtitle: subtitle) {
-            Lst {
-                ForEach(colors, id: \.self) { color in
+            ScrollView {
+                LazyVGrid(columns: columns, spacing: 20) {
                     AniButton {
-                        self.color = color
+                        self.color = .pink
                     } label: {
-                        color.clipShape(Circle())
+                        color
+                            .overlay {
+                                Circle()
+                                    .fill(.clear)
+                                    .stroke(.white, lineWidth: 4)
+                            }
+                            .clipShape(Circle())
+                    }.frame(width: 100, height: 100)
+                        .buttonStyle(.plain)
+                        .shadow(color: self.color, radius: 2)
+
+                    ForEach(
+                        colors.filter { $0 != self.color },
+                        id: \.self
+                    ) { color in
+                        AniButton {
+                            self.color = color
+                        } label: {
+                            color
+                                .clipShape(Circle())
+                        }.frame(width: 50, height: 50)
+                            .buttonStyle(.plain)
+                    }
+                }
+                .padding()
+                .listRowBackground(Color.clear)
+            }
+            .onChange(of: color) {
+                withAnimation {
+                    navigationStateService.tempBackground = {
+                        AnyView(
+                            RandomMeshBackground(color: color)
+                        )
                     }
                 }
             }
-            // Lst {
-            //     if tags.isNotEmpty {
-            //         HStack {
-            //             Text("Chapters")
-            //             Spacer()
-            //         }.subTitleFontStyle()
-            //     }
-            //     ForEach(tags) { tag in
-            //         Child(tags: $tags, tag: tag, focus: $focus)
-            //     }
-            // }
+            .onAppear {
+                withAnimation {
+                    navigationStateService.tempBackground = {
+                        AnyView(
+                            RandomMeshBackground(color: color)
+                        )
+                    }
+                }
+            }.onDisappear {
+                withAnimation {
+                    navigationStateService.tempBackground = nil
+                }
+            }
+        }.toolbar {
+            ToolbarItemGroup(placement: .bottomBar) {
+                HStack {
+                    ToolbarButton {
+                        navigationStateService.goBack()
+                    } label: {
+                        Image(
+                            systemName: "chevron.left"
+                        )
+                    }
+                    Spacer()
+                }
+            }
+
+            ToolbarItemGroup(placement: .keyboard) {
+                HStack {
+                    ToolbarButton(padding: 0) {
+                        focus = nil
+                    } label: {
+                        Image(
+                            systemName: "keyboard.chevron.compact.down"
+                        )
+                    }
+                    Spacer()
+                }
+            }
         }
         .onDisappear {
             book.name = name

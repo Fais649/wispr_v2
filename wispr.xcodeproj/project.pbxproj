@@ -256,15 +256,11 @@
 		};
 		A2A5879B2D3120F30000B20D /* wisprTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = wisprTests;
 			sourceTree = "<group>";
 		};
 		A2A587A52D3120F30000B20D /* wisprUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = wisprUITests;
 			sourceTree = "<group>";
 		};
@@ -337,7 +333,6 @@
 				CC973170E15C14DB75C41B4B /* ItemFormBookShelfView.swift */,
 				2ED7E400481892B607A35FB3 /* BaseSettingBookShelfView.swift */,
 			);
-			name = Shelf;
 			path = Shelf;
 			sourceTree = "<group>";
 		};
@@ -851,6 +846,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = wispr/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = wisp_r;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Request microphone access to create audio recordings.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -861,7 +857,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 11;
+				MARKETING_VERSION = 12.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.wisp-r.app";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -883,6 +879,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = wispr/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = wisp_r;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Request microphone access to create audio recordings.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -893,7 +890,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 11;
+				MARKETING_VERSION = 12.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.wisp-r.app";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

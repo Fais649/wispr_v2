@@ -314,7 +314,7 @@ final class Item: Codable, Transferable, AppEntity, Listable {
     var audioData: AudioData?
 
     var shadowTint: Color {
-        book?.color ?? Color.clear
+        book?.color ?? Color.white
     }
 
     var fillTint: Color {

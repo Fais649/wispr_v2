@@ -11,7 +11,7 @@ struct ToolbarButton<Content: View, S: Shape>: View {
     @ViewBuilder var label: () -> Content
 
     init(
-        padding: CGFloat = Spacing.s,
+        padding: CGFloat = Spacing.none,
         toggledOn: Bool? = nil,
         background: Bool = true,
         clipShape: S = Circle(),

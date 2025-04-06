@@ -20,7 +20,7 @@ final class NavigationStateService {
         GlobalBackground()
     }
 
-    
+    var tempBackground: (() -> AnyView)?
 
     var activePath: Path {
         pathState.active

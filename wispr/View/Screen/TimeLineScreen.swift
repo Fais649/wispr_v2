@@ -21,87 +21,92 @@ struct TimeLineScreen: View {
         Calendar.current.startOfDay(for: Date())
     }
 
+    @Binding var scrollToActiveDate: Bool
+
     var body: some View {
         ScrollViewReader { proxy in
-            VStack {
-                ScrollView {
-                    LazyVStack(pinnedViews: [.sectionHeaders]) {
-                        VStack {
-                            HStack {
-                                Text("Once upon a wispr...")
-                                    .childItem()
-                                    .opacity(0.5)
-                                Spacer()
-                            }
+            ScrollView {
+                LazyVStack {
+                    VStack {
+                        HStack {
+                            Text("Once upon a wispr...")
+                                .childItem()
+                                .opacity(0.5)
                             Spacer()
                         }
-                        .frame(height: Spacing.l)
+                        Spacer()
+                    }
+                    .frame(height: Spacing.l)
 
-                        ForEach(
-                            days.sorted(by: { $0.key < $1.key }),
-                            id: \.key
-                        ) { key, value in
-                            let allDayEvents =
-                                ItemStore.allDayEvents(from: value)
-                            let notAllDayItems = ItemStore
-                                .filterAllDayEvents(from: value)
+                    ForEach(
+                        days.sorted(by: { $0.key < $1.key }),
+                        id: \.key
+                    ) { key, value in
+                        let allDayEvents =
+                            ItemStore.allDayEvents(from: value)
+                        let notAllDayItems = ItemStore
+                            .filterAllDayEvents(from: value)
 
+                        VStack {
                             Section(
                                 header: sectionHeader(
                                     key,
-                                    notAllDayItems: value,
-                                    allDayEvents: allDayEvents
+                                    allDayEvents: allDayEvents,
+                                    notAllDayItems: value
                                 )
-                                .padding(
-                                    .bottom,
-                                    Spacing.m
-                                )
+                                .scrollTransition(Spacing.none)
                             ) {
-                                VStack {
+                                VStack(spacing: 0) {
                                     ItemDisclosures(items: notAllDayItems)
-                                    Spacer()
-                                        .frame(height: Spacing.l)
-                                }.padding(Spacing.m)
-
-                            }.id(key)
-                                .opacity(
-                                    key < navigationStateService
-                                        .activeDate ? 0.65 : 1
-                                )
-                        }
-
-                        VStack {
-                            HStack {
-                                Text("...")
-                                    .childItem()
-                                    .opacity(0.5)
-                                Spacer()
+                                        .scrollTransition(Spacing.s)
+                                }
+                                .padding(.bottom, Spacing.l)
                             }
+                        }.safeAreaPadding(.bottom, Spacing.m)
+                            .opacity(
+                                key < navigationStateService
+                                    .activeDate ? 0.65 : 1
+                            ).id(key)
+                    }
+
+                    VStack {
+                        HStack {
+                            Text("...")
+                                .childItem()
+                                .opacity(0.5)
                             Spacer()
                         }
-                        .frame(height: Spacing.l)
+                        Spacer()
                     }
-                    .id("timeline")
+                    .frame(height: Spacing.l)
                 }
-                .defaultScrollAnchor(.center)
-                .onAppear {
-                    scrollToActiveDate(proxy: proxy)
-                }
-                .onChange(of: navigationStateService.activeDate) {
+                .scrollTargetLayout()
+                .id("timeline")
+            }
+            .scrollTargetBehavior(.viewAligned)
+            .defaultScrollAnchor(.top)
+            .onAppear {
+                scrollToActiveDate(proxy: proxy)
+            }
+            .onChange(of: scrollToActiveDate) {
+                if scrollToActiveDate {
                     scrollToActiveDate(proxy: proxy, true)
+                    scrollToActiveDate = false
                 }
             }
+            .onChange(of: navigationStateService.activeDate) {
+                scrollToActiveDate(proxy: proxy, true)
+            }
         }
-        .toolbarBackground(.hidden)
     }
 
     @ViewBuilder
     func sectionHeader(
         _ key: Date,
-        notAllDayItems: [Item],
-        allDayEvents: [Item]
+        allDayEvents: [Item],
+        notAllDayItems: [Item]
     ) -> some View {
-        AniButton {
+        AniButton(padding: 0) {
             navigationStateService.goToActiveDay(
                 activeDay:
                 ActiveDay(
@@ -114,35 +119,41 @@ struct TimeLineScreen: View {
                 date: key,
                 trailing: {
                     AnyView(
-                        VStack(alignment: .trailing) {
+                        DateTrailingTitleLabel(date: key)
+                            .childItem()
+                            .fontWeight(.light)
+                    )
+                },
+                subtitle: {
+                    AnyView(
+                        VStack {
                             ForEach(
-                                allDayEvents.sorted { first, second in
-                                    first.text.count > second.text
-                                        .count
-                                }
+                                allDayEvents
+                                    .sorted { first, second in
+                                        first.text.count > second
+                                            .text
+                                            .count
+                                    }
                             ) { item in
-                                Text(item.text)
-                                    .childItem()
-                                    .fontWeight(.ultraLight)
-                                    .lineLimit(1)
-                                    .truncationMode(.tail)
-                                    .frame(
-                                        width: 100,
-                                        alignment: .trailing
-                                    )
-                                    .multilineTextAlignment(
-                                        .trailing
-                                    )
+                                HStack {
+                                    Text(item.text)
+                                        .childItem()
+                                        .fontWeight(.ultraLight)
+                                        .lineLimit(1)
+                                        .truncationMode(.tail)
+                                        .multilineTextAlignment(
+                                            .leading
+                                        )
+                                    Spacer()
+                                }
                             }
                         }
-                        .multilineTextAlignment(.trailing)
-                        .frame(width: 100)
                     )
                 }
             )
         }
-        .titleTextStyle()
-        .fontWeight(.regular)
+        .parentItem()
+        .fontWeight(.bold)
     }
 
     func scrollToActiveDate(

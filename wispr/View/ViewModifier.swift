@@ -44,7 +44,7 @@ public extension View {
     }
 
     func toolbarButtonLabelStyler(
-        padding: (x: CGFloat, y: CGFloat) = (x: Spacing.s, y: Spacing.s),
+        padding: (x: CGFloat, y: CGFloat) = (x: Spacing.none, y: Spacing.none),
         shadowRadius: CGFloat = Spacing.xxs
     ) -> some View {
         modifier(ToolbarButtonLabelStyler(
@@ -102,14 +102,27 @@ public extension View {
         modifier(ScrollTransition(enabled: enabled, edgeInset: edgeInset))
     }
 
-    func fade(_ from: UnitPoint, _ to: UnitPoint) -> some View {
-        modifier(FadeModifier(from: from, to: to))
+    func fade(
+        from: UnitPoint,
+        fromOffset: CGFloat = 0,
+        to: UnitPoint,
+        toOffset: CGFloat = 1
+    ) -> some View {
+        modifier(FadeModifier(
+            from: from,
+            fromOffset: fromOffset,
+            to: to,
+            toOffset: toOffset
+        ))
     }
 }
 
 struct FadeModifier: ViewModifier {
     var from: UnitPoint
+    var fromOffset: CGFloat
     var to: UnitPoint
+    var toOffset: CGFloat
+
     func body(content: Content) -> some View {
         content
             .mask {
@@ -117,11 +130,11 @@ struct FadeModifier: ViewModifier {
                     gradient: Gradient(stops: [
                         .init(
                             color: .black,
-                            location: 0
+                            location: fromOffset
                         ),
                         .init(
                             color: .clear,
-                            location: 1
+                            location: toOffset
                         ),
                     ]),
                     startPoint: from,
@@ -208,7 +221,7 @@ struct DecorationFontStyle: ViewModifier {
 }
 
 private struct ToolbarButtonLabelStyler: ViewModifier {
-    var padding: (x: CGFloat, y: CGFloat) = (x: Spacing.s, y: Spacing.s)
+    var padding: (x: CGFloat, y: CGFloat) = (x: Spacing.none, y: Spacing.none)
     var shadowRadius: CGFloat = Spacing.xxs
 
     func body(content: Content) -> some View {
@@ -360,16 +373,16 @@ private struct ScrollTransition: ViewModifier {
             content
                 .scrollTransition(
                     .interactive
-                        .threshold(.visible.inset(by: edgeInset * 1.6))
+                        .threshold(.visible.inset(by: edgeInset * 1))
                 ) { content, phase in
                     content.opacity(phase.isIdentity ? 1 : 0)
-                        .blur(radius: phase.isIdentity ? 0 : 40)
-                        .scaleEffect(
-                            x: 1,
-                            y: phase.isIdentity ? 1 : 0,
-                            anchor:
-                            phase.value > 0 ? .top : .bottom
-                        )
+                        .blur(radius: phase.isIdentity ? 0 : 20)
+                    // .scaleEffect(
+                    //     x: 1,
+                    //     y: phase.isIdentity ? 1 : 0,
+                    //     anchor:
+                    //     phase.value > 0 ? .top : .bottom
+                    // )
                 }
         } else {
             content

@@ -11,6 +11,7 @@ struct Disclosures<
     Item: Listable,
     ItemView: View
 >: View {
+    var defaultExpanded: Bool = false
     let items: [Item]
     var onMove: ((IndexSet, Int) -> Void)? = nil
     var onDelete: ((Item) -> Void)? = nil
@@ -26,6 +27,7 @@ struct Disclosures<
     var body: some View {
         ForEach(items) { item in
             Disclosure(
+                isExpanded: defaultExpanded,
                 item: item,
                 onDelete: onDelete,
                 onDeleteChild: onDeleteChild,

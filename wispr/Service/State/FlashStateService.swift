@@ -24,7 +24,7 @@ class FlashStateService {
                         self.flash = nil
                     }
                 }
-            }.listRowBackground(Color.clear)
+            }
         }
     }
 }

@@ -88,8 +88,10 @@ struct ContentView: View {
         }
 
         navigationStateService.setDays(await filterTimelineDays())
-        withAnimation {
-            timelineLoaded = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            withAnimation {
+                timelineLoaded = true
+            }
         }
     }
 
@@ -139,21 +141,35 @@ struct ContentView: View {
     var activeItems: [Item] { navigationStateService.activeDay.items }
     var days: [Date: [Item]] { navigationStateService.days }
 
+    var activeDayDict: [Date: [Item]] {
+        [navigationStateService.activeDay.date: navigationStateService.activeDay
+            .items]
+    }
+
+    @State var scrollToActiveDate: Bool = false
+
     var body: some View {
         NavigationStack(path: $navigationStateService.pathState.path) {
             TabView(selection: $navigationStateService.pathState.tab) {
                 Screen(
                     .timelineScreen,
                     loaded: timelineLoaded,
-                    title: { Text("Timeline") }
+                    title: { Text("Timeline") },
+                    onTapTitle: {
+                        scrollToActiveDate = true
+                    },
+                    subtitle: { Text("K").opacity(0) },
+                    backgroundOpacity: 0.4
                 ) {
-                    TimeLineScreen(days: days)
+                    TimeLineScreen(
+                        days: days,
+                        scrollToActiveDate: $scrollToActiveDate
+                    )
                 }
                 .tabItem {
                     Image(systemName: "text.line.magnify")
                 }
                 .tag(Path.timelineScreen)
-                .toolbarBackground(.hidden)
                 .animation(.smooth, value: timelineLoaded)
 
                 Screen(
@@ -171,28 +187,19 @@ struct ContentView: View {
                         )
                     },
                     trailingTitle: {
-                        Text(
-                            date.formatted(.dateTime.weekday(.wide))
+                        DateTrailingTitleLabel(
+                            date: date
                         )
                     },
                     subtitle: {
-                        HStack(alignment: .firstTextBaseline) {
-                            DateSubTitleLabel(
-                                date: date
+                        HStack {
+                            Text(
+                                date.formatted(.dateTime.weekday(.wide))
                             )
                             Spacer()
-
-                            if dayEvents.isNotEmpty {
-                                VStack(alignment: .trailing) {
-                                    ForEach(dayEvents.sorted { first, second in
-                                        first.text.count > second.text.count
-                                    }) { item in
-                                        Text(item.text)
-                                    }
-                                }
-                            }
                         }
-                    }
+                    },
+                    backgroundOpacity: 0.4
                 ) {
                     DayScreen(items: activeDay.items, editMode: $editMode)
                 }
@@ -219,7 +226,6 @@ struct ContentView: View {
             .navigationDestination(for: Path.self) { path in
                 navigationStateService.destination(path)
                     .background(navigationStateService.background)
-                    .toolbarBackground(.hidden)
             }
             .tabViewStyle(.page)
             .background(navigationStateService.background)
@@ -227,14 +233,12 @@ struct ContentView: View {
                 ToolbarItemGroup(
                     placement: .bottomBar
                 ) {
-                    HStack {
-                        Toolbar()
-                    }
+                    Toolbar()
                 }
             }
-            .toolbarBackground(.hidden)
         }
-        .toolbarBackground(.hidden)
+        .toolbarBackground(.ultraThinMaterial)
+        .toolbarBackgroundVisibility(.visible)
         .scrollIndicators(.hidden)
         .scrollContentBackground(.hidden)
         .environment(navigationStateService)
@@ -252,8 +256,32 @@ struct ContentView: View {
 
 struct GlobalBackground: View {
     @Environment(ThemeStateService.self) private var theme: ThemeStateService
+    @Environment(
+        NavigationStateService
+            .self
+    ) private var navigationStateService: NavigationStateService
     @Environment(BookStateService.self) private var activeBook: BookStateService
 
+    var body: some View {
+        VStack {
+            if let bg = navigationStateService.tempBackground {
+                bg()
+            } else if let book = activeBook.book {
+                book.globalBackground
+            } else {
+                RandomMeshBackground(
+                    color: theme.activeTheme
+                        .defaultBackgroundColor
+                )
+            }
+        }
+        .overlay(theme.activeTheme.backgroundMaterialOverlay)
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
+    }
+}
+
+struct RandomMeshBackground: View {
     @State var topRight: CGFloat = .random(in: 0 ... 1)
     @State var topLeft: CGFloat = .random(in: 0 ... 1)
     @State var top: CGFloat = .random(in: 0 ... 1)
@@ -265,39 +293,24 @@ struct GlobalBackground: View {
     @State var bottomRight: CGFloat = .random(in: 0 ... 1)
     @State var bottomLeft: CGFloat = .random(in: 0 ... 1)
 
+    var color: Color
+
     var body: some View {
-        VStack {
-            if let book = activeBook.book {
-                book.globalBackground
-            } else {
-                MeshGradient(width: 3, height: 3, points: [
-                    [0, 0], [0, 0.5], [0, 1],
-                    [0.5, 0], [0.5, 0.5], [0.5, 1],
-                    [1, 0], [1, 0.5], [1, 1],
-                ], colors: [
-                    theme.activeTheme.defaultBackgroundColor
-                        .opacity(topRight),
-                    theme.activeTheme.defaultBackgroundColor
-                        .opacity(topLeft),
-                    theme.activeTheme.defaultBackgroundColor
-                        .opacity(top),
-                    theme.activeTheme.defaultBackgroundColor
-                        .opacity(center),
-                    theme.activeTheme.defaultBackgroundColor
-                        .opacity(centerLeft),
-                    theme.activeTheme.defaultBackgroundColor,
-                    theme.activeTheme.defaultBackgroundColor
-                        .opacity(centerRight),
-                    theme.activeTheme.defaultBackgroundColor
-                        .opacity(bottomLeft),
-                    theme.activeTheme.defaultBackgroundColor
-                        .opacity(bottomRight),
-                ])
-                .blur(radius: 30)
-            }
-        }
-        .overlay(theme.activeTheme.backgroundMaterialOverlay)
-        .ignoresSafeArea()
-        .allowsHitTesting(false)
+        MeshGradient(width: 3, height: 3, points: [
+            [0, 0], [0, 0.5], [0, 1],
+            [0.5, 0], [0.5, 0.5], [0.5, 1],
+            [1, 0], [1, 0.5], [1, 1],
+        ], colors: [
+            color.opacity(topRight),
+            color.opacity(topLeft),
+            color.opacity(top),
+            color.opacity(center),
+            color.opacity(centerLeft),
+            color,
+            color.opacity(centerRight),
+            color.opacity(bottomLeft),
+            color.opacity(bottomRight),
+        ])
+        .blur(radius: 30)
     }
 }

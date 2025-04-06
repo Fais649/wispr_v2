@@ -56,50 +56,59 @@ struct BaseBookShelfView: View {
             title: title,
             trailingTitle: trailingTitle
         ) {
-            Lst {
-                ForEach(self.books.sorted(by: {
-                    if
-                        let firstClick = $0.lastClicked,
-                        let secondClick = $1.lastClicked
-                    {
-                        return firstClick > secondClick
-                    } else {
-                        return $0.timestamp < $1.timestamp
-                    }
-                })) { book in
+            ScrollView {
+                VStack(spacing: 0) {
+                    Disclosures(
+                        items: books
+                            .sorted(by: {
+                                if
+                                    let firstClick = $0.lastClicked,
+                                    let secondClick = $1.lastClicked
+                                {
+                                    return firstClick > secondClick
+                                } else {
+                                    return $0.timestamp < $1.timestamp
+                                }
+                            }),
+                        itemRow: { book in
+                            AniButton(padding: Spacing.xxs) {
+                                if editBooks {
+                                    navigationStateService.goToBookForm(book)
+                                } else {
+                                    navigationStateService.bookState
+                                        .book = book
+                                    navigationStateService.bookState
+                                        .chapter = nil
+                                }
 
-                    AniButton {
-                        if editBooks {
-                            navigationStateService.goToBookForm(book)
-                        } else {
-                            navigationStateService.bookState
-                                .book = book
-                            navigationStateService.bookState
-                                .chapter = nil
-                        }
-
-                        if
-                            navigationStateService
-                                .shelfState
-                                .isShown()
-                        {
-                            navigationStateService
-                                .shelfState
-                                .dismissShelf()
-                        }
-                    } label: {
-                        HStack {
-                            Text(book.name)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .background(
-                        book.globalBackground
-                            .clipShape(
-                                RoundedRectangle(cornerRadius: 10)
-                            )
+                                if
+                                    navigationStateService
+                                        .shelfState
+                                        .isShown()
+                                {
+                                    navigationStateService
+                                        .shelfState
+                                        .dismissShelf()
+                                }
+                            } label: {
+                                HStack {
+                                    VStack(alignment: .leading) {
+                                        Text(book.name)
+                                            .truncationMode(.tail)
+                                            .lineLimit(1)
+                                    }
+                                }
+                            }
+                            .parentItem()
+                            .padding(Spacing.s)
+                            .buttonStyle(.plain)
+                            .padding(Spacing.s)
+                        },
+                        childRow: { _ in EmptyView() }
                     )
+                    .scrollTransition(Spacing.s)
                 }
+                .safeAreaPadding(.vertical, Spacing.m)
             }
         }
     }

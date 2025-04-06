@@ -91,31 +91,21 @@ struct ItemForm: View {
             }
         }
         .toolbar {
-            ToolbarItemGroup(placement: focus != nil ? .keyboard : .bottomBar) {
+            ToolbarItemGroup(placement: .bottomBar) {
                 HStack {
-                    if focus != nil {
-                        ToolbarButton(padding: 0) {
-                            focus = nil
-                        } label: {
-                            Image(
-                                systemName: "keyboard.chevron.compact.down"
-                            )
-                        }
-                    } else {
-                        ToolbarButton(padding: 0) {
-                            navigationStateService.goBack()
-                        } label: {
-                            Image(
-                                systemName: "chevron.left"
-                            )
-                        }
+                    ToolbarButton {
+                        navigationStateService.goBack()
+                    } label: {
+                        Image(
+                            systemName: "chevron.left"
+                        )
                     }
                     Spacer()
 
-                    ToolbarButton(padding: -16) {
+                    ToolbarButton {
                         navigationStateService.toggleBookShelf()
                     } label: {
-                        HStack(spacing: 8) {
+                        HStack {
                             Image(systemName: "line.diagonal")
                                 .opacity(book == nil ? 0.4 : 1)
                                 .scaleEffect(
@@ -126,7 +116,10 @@ struct ItemForm: View {
                                 Text(book.name)
                             } else {
                                 Image(systemName: "asterisk")
-                                    .scaleEffect(0.8)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .contentShape(Rectangle())
+                                    .frame(width: 16, height: 16)
                             }
                         }
                     }
@@ -140,7 +133,7 @@ struct ItemForm: View {
                         }
                     }
 
-                    ToolbarButton(padding: -16) {
+                    ToolbarButton {
                         navigationStateService.toggleDatePickerShelf()
                     } label: {
                         HStack(spacing: 8) {
@@ -159,7 +152,90 @@ struct ItemForm: View {
                                 )
                             } else {
                                 Image(systemName: "circle.fill")
-                                    .scaleEffect(0.6)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .contentShape(Rectangle())
+                                    .frame(width: 12, height: 12)
+                            }
+                        }
+                    }
+                    .onTapGesture(count: isToday ? 1 : 2) {
+                        withAnimation {
+                            if isToday {
+                                navigationStateService.toggleDatePickerShelf()
+                            } else {
+                                navigationStateService.goToToday()
+                            }
+                        }
+                    }
+                }.padding(Spacing.m)
+            }
+
+            ToolbarItemGroup(placement: .keyboard) {
+                HStack {
+                    ToolbarButton(padding: 0) {
+                        focus = nil
+                    } label: {
+                        Image(
+                            systemName: "keyboard.chevron.compact.down"
+                        )
+                    }
+                    Spacer()
+
+                    ToolbarButton {
+                        navigationStateService.toggleBookShelf()
+                    } label: {
+                        HStack {
+                            Image(systemName: "line.diagonal")
+                                .opacity(book == nil ? 0.4 : 1)
+                                .scaleEffect(
+                                    book == nil ? 0.6 : 1,
+                                    anchor: .center
+                                )
+                            if let book {
+                                Text(book.name)
+                            } else {
+                                Image(systemName: "asterisk")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .contentShape(Rectangle())
+                                    .frame(width: 16, height: 16)
+                            }
+                        }
+                    }
+                    .onTapGesture(count: book == nil ? 1 : 2) {
+                        withAnimation {
+                            if book == nil {
+                                navigationStateService.toggleBookShelf()
+                            } else {
+                                navigationStateService.bookState.dismissBook()
+                            }
+                        }
+                    }
+
+                    ToolbarButton {
+                        navigationStateService.toggleDatePickerShelf()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "line.diagonal")
+                                .opacity(isToday ? 0.4 : 1)
+                                .scaleEffect(isToday ? 0.6 : 1, anchor: .center)
+
+                            if !isToday {
+                                Text(
+                                    timestamp
+                                        .formatted(
+                                            .dateTime.day(.twoDigits)
+                                                .month(.twoDigits)
+                                                .year(.twoDigits)
+                                        )
+                                )
+                            } else {
+                                Image(systemName: "circle.fill")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .contentShape(Rectangle())
+                                    .frame(width: 12, height: 12)
                             }
                         }
                     }
@@ -204,7 +280,8 @@ struct ItemForm: View {
             trailingTitle: trailingTitle,
             subtitle: subtitle,
             dateShelf: ItemFormDateShelfView($eventFormData, $timestamp),
-            bookShelf: ItemFormBookShelfView(book: $book)
+            bookShelf: ItemFormBookShelfView(book: $book),
+            backgroundOpacity: 0.4
         ) {
             Lst {
                 ForEach(
@@ -213,19 +290,32 @@ struct ItemForm: View {
                 ) { child in
                     Child(children: $children, child: child, focus: $focus)
                 }
-            }
+            }.padding(Spacing.l)
         }
-        .background {
+        .onChange(of: book) {
             if let book {
-                book.globalBackground
-                    .overlay(theme.activeTheme.backgroundMaterialOverlay)
-                    .ignoresSafeArea()
-                    .allowsHitTesting(false)
+                withAnimation {
+                    navigationStateService.tempBackground = {
+                        AnyView(
+                            RandomMeshBackground(color: book.color)
+                        )
+                    }
+                }
             }
         }
         .onAppear {
             if text.isEmpty {
                 focus = .item(id: item.id)
+            }
+
+            if let book {
+                withAnimation {
+                    navigationStateService.tempBackground = {
+                        AnyView(
+                            RandomMeshBackground(color: book.color)
+                        )
+                    }
+                }
             }
         }
         .task {
@@ -247,6 +337,10 @@ struct ItemForm: View {
                 tags: tags,
                 children: children.filter { $0.text.isNotEmpty }
             )
+
+            withAnimation {
+                navigationStateService.tempBackground = nil
+            }
         }
     }
 
@@ -267,9 +361,10 @@ struct ItemForm: View {
                         child.toggleTaskDataCompletedAt()
                     } label: {
                         Image(
-                            systemName: child.isTaskCompleted ? "circle.fill" :
-                                "circle.dotted"
+                            systemName: child.isTaskCompleted ? "square.fill" :
+                                "square.dotted"
                         )
+                        .scaleEffect(0.6)
                     }
                 }
 
@@ -328,9 +423,10 @@ struct ItemForm: View {
                             } label: {
                                 Image(
                                     systemName: child
-                                        .isTask ? "circle.fill" :
-                                        "circle.dotted"
+                                        .isTask ? "square.fill" :
+                                        "square.dotted"
                                 )
+                                .scaleEffect(0.6)
                             }.disabled(child.text.isEmpty)
                         }
                     }

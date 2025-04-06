@@ -17,7 +17,6 @@ struct ItemDisclosures: View {
             .self
     ) private var flashService: FlashStateService
     @Environment(\.modelContext) private var modelContext: ModelContext
-    var items: [Item]
 
     @Environment(\.editMode) var editMode
     var isEditing: Bool {
@@ -27,6 +26,9 @@ struct ItemDisclosures: View {
 
         return false
     }
+
+    var defaultExpanded: Bool = false
+    var items: [Item]
 
     func onMove(_ indexSet: IndexSet, _ newIndex: Int) {
         let (success, message) = ItemStore.updatePositions(
@@ -55,6 +57,7 @@ struct ItemDisclosures: View {
 
     var body: some View {
         Disclosures(
+            defaultExpanded: defaultExpanded,
             items: items,
             onMove: onMove,
             onDelete: delete,
@@ -130,10 +133,11 @@ struct ItemDisclosures: View {
                 } label: {
                     Image(
                         systemName: task
-                            .completedAt == nil ? "circle.dotted" :
-                            "circle.fill"
+                            .completedAt == nil ? "square.dotted" :
+                            "square.fill"
                     )
                     .buttonFontStyle()
+                    .scaleEffect(0.6)
                 }
             }
 

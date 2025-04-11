@@ -13,6 +13,16 @@ struct ItemForm: View {
         NavigationStateService
             .self
     ) private var navigationStateService: NavigationStateService
+
+    @Environment(
+        DayStateService
+            .self
+    ) private var dayState: DayStateService
+
+    @Environment(
+        BookStateService
+            .self
+    ) private var bookState: BookStateService
     @Environment(
         ThemeStateService
             .self
@@ -20,6 +30,7 @@ struct ItemForm: View {
     @Environment(\.modelContext) private var modelContext: ModelContext
     @FocusState var focus: FocusedField?
 
+    var animation: Namespace.ID
     var item: Item
 
     @State private var timestamp: Date
@@ -29,21 +40,20 @@ struct ItemForm: View {
     @State private var children: [Item]
     @State private var book: Book?
     @State private var tags: [Tag]
-    @State private var initialChapter: Tag?
-
     @State var showDateShelf: Bool = false
     @State var showBookShelf: Bool = false
 
-    init(item: Item) {
+    init(animation: Namespace.ID, item: Item) {
         let i = item
         self.item = i
+        self.animation = animation
+        book = i.book
         timestamp = i.timestamp
         text = i.text
         taskData = i.taskData
         eventFormData = i.eventData?.formData()
         children = i.children
         tags = i.tags
-        book = i.book
     }
 
     enum ItemFormSheets: String, Identifiable {
@@ -52,6 +62,7 @@ struct ItemForm: View {
     }
 
     @State var isExpanded = true
+    @State var appeared = false
 
     var isToday: Bool {
         Calendar.current.isDateInToday(timestamp)
@@ -91,164 +102,69 @@ struct ItemForm: View {
             }
         }
         .toolbar {
-            ToolbarItemGroup(placement: .bottomBar) {
-                HStack {
-                    ToolbarButton {
-                        navigationStateService.goBack()
-                    } label: {
-                        Image(
-                            systemName: "chevron.left"
-                        )
-                    }
-                    Spacer()
-
-                    ToolbarButton {
-                        navigationStateService.toggleBookShelf()
-                    } label: {
-                        HStack {
-                            Image(systemName: "line.diagonal")
-                                .opacity(book == nil ? 0.4 : 1)
-                                .scaleEffect(
-                                    book == nil ? 0.6 : 1,
-                                    anchor: .center
-                                )
-                            if let book {
-                                Text(book.name)
-                            } else {
-                                Image(systemName: "asterisk")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .contentShape(Rectangle())
-                                    .frame(width: 16, height: 16)
-                            }
-                        }
-                    }
-                    .onTapGesture(count: book == nil ? 1 : 2) {
-                        withAnimation {
-                            if book == nil {
-                                navigationStateService.toggleBookShelf()
-                            } else {
-                                navigationStateService.bookState.dismissBook()
-                            }
-                        }
-                    }
-
-                    ToolbarButton {
-                        navigationStateService.toggleDatePickerShelf()
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: "line.diagonal")
-                                .opacity(isToday ? 0.4 : 1)
-                                .scaleEffect(isToday ? 0.6 : 1, anchor: .center)
-
-                            if !isToday {
-                                Text(
-                                    timestamp
-                                        .formatted(
-                                            .dateTime.day(.twoDigits)
-                                                .month(.twoDigits)
-                                                .year(.twoDigits)
-                                        )
-                                )
-                            } else {
-                                Image(systemName: "circle.fill")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .contentShape(Rectangle())
-                                    .frame(width: 12, height: 12)
-                            }
-                        }
-                    }
-                    .onTapGesture(count: isToday ? 1 : 2) {
-                        withAnimation {
-                            if isToday {
-                                navigationStateService.toggleDatePickerShelf()
-                            } else {
-                                navigationStateService.goToToday()
-                            }
-                        }
-                    }
-                }.padding(Spacing.m)
-            }
-
             ToolbarItemGroup(placement: .keyboard) {
-                HStack {
-                    ToolbarButton(padding: 0) {
-                        focus = nil
-                    } label: {
-                        Image(
-                            systemName: "keyboard.chevron.compact.down"
-                        )
-                    }
-                    Spacer()
+                ToolbarButton(padding: 0) {
+                    focus = nil
+                } label: {
+                    Image(
+                        systemName: "keyboard.chevron.compact.down"
+                    )
+                }
 
-                    ToolbarButton {
-                        navigationStateService.toggleBookShelf()
-                    } label: {
-                        HStack {
-                            Image(systemName: "line.diagonal")
-                                .opacity(book == nil ? 0.4 : 1)
-                                .scaleEffect(
-                                    book == nil ? 0.6 : 1,
-                                    anchor: .center
-                                )
-                            if let book {
-                                Text(book.name)
-                            } else {
-                                Image(systemName: "asterisk")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .contentShape(Rectangle())
-                                    .frame(width: 16, height: 16)
-                            }
-                        }
-                    }
-                    .onTapGesture(count: book == nil ? 1 : 2) {
-                        withAnimation {
-                            if book == nil {
-                                navigationStateService.toggleBookShelf()
-                            } else {
-                                navigationStateService.bookState.dismissBook()
-                            }
-                        }
-                    }
+                ToolbarButton {
+                    navigationStateService.toggleBookShelf()
+                } label: {
+                    HStack {
+                        Image(systemName: "line.diagonal")
+                            .opacity(book == nil ? 0.4 : 1)
+                            .scaleEffect(
+                                book == nil ? 0.6 : 1,
+                                anchor: .center
+                            )
 
-                    ToolbarButton {
-                        navigationStateService.toggleDatePickerShelf()
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: "line.diagonal")
-                                .opacity(isToday ? 0.4 : 1)
-                                .scaleEffect(isToday ? 0.6 : 1, anchor: .center)
-
-                            if !isToday {
-                                Text(
-                                    timestamp
-                                        .formatted(
-                                            .dateTime.day(.twoDigits)
-                                                .month(.twoDigits)
-                                                .year(.twoDigits)
-                                        )
-                                )
-                            } else {
-                                Image(systemName: "circle.fill")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .contentShape(Rectangle())
-                                    .frame(width: 12, height: 12)
-                            }
-                        }
-                    }
-                    .onTapGesture(count: isToday ? 1 : 2) {
-                        withAnimation {
-                            if isToday {
-                                navigationStateService.toggleDatePickerShelf()
-                            } else {
-                                navigationStateService.goToToday()
-                            }
+                        if let book {
+                            Text(book.name)
+                        } else {
+                            Image(systemName: "asterisk")
+                                .resizable()
+                                .scaledToFit()
+                                .contentShape(Rectangle())
+                                .frame(width: 16, height: 16)
                         }
                     }
                 }
+
+                ToolbarButton {
+                    navigationStateService.toggleDatePickerShelf()
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "line.diagonal")
+                            .opacity(isToday ? 0.4 : 1)
+                            .scaleEffect(
+                                isToday ? 0.6 : 1,
+                                anchor: .center
+                            )
+
+                        if !isToday {
+                            Text(
+                                timestamp
+                                    .formatted(
+                                        .dateTime.day(.twoDigits)
+                                            .month(.twoDigits)
+                                            .year(.twoDigits)
+                                    )
+                            )
+                        } else {
+                            Image(systemName: "circle.fill")
+                                .resizable()
+                                .scaledToFit()
+                                .contentShape(Rectangle())
+                                .frame(width: 12, height: 12)
+                        }
+                    }
+                }
+                Divider()
+                Spacer()
             }
         }
     }
@@ -280,8 +196,8 @@ struct ItemForm: View {
             trailingTitle: trailingTitle,
             subtitle: subtitle,
             dateShelf: ItemFormDateShelfView($eventFormData, $timestamp),
-            bookShelf: ItemFormBookShelfView(book: $book),
-            backgroundOpacity: 0.4
+            bookShelf: ItemFormBookShelfView(animation: animation, book: $book),
+            backgroundOpacity: 0
         ) {
             Lst {
                 ForEach(
@@ -290,8 +206,9 @@ struct ItemForm: View {
                 ) { child in
                     Child(children: $children, child: child, focus: $focus)
                 }
-            }.padding(Spacing.l)
+            }.padding(Spacing.m)
         }
+        .safeAreaPadding(Spacing.m)
         .onChange(of: book) {
             if let book {
                 withAnimation {
@@ -318,25 +235,22 @@ struct ItemForm: View {
                 }
             }
         }
-        .task {
-            if tags.isNotEmpty && book == nil {
-                book = BookStore.loadBook(by: tags)
-            }
-        }
         .onDisappear {
             if let book {
                 tags = book.tags
             }
 
-            item.commit(
-                timestamp: timestamp,
-                text: text,
-                taskData: taskData,
-                eventFormData: eventFormData,
-                book: book,
-                tags: tags,
-                children: children.filter { $0.text.isNotEmpty }
-            )
+            Task {
+                item.commit(
+                    timestamp: timestamp,
+                    text: text,
+                    taskData: taskData,
+                    eventFormData: eventFormData,
+                    book: book,
+                    tags: tags,
+                    children: children.filter { $0.text.isNotEmpty }
+                )
+            }
 
             withAnimation {
                 navigationStateService.tempBackground = nil
@@ -350,7 +264,7 @@ struct ItemForm: View {
         @State var child: Item
         @FocusState.Binding var focus: FocusedField?
 
-        func isFocused() -> Bool {
+        var isFocused: Bool {
             focus == .item(id: child.id)
         }
 
@@ -364,7 +278,7 @@ struct ItemForm: View {
                             systemName: child.isTaskCompleted ? "square.fill" :
                                 "square.dotted"
                         )
-                        .scaleEffect(0.6)
+                        .scaleEffect(0.8)
                     }
                 }
 
@@ -406,29 +320,27 @@ struct ItemForm: View {
             }
             .childItem()
             .toolbar {
-                if isFocused() {
+                if isFocused {
                     ToolbarItemGroup(placement: .keyboard) {
-                        HStack {
-                            Divider()
-                            AniButton {
-                                print("add_audio")
-                            } label: {
-                                Image(systemName: "link")
-                            }.disabled(child.text.isEmpty)
+                        Divider()
+                        AniButton {
+                            print("add_audio")
+                        } label: {
+                            Image(systemName: "link")
+                        }.disabled(child.text.isEmpty)
 
-                            Divider()
+                        Divider()
 
-                            AniButton {
-                                child.toggleTaskData()
-                            } label: {
-                                Image(
-                                    systemName: child
-                                        .isTask ? "square.fill" :
-                                        "square.dotted"
-                                )
-                                .scaleEffect(0.6)
-                            }.disabled(child.text.isEmpty)
-                        }
+                        AniButton {
+                            child.toggleTaskData()
+                        } label: {
+                            Image(
+                                systemName: child
+                                    .isTask ? "square.fill" :
+                                    "square.dotted"
+                            )
+                            .scaleEffect(0.8)
+                        }.disabled(child.text.isEmpty)
                     }
                 }
             }

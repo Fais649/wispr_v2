@@ -98,7 +98,12 @@ struct BookForm: View {
     ]
 
     var body: some View {
-        Screen(.bookForm(book: book), title: title, subtitle: subtitle) {
+        Screen(
+            .bookForm(book: book),
+            title: title,
+            subtitle: subtitle,
+            backgroundOpacity: 0
+        ) {
             ScrollView {
                 LazyVGrid(columns: columns, spacing: 20) {
                     AniButton {

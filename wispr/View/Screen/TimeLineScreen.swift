@@ -10,93 +10,75 @@ import SwiftUI
 struct TimeLineScreen: View {
     @Environment(\.modelContext) private var modelContext: ModelContext
     @Environment(ThemeStateService.self) private var theme: ThemeStateService
+    @Environment(DayStateService.self) private var dayState: DayStateService
     @Environment(
         NavigationStateService
             .self
     ) private var navigationStateService: NavigationStateService
 
-    var days: [Date: [Item]]
+    var days: [Day]
 
     var todayDate: Date {
         Calendar.current.startOfDay(for: Date())
     }
 
-    @Binding var scrollToActiveDate: Bool
+    @Namespace var animation
 
     var body: some View {
-        ScrollViewReader { proxy in
+        ScrollViewReader { _ in
             ScrollView {
                 LazyVStack {
-                    VStack {
-                        HStack {
-                            Text("Once upon a wispr...")
-                                .childItem()
-                                .opacity(0.5)
-                            Spacer()
-                        }
+                    HStack {
+                        Text("Once upon a wispr...")
+                            .childItem()
+                            .opacity(0.5)
                         Spacer()
                     }
-                    .frame(height: Spacing.l)
 
                     ForEach(
-                        days.sorted(by: { $0.key < $1.key }),
-                        id: \.key
-                    ) { key, value in
+                        days.sorted(by: { $0.date < $1.date }),
+                        id: \.id
+                    ) { day in
                         let allDayEvents =
-                            ItemStore.allDayEvents(from: value)
+                            ItemStore.allDayEvents(from: day.items)
                         let notAllDayItems = ItemStore
-                            .filterAllDayEvents(from: value)
+                            .filterAllDayEvents(from: day.items)
 
                         VStack {
                             Section(
                                 header: sectionHeader(
-                                    key,
+                                    day.date,
                                     allDayEvents: allDayEvents,
-                                    notAllDayItems: value
+                                    notAllDayItems: day.items
                                 )
                                 .scrollTransition(Spacing.none)
                             ) {
                                 VStack(spacing: 0) {
-                                    ItemDisclosures(items: notAllDayItems)
-                                        .scrollTransition(Spacing.s)
+                                    ItemDisclosures(
+                                        animation: animation,
+                                        items: notAllDayItems
+                                    )
+                                    .scrollTransition(Spacing.s)
                                 }
                                 .padding(.bottom, Spacing.l)
                             }
-                        }.safeAreaPadding(.bottom, Spacing.m)
-                            .opacity(
-                                key < navigationStateService
-                                    .activeDate ? 0.65 : 1
-                            ).id(key)
+                        }
+                        .safeAreaPadding(.bottom, Spacing.m)
+                        .id(day.id)
                     }
 
-                    VStack {
-                        HStack {
-                            Text("...")
-                                .childItem()
-                                .opacity(0.5)
-                            Spacer()
-                        }
+                    HStack {
+                        Text("...")
+                            .childItem()
+                            .opacity(0.5)
                         Spacer()
                     }
-                    .frame(height: Spacing.l)
                 }
                 .scrollTargetLayout()
                 .id("timeline")
             }
             .scrollTargetBehavior(.viewAligned)
             .defaultScrollAnchor(.top)
-            .onAppear {
-                scrollToActiveDate(proxy: proxy)
-            }
-            .onChange(of: scrollToActiveDate) {
-                if scrollToActiveDate {
-                    scrollToActiveDate(proxy: proxy, true)
-                    scrollToActiveDate = false
-                }
-            }
-            .onChange(of: navigationStateService.activeDate) {
-                scrollToActiveDate(proxy: proxy, true)
-            }
         }
     }
 
@@ -104,18 +86,13 @@ struct TimeLineScreen: View {
     func sectionHeader(
         _ key: Date,
         allDayEvents: [Item],
-        notAllDayItems: [Item]
+        notAllDayItems _: [Item]
     ) -> some View {
         AniButton(padding: 0) {
-            navigationStateService.goToActiveDay(
-                activeDay:
-                ActiveDay(
-                    date: key,
-                    items: notAllDayItems
-                )
-            )
+            dayState.setActive(by: key)
         } label: {
             DateTitleWithDivider(
+
                 date: key,
                 trailing: {
                     AnyView(
@@ -154,36 +131,6 @@ struct TimeLineScreen: View {
         }
         .parentItem()
         .fontWeight(.bold)
-    }
-
-    func scrollToActiveDate(
-        proxy: ScrollViewProxy,
-        _ animated: Bool = false
-    ) {
-        // DispatchQueue.main.asyncAfter(
-        //     deadline: .now() +
-        //         1
-        // ) {
-        if days[navigationStateService.activeDate] == nil {
-            let sortedKeys = days.keys.sorted()
-            if
-                let next = sortedKeys.first(where: { $0 >
-                        navigationStateService.activeDate
-                })
-            {
-                withAnimation(animated ? .smooth() : nil) {
-                    proxy.scrollTo(next, anchor: .top)
-                }
-            }
-        } else {
-            withAnimation(animated ? .smooth : nil) {
-                proxy.scrollTo(
-                    navigationStateService.activeDate,
-                    anchor: .top
-                )
-            }
-        }
-        // }
     }
 
     func isToday(_ date: Date) -> Bool {

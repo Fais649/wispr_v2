@@ -8,21 +8,19 @@
 import SwiftData
 import SwiftUI
 
-struct AllDay: Listable {
-    var id: UUID = .init()
-    typealias Child = Item
-
-    var children: [Child] = []
-}
-
 @MainActor
 struct Disclosure<
     Label: View,
     Item: Listable,
     ItemView: View
 >: View {
+    @Environment(\.modelContext) private var modelContext: ModelContext
     @Environment(\.editMode) var editMode
+    var animation: Namespace.ID
+    @State var wasExpanded = false
     @State var isExpanded = false
+    @State var childMoving = false
+
     var isEditing: Bool {
         if let editMode {
             return editMode.wrappedValue.isEditing
@@ -88,21 +86,56 @@ struct Disclosure<
         }
     }
 
+    var bg: some View {
+        UnevenRoundedRectangle(cornerRadii: .init(
+            topLeading: 4,
+            bottomLeading: isExpanded || !expandable ? 0 : 4,
+            bottomTrailing: !expandable ? 4 : isExpanded ? 2 : 30,
+            topTrailing: 4
+        )).fill(
+            expandable ? AnyShapeStyle(item.shadowTint) :
+                AnyShapeStyle(item.shadowTint.gradient)
+        )
+        .opacity(0.2)
+    }
+
+    func childBg(isLast: Bool) -> some View {
+        UnevenRoundedRectangle(cornerRadii: .init(
+            topLeading: 0,
+            bottomLeading: isLast ? 2 : 0,
+            bottomTrailing: isLast ? 2 : 0,
+            topTrailing: 0
+        )).fill(item.shadowTint)
+            .opacity(0.2)
+            .ignoresSafeArea()
+    }
+
     var body: some View {
-        HStack(spacing: -Spacing.s) {
-            if reversed {
-                reverse()
-                item.shadowTint
-                    .frame(width: 2)
-                    .clipShape(
-                        RoundedRectangle(cornerRadius: 1)
-                    )
-                    .opacity(0.4)
-            } else {
-                regular()
+        HStack {
+            HStack {
+                if reversed {
+                    reverse()
+                    item.shadowTint
+                        .frame(width: 2)
+                        .clipShape(
+                            RoundedRectangle(cornerRadius: 1)
+                        )
+                        .opacity(0.4)
+                } else {
+                    regular()
+                }
             }
+            .background(bg)
+            .matchedTransitionSource(id: item.id, in: animation)
         }
-        .contentShape(Rectangle())
+        .onDrag {
+            withAnimation {
+                wasExpanded = isExpanded
+                isExpanded = false // collapse on drag start
+            }
+            return NSItemProvider(object: "lol" as NSString)
+        }
+        .contentShape(RoundedRectangle(cornerRadius: 10))
         .onTapGesture {
             if expandable {
                 withAnimation {
@@ -110,26 +143,7 @@ struct Disclosure<
                 }
             }
         }
-        .background {
-            UnevenRoundedRectangle(cornerRadii: .init(
-                topLeading: 4,
-                bottomLeading: isExpanded ? 0 : 4,
-                bottomTrailing: !expandable ? 4 : isExpanded ? 20 : 30,
-                topTrailing: 4
-            )).fill(
-                expandable ? AnyShapeStyle(item.shadowTint) :
-                    AnyShapeStyle(item.shadowTint.gradient)
-            )
-            .overlay(alignment: .bottomTrailing) {
-                if expandable {
-                    Circle().fill(item.shadowTint).frame(width: Spacing.xs)
-                        .padding(isExpanded ? .top : .vertical, Spacing.xs)
-                        .offset(y: isExpanded ? Spacing.xxs : 0)
-                }
-            }
-            .opacity(0.2)
-            .padding(isExpanded ? .top : .vertical, Spacing.xs)
-        }
+        .padding(.top, Spacing.xs)
 
         if expandable, isExpanded {
             ForEach(children) { item in
@@ -144,42 +158,24 @@ struct Disclosure<
                     }
                     childRow(item)
                 }
+                .onDrag {
+                    withAnimation {
+                        childMoving = true // collapse on drag start
+                    }
+                    return NSItemProvider(object: "lol" as NSString)
+                }
                 .padding(
                     .leading,
                     reversed ? Spacing.none : Spacing.l
                 )
-                .background {
-                    UnevenRoundedRectangle(cornerRadii: .init(
-                        topLeading: 0,
-                        bottomLeading: item == children.last ? 2 : 0,
-                        bottomTrailing: item == children.last ? 2 : 0,
-                        topTrailing: item == children.first ? 20 : 0
-                    )).fill(self.item.shadowTint)
-                        .opacity(0.2)
-                }
+                .listRowBackground(childBg(isLast: children.last == item))
                 .padding(
                     .bottom,
-                    item == children.last ? Spacing.xs : Spacing.none
+                    item == children.last ? Spacing.xs : childMoving ?
+                        Spacing.xs : Spacing.none
                 )
-                .mask {
-                    LinearGradient(
-                        gradient: Gradient(stops: [
-                            .init(
-                                color: .black,
-                                location: 0.7
-                            ),
-                            .init(
-                                color: item == children.last ? .clear :
-                                    .black,
-                                location: 1
-                            ),
-                        ]),
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                }
-
-            }.onMove(perform: { indexSet, newIndex in
+            }
+            .onMove(perform: { indexSet, newIndex in
                 if let onMoveChild {
                     onMoveChild(
                         item,
@@ -187,7 +183,36 @@ struct Disclosure<
                         newIndex
                     )
                 }
+                withAnimation {
+                    childMoving = false
+                }
             })
+        }
+    }
+}
+
+struct MyDisclosureStyle: DisclosureGroupStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        VStack {
+            Button {
+                withAnimation {
+                    configuration.isExpanded.toggle()
+                }
+            } label: {
+                HStack(alignment: .firstTextBaseline) {
+                    configuration.label
+                    Spacer()
+                    Text(configuration.isExpanded ? "hide" : "show")
+                        .foregroundColor(.accentColor)
+                        .font(.caption.lowercaseSmallCaps())
+                        .animation(nil, value: configuration.isExpanded)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            if configuration.isExpanded {
+                configuration.content
+            }
         }
     }
 }

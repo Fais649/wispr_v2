@@ -4,8 +4,8 @@
 //
 //  Created by Faisal Alalaiwat on 24.03.25.
 //
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct AniButton<Content: View>: View {
     @Environment(\.isEnabled) private var isEnabled
@@ -29,10 +29,10 @@ struct AniButton<Content: View>: View {
 
     var body: some View {
         Button {
-            withAnimation(.spring(duration: duration)) {
-                action()
-                clicked.toggle()
-            }
+            // withAnimation(.spring(duration: duration)) {
+            action()
+            clicked.toggle()
+            // }
         } label: {
             label()
         }.padding(padding)

@@ -13,40 +13,23 @@ import SwiftUI
 @MainActor
 enum SharedState {
     static var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-            Tag.self,
-            Book.self,
-            EventCalendar.self,
-        ])
-        let modelConfiguration = ModelConfiguration(
-            schema: schema,
-            isStoredInMemoryOnly: false
-        )
-
         do {
             let urlApp = FileManager.default.urls(
                 for: .applicationSupportDirectory,
                 in: .userDomainMask
-            ).last
-            let url = urlApp!.appendingPathComponent("default.store")
-            if FileManager.default.fileExists(atPath: url.path) {
-                print("swiftdata db at \(url.absoluteString)")
-            }
+            ).last!
+            let url = urlApp.appendingPathComponent("default.store")
+
+            let config = ModelConfiguration(url: url)
+
             return try ModelContainer(
-                for: schema,
-                configurations: [modelConfiguration]
+                for: Schema([
+                    Item.self, Book.self, Tag.self,
+                    DaysSchemaV2.Day.self, EventCalendar.self,
+                ]),
+                configurations: config
             )
         } catch {
-            let urlApp = FileManager.default.urls(
-                for: .applicationSupportDirectory,
-                in: .userDomainMask
-            ).last
-            let url = urlApp!.appendingPathComponent("default.store")
-            if FileManager.default.fileExists(atPath: url.path) {
-                print("swiftdata db at \(url.absoluteString)")
-            }
-
             fatalError("Could not create ModelContainer: \(error)")
         }
     }()

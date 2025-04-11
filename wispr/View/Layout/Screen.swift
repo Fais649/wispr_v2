@@ -26,6 +26,8 @@ struct Screen<
 
     @State private var showShelf = false
     var backgroundOpacity: CGFloat
+    var onTapBackground: (() -> Void)? = nil
+    var shelfEnabled = true
 
     var body: some View {
         VStack {
@@ -51,25 +53,30 @@ struct Screen<
                 content()
                     .baseShadowStyle()
                     .fade(from: .top, fromOffset: 0.8, to: .bottom, toOffset: 1)
-                    .animation(.smooth, value: loaded)
             }
         }
-        .safeAreaPadding(.horizontal, Spacing.m)
-        .safeAreaPadding(.top, Spacing.m)
+        .padding(Spacing.m)
         .background {
-            RoundedRectangle(cornerRadius: 20).fill(.ultraThinMaterial)
-                .stroke(.thinMaterial)
-                .safeAreaPadding(.horizontal, Spacing.s)
-                .opacity(backgroundOpacity)
+            Button {
+                if let onTapBackground {
+                    onTapBackground()
+                }
+            } label: {
+                RoundedRectangle(cornerRadius: 20).fill(.ultraThinMaterial)
+                    .stroke(.thinMaterial)
+                    .opacity(backgroundOpacity)
+            }
         }
-        .safeAreaPadding(.bottom, Spacing.l)
         .sheet(isPresented: $showShelf) {
             if navigationStateService.pathState.active == path {
                 navigationStateService.shelfState.display(
                     dateShelf,
                     bookShelf
                 )
-                .presentationDetents([.fraction(0.55)])
+                .presentationDetents(
+                    navigationStateService.shelfState.shelf
+                        .detents
+                )
                 .presentationCornerRadius(0)
                 .presentationBackground {
                     Rectangle().fill(
@@ -83,11 +90,16 @@ struct Screen<
                         toOffset: 1
                     )
                 }
+                .padding(.horizontal, Spacing.m)
             }
         }
         .screenStyle()
         .navigationBarBackButtonHidden()
         .onChange(of: navigationStateService.shelfState.isShown()) {
+            if !shelfEnabled {
+                return
+            }
+
             if !navigationStateService.shelfState.isShown() {
                 withAnimation {
                     navigationStateService.shelfState.dismissShelf()
@@ -117,6 +129,8 @@ extension Screen {
         dateShelf: DateShelf = BaseDateShelfView(),
         bookShelf: BookShelf = BaseBookShelfView(),
         backgroundOpacity: CGFloat = 1,
+        onTapBackground: (() -> Void)? = nil,
+        shelfEnabled: Bool = true,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self.path = path
@@ -130,5 +144,7 @@ extension Screen {
         self.dateShelf = dateShelf
         self.bookShelf = bookShelf
         self.backgroundOpacity = backgroundOpacity
+        self.onTapBackground = onTapBackground
+        self.shelfEnabled = shelfEnabled
     }
 }

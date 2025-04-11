@@ -16,6 +16,10 @@ struct Toolbar: View {
         NavigationStateService
             .self
     ) private var navigationStateService: NavigationStateService
+    @Environment(
+        DayStateService
+            .self
+    ) private var dayState: DayStateService
 
     @Environment(
         BookStateService
@@ -23,6 +27,10 @@ struct Toolbar: View {
     ) private var bookState: BookStateService
 
     @Query var books: [Book]
+
+    var showNewItemButton: Bool = true
+    var showDateShelfButton: Bool = true
+    var showBackground: Bool = true
 
     var onForm: Bool {
         navigationStateService.pathState.onForm
@@ -37,11 +45,11 @@ struct Toolbar: View {
     }
 
     var date: Date {
-        navigationStateService.activeDate
+        dayState.active.date
     }
 
     var isToday: Bool {
-        navigationStateService.isTodayActive
+        dayState.isTodayActive()
     }
 
     var book: Book? {
@@ -56,6 +64,8 @@ struct Toolbar: View {
         book == nil && isToday
     }
 
+    @Namespace var animation
+
     var body: some View {
         HStack {
             if onForm {
@@ -66,15 +76,19 @@ struct Toolbar: View {
                         systemName: "chevron.left"
                     )
                 }
+                .matchedGeometryEffect(id: "leftMostButton", in: animation)
                 Spacer()
             } else {
-                ToolbarButton(
-                    toggledOn: bookShelfShown
-                ) {
+                ToolbarButton {
                     navigationStateService.toggleSettingShelf()
                 } label: {
                     Logo()
                 }
+                .matchedGeometryEffect(
+                    id: "leftMostButton",
+                    in: animation,
+                    isSource: true
+                )
                 .onChange(of: navigationStateService.activePath) {
                     if navigationStateService.onForm {
                         withAnimation {
@@ -88,7 +102,7 @@ struct Toolbar: View {
                             navigationStateService.toggleSettingShelf()
                         } else {
                             navigationStateService.bookState.dismissBook()
-                            navigationStateService.goToToday()
+                            dayState.setTodayActive()
                         }
                     }
                 }
@@ -104,12 +118,21 @@ struct Toolbar: View {
                             .scaleEffect(book == nil ? 0.6 : 1, anchor: .center)
                         if let book {
                             Text(book.name)
+                                .matchedGeometryEffect(
+                                    id: "bookButton",
+                                    in: animation
+                                )
                         } else {
                             Image(systemName: "asterisk")
                                 .resizable()
                                 .scaledToFit()
                                 .contentShape(Rectangle())
                                 .frame(width: 16, height: 16)
+                                .matchedGeometryEffect(
+                                    id: "bookButton",
+                                    in: animation,
+                                    isSource: true
+                                )
                         }
                     }
                 }
@@ -123,44 +146,55 @@ struct Toolbar: View {
                     }
                 }
 
-                ToolbarButton {
-                    navigationStateService.toggleDatePickerShelf()
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "line.diagonal")
-                            .opacity(isToday ? 0.4 : 1)
-                            .scaleEffect(isToday ? 0.6 : 1, anchor: .center)
+                if showDateShelfButton {
+                    ToolbarButton {
+                        navigationStateService.toggleDatePickerShelf()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "line.diagonal")
+                                .opacity(isToday ? 0.4 : 1)
+                                .scaleEffect(isToday ? 0.6 : 1, anchor: .center)
 
-                        if !isToday {
-                            Text(
-                                date
-                                    .formatted(
-                                        .dateTime.day(.twoDigits)
-                                            .month(.twoDigits)
-                                            .year(.twoDigits)
+                            if !isToday {
+                                Text(
+                                    date
+                                        .formatted(
+                                            .dateTime.day(.twoDigits)
+                                                .month(.twoDigits)
+                                                .year(.twoDigits)
+                                        )
+                                )
+                                .matchedGeometryEffect(
+                                    id: "dateButton",
+                                    in: animation
+                                )
+                            } else {
+                                Image(systemName: "circle.fill")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .contentShape(Rectangle())
+                                    .frame(width: 12, height: 12)
+                                    .matchedGeometryEffect(
+                                        id: "dateButton",
+                                        in: animation,
+                                        isSource: true
                                     )
-                            )
-                        } else {
-                            Image(systemName: "circle.fill")
-                                .resizable()
-                                .scaledToFit()
-                                .contentShape(Rectangle())
-                                .frame(width: 12, height: 12)
+                            }
                         }
                     }
-                }
-                .onTapGesture(count: isToday ? 1 : 2) {
-                    withAnimation {
-                        if isToday {
-                            navigationStateService.toggleDatePickerShelf()
-                        } else {
-                            navigationStateService.goToToday()
+                    .onTapGesture(count: isToday ? 1 : 2) {
+                        withAnimation {
+                            if isToday {
+                                navigationStateService.toggleDatePickerShelf()
+                            } else {
+                                dayState.setTodayActive()
+                            }
                         }
                     }
                 }
             }
 
-            if !onForm {
+            if showNewItemButton, !onForm {
                 Spacer()
                 ToolbarButton(padding: 0) {
                     navigationStateService.goToItemForm()
@@ -170,7 +204,11 @@ struct Toolbar: View {
             }
         }
         .padding(Spacing.m)
-        .background(.ultraThinMaterial)
+        .background {
+            if showBackground {
+                Rectangle().fill(.ultraThinMaterial)
+            }
+        }
         .clipShape(Capsule())
     }
 }

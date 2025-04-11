@@ -4,8 +4,19 @@
 //
 //  Created by Faisal Alalaiwat on 04.03.25.
 //
+import AppIntents
+import AudioKit
+import AVFoundation
+import EventKit
+import Foundation
+import PhotosUI
 import SwiftData
 import SwiftUI
+import SwiftWhisper
+import SwipeActions
+import UniformTypeIdentifiers
+import UserNotifications
+import WidgetKit
 
 class BookStore {
     @MainActor
@@ -15,6 +26,15 @@ class BookStore {
 
     static func create() -> Book {
         Book(name: "", tags: [])
+    }
+
+    @MainActor
+    static func loadBooks() -> [Book] {
+        let desc = FetchDescriptor<Book>()
+
+        let res = try? modelContext.fetch(desc)
+        let books = res ?? []
+        return books
     }
 
     @MainActor
@@ -37,15 +57,13 @@ class BookStore {
 }
 
 @Model
-final class Book: Identifiable, Equatable, Listable {
+final class Book: Codable, Transferable, Identifiable, Equatable, Listable {
     typealias Child = Tag
     var id: UUID = UUID()
     var name: String
     @Relationship(deleteRule: .noAction) var tags: [Tag] = []
     var timestamp: Date = Date()
     var lastClicked: Date?
-    var startDate: Date?
-    var endDate: Date?
 
     var parent: Book? = nil
     var children: [Tag] { [] }
@@ -55,6 +73,22 @@ final class Book: Identifiable, Equatable, Listable {
         return Color(uiColor: UIColor(hex: colorHex))
     }
 
+    var preview: AnyView {
+        AnyView(
+            HStack {
+                Text(name)
+                Spacer()
+            }
+            .padding(.vertical, Spacing.xs)
+            .background {
+                RoundedRectangle(cornerRadius: 4).fill(
+                    shadowTint
+                )
+                .opacity(0.2)
+            }
+        )
+    }
+
     var shadowTint: Color {
         color
     }
@@ -62,14 +96,10 @@ final class Book: Identifiable, Equatable, Listable {
     init(
         name: String,
         tags: [Tag],
-        startDate: Date? = nil,
-        endDate: Date? = nil,
         color: UIColor = .systemPink
     ) {
         self.name = name
         self.tags = tags
-        self.startDate = startDate
-        self.endDate = endDate
         colorHex = color.toHex() ?? ""
     }
 
@@ -79,5 +109,38 @@ final class Book: Identifiable, Equatable, Listable {
 
     var globalBackground: some View {
         RandomMeshBackground(color: color)
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case colorHex
+    }
+
+    static var transferRepresentation: some TransferRepresentation {
+        CodableRepresentation(contentType: .item)
+        ProxyRepresentation(exporting: \.name)
+    }
+
+    required init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        id = try values.decode(UUID.self, forKey: .id)
+        name = try values.decode(String.self, forKey: .name)
+        colorHex = try values.decode(String.self, forKey: .colorHex)
+        tags = []
+        timestamp = Date()
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encode(colorHex, forKey: .colorHex)
+    }
+
+    var displayRepresentation: DisplayRepresentation {
+        DisplayRepresentation(title: LocalizedStringResource(
+            stringLiteral: name
+        ))
     }
 }

@@ -17,6 +17,22 @@ public extension Date {
     }
 }
 
+extension Calendar {
+    func nextDay(for date: Date) -> Date {
+        Calendar.current.startOfDay(for: date.advanced(
+            by:
+            86400
+        ))
+    }
+
+    func previousDay(for date: Date) -> Date {
+        Calendar.current.startOfDay(for: date.advanced(
+            by:
+            -86400
+        ))
+    }
+}
+
 extension UIColor {
     convenience init(hex: String) {
         var hexString = hex.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -120,7 +136,6 @@ extension Calendar {
         return self.date(byAdding: .day, value: 7, to: sunday)
     }
 }
-
 
 extension UIView {
     var allSubViews: [UIView] {

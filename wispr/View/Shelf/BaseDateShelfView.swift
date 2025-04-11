@@ -11,12 +11,15 @@ import SwiftUI
 struct BaseDateShelfView: View {
     @Environment(\.modelContext) private var modelContext: ModelContext
     @Environment(NavigationStateService.self) private var navigationStateService
+    @Environment(DayStateService.self) private var dayState
     @Environment(CalendarSyncService.self) private var calendarSyncService
     @Environment(ThemeStateService.self) private var theme: ThemeStateService
     @State var showCalendarShelf: Bool = false
     @State var loaded: Bool = false
 
     @State var eventCalendars: [String: [EventCalendar]] = [:]
+    @State var selectedDate: Date = .init()
+    @Query() var days: [Day]
 
     func title() -> some View {
         Text("Date")
@@ -30,74 +33,47 @@ struct BaseDateShelfView: View {
         ) {
             DatePicker(
                 "",
-                selection:
-                Bindable(navigationStateService).activeDate,
+                selection: $selectedDate,
                 displayedComponents: [.date]
             )
             .datePickerStyle(.graphical)
             .tint(theme.activeTheme.backgroundMaterialOverlay)
+            HStack(spacing: Spacing.l) {
+                ToolbarButton {
+                    dayState.yesterday()
+                    navigationStateService.shelfState.dismissShelf()
+                } label: {
+                    Text("Yesterday")
+                }
+
+                ToolbarButton {
+                    dayState.setTodayActive()
+                    navigationStateService.shelfState.dismissShelf()
+                } label: {
+                    Text("Today")
+                }
+
+                ToolbarButton {
+                    dayState.tomorrow()
+                    navigationStateService.shelfState.dismissShelf()
+                } label: {
+                    Text("Tomorrow")
+                }
+            }.padding(Spacing.m)
+        }
+        .task {
+            selectedDate = dayState.active.date
         }
         .padding(.top, Spacing.m)
-        .onChange(of: navigationStateService.activeDate) {
-            navigationStateService.shelfState.dismissShelf()
-        }
-    }
-}
-
-struct BaseDateShelfLabelView: View {
-    @Environment(ThemeStateService.self) private var theme: ThemeStateService
-    @Environment(
-        NavigationStateService
-            .self
-    ) var navigationStateService: NavigationStateService
-    @State var showTodayButton: Bool = false
-
-    var dateShelfShown: Bool {
-        navigationStateService.shelfState.isDatePicker()
-    }
-
-    var body: some View {
-        HStack {
-            if showTodayButton {
-                ToolbarButton(
-                    toggledOn: dateShelfShown
-                ) {
-                    navigationStateService.goToToday()
-                } label: {
-                    Image(systemName: "asterisk")
+        .onChange(of: selectedDate) {
+            if selectedDate != dayState.active.date {
+                if let d = DayStore.loadDay(from: days, by: selectedDate) {
+                    dayState.setActive(d)
+                } else {
+                    dayState.setActive(DayStore.createBlank(selectedDate))
                 }
-            }
 
-            ToolbarButton(
-                toggledOn: dateShelfShown
-            ) {
-                navigationStateService.toggleDatePickerShelf()
-            } label: {
-                Image(systemName: "calendar")
-            }
-            .onChange(of: navigationStateService.activePath) {
-                if navigationStateService.onForm {
-                    withAnimation {
-                        navigationStateService.closeShelf()
-                    }
-                }
-            }
-            .onChange(of: navigationStateService.activeDate) {
-                withAnimation {
-                    navigationStateService.closeShelf()
-                    showTodayButton = !navigationStateService.isTodayActive
-                }
-            }
-        }.onAppear {
-            withAnimation {
-                showTodayButton = !navigationStateService.isTodayActive
-            }
-        }
-        .background {
-            if !navigationStateService.isTodayActive {
-                Capsule().fill(theme.activeTheme.backgroundMaterialOverlay)
-                    .blur(radius: dateShelfShown ? 50 : 0)
-                    .blendMode(.luminosity)
+                navigationStateService.shelfState.dismissShelf()
             }
         }
     }

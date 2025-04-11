@@ -287,10 +287,10 @@ private struct ScreenStyle: ViewModifier {
         VStack {
             content
         }
-        .safeAreaPadding(.top, Padding.screenTop)
-        .safeAreaPadding(.bottom, Padding.screenBottom)
-        .safeAreaPadding(.leading, Padding.screenLeading)
-        .safeAreaPadding(.trailing, Padding.screenTrailing)
+        // .safeAreaPadding(.top, Padding.screenTop)
+        // .safeAreaPadding(.bottom, Padding.screenBottom)
+        // .safeAreaPadding(.leading, Padding.screenLeading)
+        // .safeAreaPadding(.trailing, Padding.screenTrailing)
     }
 }
 
@@ -352,8 +352,7 @@ struct LstRowStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
             .listRowBackground(Color.clear)
-            .listRowSpacing(Spacing.none)
-            .contentShape(Rectangle())
+            .contentShape(RoundedRectangle(cornerRadius: 20))
             .listRowSeparator(themeService.activeTheme.listRowSeparator)
             .listRowInsets(.init(
                 top: Spacing.m,

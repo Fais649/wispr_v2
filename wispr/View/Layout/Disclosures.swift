@@ -11,6 +11,7 @@ struct Disclosures<
     Item: Listable,
     ItemView: View
 >: View {
+    var animation: Namespace.ID
     var defaultExpanded: Bool = false
     let items: [Item]
     var onMove: ((IndexSet, Int) -> Void)? = nil
@@ -20,15 +21,13 @@ struct Disclosures<
     let itemRow: (Item) -> Label
     let childRow: (Item.Child) -> ItemView
 
-    func row(_ item: Item) -> some View {
-        Disclosure(item: item, itemRow: itemRow, childRow: childRow)
-    }
-
     var body: some View {
         ForEach(items) { item in
             Disclosure(
+                animation: animation,
                 isExpanded: defaultExpanded,
                 item: item,
+                onMoveChild: onMoveChild,
                 onDelete: onDelete,
                 onDeleteChild: onDeleteChild,
                 itemRow: itemRow,

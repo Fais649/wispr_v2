@@ -19,12 +19,17 @@ class ItemStore {
         SharedState.sharedModelContainer.mainContext
     }
 
+    @MainActor
+    static func save() {
+        try? modelContext.save()
+    }
+
     static func allActiveItemsPredicate() -> Predicate<Item> {
         #Predicate<Item> { $0.parent == nil && !$0.archived }
     }
 
-    static func activeItemsPredicated(for day: Date) -> Predicate<Item> {
-        let start = Calendar.current.startOfDay(for: day)
+    static func activeItemsPredicated(for date: Date) -> Predicate<Item> {
+        let start = Calendar.current.startOfDay(for: date)
         let end = Calendar.current.startOfDay(for: start.advanced(by: 86400))
         return #Predicate<Item> {
             $0.parent == nil && !$0.archived && start <= $0
@@ -118,10 +123,6 @@ class ItemStore {
 
     @MainActor
     static func loadEventItems() -> [Item] {
-//        let desc = FetchDescriptor<Item>(predicate: #Predicate<Item> {
-//            $0.eventData != nil
-//        })
-
         let desc = FetchDescriptor<Item>()
         let items = try? modelContext.fetch(desc)
         let res = items ?? []
@@ -158,6 +159,7 @@ class ItemStore {
     @MainActor
     static func create(
         id: UUID = UUID(),
+        day: Day? = nil,
         timestamp: Date,
         parent: Item? = nil,
         position: Int? = nil,
@@ -171,6 +173,17 @@ class ItemStore {
     ) -> Item {
         let item = Item()
         item.id = id
+
+        if day == nil {
+            if let day = DayStore.loadDay(by: timestamp) {
+                item.day = day
+            } else {
+                item.day = DayStore.createBlank(timestamp)
+            }
+        } else {
+            item.day = day
+        }
+
         item.timestamp = timestamp
         item.parent = parent
         item.archived = archived
@@ -196,38 +209,39 @@ class ItemStore {
     static func calculatePosition(
         item: Item
     ) -> Int {
-        var items = loadItems(for: item.timestamp)
+        guard let day = item.day else {
+            return 0
+        }
+
+        var items = loadItems(for: day.date)
 
         guard let event = item.eventData else {
             return items.count
         }
 
-        let events = items.filter {
-            guard let e = $0.eventData else {
-                return false
-            }
-
-            return e.startDate < event.startDate
-        }
-
         guard
-            let replace = events.sorted(by: { $0.position > $1.position })
-                .first
+            let previous = items.filter({
+                guard let e = $0.eventData else {
+                    return false
+                }
+
+                return e.startDate < event.startDate
+            })
+                .sorted(by: { $0.position > $1.position }).first
         else {
             return items.count
         }
 
-        items.sort(by: { $0.position < $1.position })
         items.insert(
             item,
-            at: replace.position + 1
+            at: min(previous.position + 1, items.count)
         )
 
         for (index, i) in items.enumerated() {
             i.position = index
         }
 
-        return replace.position + 1
+        return previous.position + 1
     }
 
     @MainActor
@@ -239,9 +253,17 @@ class ItemStore {
     }
 
     @MainActor
-    static func loadItems(for day: Date) -> [Item] {
+    static func loadItems() -> [Item] {
         let desc =
-            FetchDescriptor<Item>(predicate: activeItemsPredicated(for: day))
+            FetchDescriptor<Item>()
+        let items = try? modelContext.fetch(desc)
+        return items ?? []
+    }
+
+    @MainActor
+    static func loadItems(for date: Date) -> [Item] {
+        let desc =
+            FetchDescriptor<Item>(predicate: activeItemsPredicated(for: date))
         let items = try? modelContext.fetch(desc)
         return items ?? []
     }
@@ -289,7 +311,7 @@ class ItemStore {
 }
 
 @Model
-final class Item: Codable, Transferable, AppEntity, Listable {
+final class Item: Codable, Transferable, Listable {
     typealias Child = Item
 
     @Attribute(.unique) var id: UUID
@@ -300,12 +322,37 @@ final class Item: Codable, Transferable, AppEntity, Listable {
     var archived = false
     var archivedAt: Date? = nil
     var parent: Item?
-    @Relationship(deleteRule: .cascade, inverse: \Item.parent)
-    var children: [Item] = []
+
+    var children: [Item] {
+        _children.sorted { $0.position < $1.position }
+    }
+
+    func setChildren(_ children: [Item]) {
+        _children = children
+    }
+
+    func moveChild(
+        from indexSet: IndexSet,
+        to newIndex: Int
+    ) {
+        _children.move(fromOffsets: indexSet, toOffset: newIndex)
+        for (index, child) in _children.enumerated() {
+            child.position = index
+        }
+        // try? modelContext.save()
+    }
+
+    private var _children: [Item] = []
+
     @Relationship(deleteRule: .noAction)
     var book: Book? = nil
+
+    @Relationship(deleteRule: .noAction)
+    var day: Day? = nil
+
     @Relationship(deleteRule: .noAction)
     var tags: [Tag] = []
+
     var text = ""
     var taskData: TaskData?
     var eventData: EventData?
@@ -315,6 +362,22 @@ final class Item: Codable, Transferable, AppEntity, Listable {
 
     var shadowTint: Color {
         book?.color ?? Color.white
+    }
+
+    var preview: AnyView {
+        AnyView(
+            HStack {
+                Text(text)
+                Spacer()
+            }
+            .padding(.vertical, Spacing.xs)
+            .background {
+                RoundedRectangle(cornerRadius: 4).fill(
+                    shadowTint
+                )
+                .opacity(0.2)
+            }
+        )
     }
 
     var fillTint: Color {
@@ -414,7 +477,7 @@ final class Item: Codable, Transferable, AppEntity, Listable {
 
     @MainActor
     func commit(
-        timestamp: Date? = nil,
+        timestamp: Date,
         text: String = "",
         taskData: TaskData?,
         eventFormData: EventData.FormData?,
@@ -423,9 +486,7 @@ final class Item: Codable, Transferable, AppEntity, Listable {
         children: [Item],
         syncEkEvent: Bool = true
     ) {
-        if let timestamp {
-            setTimestamp(timestamp)
-        }
+        setTimestamp(timestamp)
         self.text = text
         self.taskData = taskData
 
@@ -439,23 +500,23 @@ final class Item: Codable, Transferable, AppEntity, Listable {
             deleteEvent()
         }
 
-        if eventData != nil {
-            updatePosition()
-        }
+        updatePosition()
 
         self.book = book
         self.tags = tags
-        self.children = children
+        _children = children.filter { $0.text.isNotEmpty }
 
         commit()
     }
 
     @MainActor
     func commit(
+        day: Day,
         timestamp: Date? = nil,
         text: String = "",
         ekEvent: EKEvent
     ) {
+        self.day = day
         if let timestamp {
             setTimestamp(timestamp)
         }
@@ -478,6 +539,8 @@ final class Item: Codable, Transferable, AppEntity, Listable {
         } else {
             ItemStore.modelContext.delete(self)
         }
+
+        try? ItemStore.modelContext.save()
     }
 
     func archive() {
@@ -500,13 +563,21 @@ final class Item: Codable, Transferable, AppEntity, Listable {
             position: children.count
         )
         child.taskData = taskData
-        children.append(child)
+        _children.append(child)
         return child
     }
 
     @MainActor
     func setTimestamp(_ date: Date) {
         timestamp = date
+
+        if let day = DayStore.loadDay(by: timestamp) {
+            self.day = day
+        } else {
+            day = DayStore.createBlank(timestamp)
+        }
+
+        ItemStore.save()
         updatePosition()
     }
 
@@ -666,19 +737,6 @@ final class Item: Codable, Transferable, AppEntity, Listable {
             text
         ))
     }
-
-    var queryIntentParameter: IntentParameter<Item> {
-        IntentParameter<Item>(query: Item.defaultQuery)
-    }
-
-    var defaultIntentParameter: IntentParameter<Item> {
-        let i = IntentParameter<Item>(title: "Item", default: self)
-        i.wrappedValue = self
-        return i
-    }
-
-    static var typeDisplayRepresentation: TypeDisplayRepresentation = "Item"
-    static var defaultQuery = ItemQuery()
 }
 
 struct ItemRecord: Codable, Transferable {
@@ -690,29 +748,6 @@ struct ItemRecord: Codable, Transferable {
 
 extension UTType {
     static let item = UTType(exportedAs: "punk.systems.item")
-}
-
-struct ItemQuery: EntityQuery {
-    func entities(for identifiers: [Item.ID]) async throws -> [Item] {
-        var entities: [Item] = []
-        let items = await fetchItemsByIds(identifiers)
-
-        for item in items {
-            entities.append(item)
-        }
-
-        return entities
-    }
-
-    @MainActor
-    func fetchItemsByIds(_ ids: [UUID]) async -> [Item] {
-        return ItemStore.byIds(ids: ids)
-    }
-
-    @MainActor
-    func fetchItemById(_ id: UUID) async -> Item? {
-        return ItemStore.byId(id: id)
-    }
 }
 
 struct LocationData: Identifiable, Codable {

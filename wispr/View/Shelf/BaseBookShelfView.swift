@@ -49,6 +49,7 @@ struct BaseBookShelfView: View {
         }
     }
 
+    @Namespace var animation
     var body: some View {
         Screen(
             .bookShelf,
@@ -59,6 +60,7 @@ struct BaseBookShelfView: View {
             ScrollView {
                 VStack(spacing: 0) {
                     Disclosures(
+                        animation: animation,
                         items: books
                             .sorted(by: {
                                 if
@@ -111,118 +113,5 @@ struct BaseBookShelfView: View {
                 .safeAreaPadding(.vertical, Spacing.m)
             }
         }
-    }
-}
-
-struct BaseBookShelfLabelView: View {
-    @Environment(
-        NavigationStateService
-            .self
-    ) private var navigationStateService: NavigationStateService
-
-    var date: Date {
-        navigationStateService.activeDate
-    }
-
-    var isToday: Bool {
-        navigationStateService.isTodayActive
-    }
-
-    var book: Book? {
-        navigationStateService.bookState.book
-    }
-
-    var chapter: Tag? {
-        navigationStateService.bookState.chapter
-    }
-
-    var clipShape: AnyShape {
-        if book != nil {
-            return AnyShape(Capsule())
-        } else {
-            return AnyShape(Circle())
-        }
-    }
-
-    var bookShelfShown: Bool {
-        navigationStateService.shelfState.isBook()
-    }
-
-    var body: some View {
-        ToolbarButton(
-            padding: -8,
-            toggledOn: bookShelfShown,
-            clipShape: clipShape
-        ) {
-            navigationStateService.toggleSettingShelf()
-        } label: {
-            Logo()
-        }
-        .onChange(of: navigationStateService.activePath) {
-            if navigationStateService.onForm {
-                withAnimation {
-                    navigationStateService.closeShelf()
-                }
-            }
-        }
-
-        ToolbarButton(padding: -16) {
-            navigationStateService.toggleBookShelf()
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "line.diagonal")
-                    .opacity(book == nil ? 0.4 : 1)
-                    .scaleEffect(book == nil ? 0.6 : 1, anchor: .center)
-                if let book {
-                    Text(book.name)
-                } else {
-                    Image(systemName: "asterisk")
-                        .scaleEffect(0.8)
-                }
-            }
-        }
-        .onTapGesture(count: book == nil ? 1 : 2) {
-            withAnimation {
-                if book == nil {
-                    navigationStateService.toggleBookShelf()
-                } else {
-                    navigationStateService.bookState.dismissBook()
-                }
-            }
-        }
-
-        ToolbarButton(padding: -16) {
-            navigationStateService.toggleDatePickerShelf()
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "line.diagonal")
-                    .opacity(isToday ? 0.4 : 1)
-                    .scaleEffect(isToday ? 0.6 : 1, anchor: .center)
-
-                if !isToday {
-                    Text(
-                        date
-                            .formatted(
-                                .dateTime.day(.twoDigits).month(.twoDigits)
-                                    .year(.twoDigits)
-                            )
-                    )
-                } else {
-                    Image(systemName: "circle.fill")
-                        .scaleEffect(0.6)
-                }
-            }
-        }
-        .onTapGesture(count: isToday ? 1 : 2) {
-            withAnimation {
-                if isToday {
-                    navigationStateService.toggleDatePickerShelf()
-                } else {
-                    navigationStateService.goToToday()
-                }
-            }
-        }
-
-        Spacer()
     }
 }

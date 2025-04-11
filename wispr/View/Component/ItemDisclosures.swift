@@ -9,6 +9,10 @@ import SwiftUI
 
 struct ItemDisclosures: View {
     @Environment(
+        Globals
+            .self
+    ) private var globals: Globals
+    @Environment(
         NavigationStateService
             .self
     ) private var navigationStateService: NavigationStateService
@@ -27,6 +31,8 @@ struct ItemDisclosures: View {
         return false
     }
 
+    var animation: Namespace.ID
+
     var defaultExpanded: Bool = false
     var items: [Item]
 
@@ -41,22 +47,18 @@ struct ItemDisclosures: View {
             withAnimation {
                 flashService.flash = FlashData(type: .error, message: message)
             }
+        } else {
+            try? modelContext.save()
         }
     }
 
     func onMoveChild(_ item: Item, _ indexSet: IndexSet, _ newIndex: Int) {
-        item.children.move(
-            fromOffsets: indexSet,
-            toOffset: newIndex
-        )
-
-        for (index, child) in item.children.enumerated() {
-            child.position = index
-        }
+        item.moveChild(from: indexSet, to: newIndex)
     }
 
     var body: some View {
         Disclosures(
+            animation: animation,
             defaultExpanded: defaultExpanded,
             items: items,
             onMove: onMove,
@@ -67,10 +69,11 @@ struct ItemDisclosures: View {
             label(item)
                 .id(item.id)
                 .padding(Spacing.s)
+                .matchedGeometryEffect(id: item.id, in: animation)
         } childRow: { child in
             row(child)
+                .padding(Spacing.s)
                 .id(child.id)
-                .padding(Spacing.xxs)
         }
         .listRowInsets(EdgeInsets())
         .opacity(flashService.isFlashing ? 0 : 1)
@@ -79,8 +82,7 @@ struct ItemDisclosures: View {
     @ViewBuilder
     func label(_ item: Item) -> some View {
         AniButton(padding: Spacing.xxs) {
-            navigationStateService.activeDate = item.timestamp
-            navigationStateService.pathState.setActive(.itemForm(item: item))
+            navigationStateService.goToItemForm(item)
         } label: {
             HStack {
                 VStack(alignment: .leading) {
@@ -116,34 +118,34 @@ struct ItemDisclosures: View {
         .parentItem()
         .padding(Spacing.s)
         .buttonStyle(.plain)
-        // .swipeActions(edge: .leading) {
-        //     self.archiveButton(item)
-        // }.swipeActions(edge: .trailing) {
-        //     self.deleteButton(item)
-        // }
+        .swipeActions(edge: .leading) {
+            self.archiveButton(item)
+        }.swipeActions(edge: .trailing) {
+            self.deleteButton(item)
+        }
     }
 
     func row(_ child: Item) -> some View {
         HStack {
-            if var task = child.taskData {
-                AniButton(padding: Spacing.s) {
-                    task.completedAt = task
-                        .completedAt == nil ? Date() : nil
-                    child.taskData = task
-                } label: {
+            AniButton(padding: Spacing.s) {
+                if var task = child.taskData {
+                    withAnimation {
+                        task.completedAt = task
+                            .completedAt == nil ? Date() : nil
+                        child.taskData = task
+                    }
+                }
+            } label: {
+                if let task = child.taskData {
                     Image(
-                        systemName: task
-                            .completedAt == nil ? "square.dotted" :
+                        systemName: task.completedAt == nil ? "square.dotted" :
                             "square.fill"
                     )
                     .buttonFontStyle()
-                    .scaleEffect(0.6)
+                    .scaleEffect(0.8)
                 }
-            }
 
-            AniButton(padding: Spacing.xs) {
-                navigationStateService.goToItemForm(child.parent)
-            } label: {
+                Text(child.position.description)
                 Text(child.text)
                     .multilineTextAlignment(.leading)
             }.buttonStyle(.plain)
@@ -153,9 +155,9 @@ struct ItemDisclosures: View {
         .contentShape(Rectangle())
         .padding(Spacing.xxs)
         .childItem()
-        // .swipeActions(edge: .trailing) {
-        //     self.deleteButton(child)
-        // }
+        .swipeActions(edge: .trailing) {
+            self.deleteButton(child)
+        }
     }
 
     @ViewBuilder

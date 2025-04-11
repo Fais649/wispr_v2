@@ -13,48 +13,35 @@ struct ActiveDay {
     var items: [Item] = []
 }
 
+@Observable
+class Globals {}
+
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @Environment(ThemeStateService.self) private var theme: ThemeStateService
 
+    @Environment(ThemeStateService.self) private var theme: ThemeStateService
+    @State var globals: Globals = .init()
     @State var navigationStateService: NavigationStateService = .init()
+    @State var dayState: DayStateService = .init()
     @State var flashService: FlashStateService = .init()
     @State var calendarSyncService: CalendarSyncService = .init()
-    @Namespace var namespace
+
+    @Namespace var animation
 
     @State var editMode: EditMode = .inactive
     @State var showShelf: Bool = false
 
-    @Query(
-        filter: ItemStore.allActiveItemsPredicate(),
-        sort: \.position
-    )
-    var items: [Item]
-
-    @State var dayItems: [Item] = []
-
-    var dayEvents: [Item] {
-        dItems.filter {
-            if
-                let e =
-                $0.eventData
-            {
-                return e.allDay
-            } else {
-                return false
-            }
-        }
-    }
-
     @State var timelineLoaded: Bool = false
     @State var dayLoaded: Bool = false
+
+    @Query() var days: [Day]
 
     var path: [Path] {
         navigationStateService.pathState.path
     }
 
     var date: Date {
-        navigationStateService.activeDate
+        dayState.active.date
     }
 
     var tab: Path {
@@ -65,191 +52,151 @@ struct ContentView: View {
         navigationStateService.bookState.book
     }
 
-    var chapterFilter: Tag? {
+    func load() {
+        withAnimation {
+            timelineLoaded = false
+        }
+
+        withAnimation {
+            timelineLoaded = true
+        }
+    }
+
+    func deleteEmptyItems(in context: ModelContext) async {
+        do {
+            let items = ItemStore.loadItems()
+            for item in items {
+                if item.text.isEmpty {
+                    modelContext.delete(item)
+                }
+            }
+
+            try context.save()
+        } catch {
+            print("Error deleting empty items: \(error)")
+        }
+    }
+
+    func consolidateDuplicateDays(in context: ModelContext) async {
+        do {
+            let calendar = Calendar.current
+            let days = DayStore.loadDays()
+            let groupedDays = Dictionary(grouping: days) { day in
+                calendar.startOfDay(for: day.date)
+            }
+
+            for (_, duplicates) in groupedDays {
+                guard duplicates.count > 1 else { continue }
+
+                let primary = duplicates.first!
+                for duplicate in duplicates.dropFirst() {
+                    primary.items.append(contentsOf: duplicate.items)
+                    context.delete(duplicate)
+                }
+            }
+
+            try context.save()
+        } catch {
+            print("Error consolidating duplicates: \(error)")
+        }
+    }
+
+    @State var dragOffset: CGFloat = 0
+    @State var xdragOffset: CGFloat = 0
+
+    @State var showDateShelf: Bool = false
+    var showDayOverlay: Bool {
+        activeDay != nil
+    }
+
+    @State var firstLoad: Bool = true
+    @State var active: Date? = Calendar.current.startOfDay(for: Date())
+    @State var activeDay: Day? = nil
+
+    var onForm: Bool {
+        navigationStateService.pathState.onForm
+    }
+
+    var onBookForm: Bool {
+        navigationStateService.pathState.onBookForm
+    }
+
+    var bookShelfShown: Bool {
+        navigationStateService.shelfState.isBook()
+    }
+
+    var isToday: Bool {
+        dayState.isTodayActive()
+    }
+
+    var book: Book? {
+        navigationStateService.bookState.book
+    }
+
+    var chapter: Tag? {
         navigationStateService.bookState.chapter
     }
 
-    var dItems: [Item] {
-        let i = try? items.filter(
-            ItemStore
-                .activeItemsPredicated(
-                    for: navigationStateService
-                        .activeDate
-                )
-        )
-
-        return i ?? []
+    var noFilter: Bool {
+        book == nil && isToday
     }
-
-    func loadTimeline() async {
-        withAnimation {
-            timelineLoaded = false
-            dayLoaded = false
-        }
-
-        navigationStateService.setDays(await filterTimelineDays())
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-            withAnimation {
-                timelineLoaded = true
-            }
-        }
-    }
-
-    func filterTimelineDays() async -> [Date: [Item]] {
-        let i = ItemStore.filterByBook(
-            items: items,
-            book: bookFilter
-        )
-        .sorted(by: {
-            $0.timestamp < $1.timestamp && $0.position < $1.position
-        })
-
-        return Dictionary(
-            grouping: i,
-            by: {
-                Calendar.current.startOfDay(for: $0.timestamp)
-            }
-        )
-    }
-
-    func loadDay() {
-        withAnimation {
-            dayLoaded = false
-        }
-
-        navigationStateService.setActiveDay(
-            activeDay: loadActiveDay()
-        )
-
-        withAnimation {
-            dayLoaded = true
-        }
-    }
-
-    func loadActiveDay() -> ActiveDay {
-        return .init(date: date, items: days[date] ?? [])
-    }
-
-    func load() {
-        Task {
-            await loadTimeline()
-            loadDay()
-        }
-    }
-
-    var activeDay: ActiveDay { navigationStateService.activeDay }
-    var activeItems: [Item] { navigationStateService.activeDay.items }
-    var days: [Date: [Item]] { navigationStateService.days }
-
-    var activeDayDict: [Date: [Item]] {
-        [navigationStateService.activeDay.date: navigationStateService.activeDay
-            .items]
-    }
-
-    @State var scrollToActiveDate: Bool = false
 
     var body: some View {
         NavigationStack(path: $navigationStateService.pathState.path) {
-            TabView(selection: $navigationStateService.pathState.tab) {
-                Screen(
-                    .timelineScreen,
-                    loaded: timelineLoaded,
-                    title: { Text("Timeline") },
-                    onTapTitle: {
-                        scrollToActiveDate = true
-                    },
-                    subtitle: { Text("K").opacity(0) },
-                    backgroundOpacity: 0.4
-                ) {
-                    TimeLineScreen(
-                        days: days,
-                        scrollToActiveDate: $scrollToActiveDate
-                    )
-                }
-                .tabItem {
-                    Image(systemName: "text.line.magnify")
-                }
-                .tag(Path.timelineScreen)
-                .animation(.smooth, value: timelineLoaded)
-
-                Screen(
-                    .dayScreen,
-                    loaded: dayLoaded,
-                    title: {
-                        DateTitle(
-                            date: date,
-                            scrollTransition: false,
-                            dateStringLeading: date
-                                .formatted(
-                                    date: .long,
-                                    time: .omitted
-                                )
+            VStack {
+                if timelineLoaded {
+                    VStack {
+                        HorizontalTimelineScreen(
+                            animation: animation,
+                            activeDay: $activeDay,
+                            // selectedDate: $selectedDate,
+                            showDateShelf: $showDateShelf,
+                            active: $active
                         )
-                    },
-                    trailingTitle: {
-                        DateTrailingTitleLabel(
-                            date: date
-                        )
-                    },
-                    subtitle: {
-                        HStack {
-                            Text(
-                                date.formatted(.dateTime.weekday(.wide))
-                            )
-                            Spacer()
-                        }
-                    },
-                    backgroundOpacity: 0.4
-                ) {
-                    DayScreen(items: activeDay.items, editMode: $editMode)
+                    }
+                } else {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        ProgressView()
+                            .progressViewStyle(.circular)
+                            .toolbarBackground(.hidden)
+                            .toolbarBackgroundVisibility(.hidden)
+                            .toolbarVisibility(.hidden)
+                        Spacer()
+                    }
+                    Spacer()
                 }
-                .tag(Path.dayScreen)
-                .animation(.smooth, value: dayLoaded)
-            }
-            .animation(.smooth, value: tab)
-            .animation(.smooth, value: date)
-            .onChange(of: path.isEmpty) {
-                if path.isEmpty {
-                    load()
-                }
-            }
-            .onChange(of: date) {
-                loadDay()
-            }
-            .onChange(of: items) {
-                load()
-            }
-            .onChange(of: bookFilter) {
-                load()
-                navigationStateService.shelfState.dismissShelf()
+            }.overlay {
+                flashService.flashMessage
             }
             .navigationDestination(for: Path.self) { path in
-                navigationStateService.destination(path)
+                navigationStateService.destination(animation, path)
                     .background(navigationStateService.background)
             }
             .tabViewStyle(.page)
             .background(navigationStateService.background)
-            .toolbar {
-                ToolbarItemGroup(
-                    placement: .bottomBar
-                ) {
-                    Toolbar()
-                }
-            }
         }
         .toolbarBackground(.ultraThinMaterial)
         .toolbarBackgroundVisibility(.visible)
         .scrollIndicators(.hidden)
         .scrollContentBackground(.hidden)
+        .environment(globals)
         .environment(navigationStateService)
+        .environment(dayState)
         .environment(navigationStateService.bookState)
         .environment(navigationStateService.shelfState)
         .environment(flashService)
         .environment(calendarSyncService)
         .task {
             await calendarSyncService.sync()
-            await loadTimeline()
-            loadDay()
+            await deleteEmptyItems(in: modelContext)
+            await consolidateDuplicateDays(in: modelContext)
+
+            withAnimation {
+                timelineLoaded = true
+                dayLoaded = true
+            }
         }
     }
 }

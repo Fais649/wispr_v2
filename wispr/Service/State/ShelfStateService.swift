@@ -10,6 +10,12 @@ import SwiftUI
 final class ShelfStateService {
     enum SType {
         case date, book, setting, none
+        var detents: Set<PresentationDetent> {
+            switch self {
+                case .setting: [.fraction(0.6), .fraction(0.9)]
+                default: [.fraction(0.6)]
+            }
+        }
     }
 
     var shelf: SType = .none
@@ -81,7 +87,6 @@ final class ShelfStateService {
                     EmptyView()
             }
         }
-        .frame(height: 450)
         .onDisappear {
             self.dismissShelf()
         }

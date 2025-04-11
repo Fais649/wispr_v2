@@ -6,9 +6,11 @@
 //
 import SwiftUI
 
-protocol Listable: Identifiable, Equatable {
+protocol Listable: Transferable, Identifiable, Equatable {
     associatedtype Child: Identifiable, Equatable
     var children: [Child] { get }
+    @ViewBuilder
+    var preview: AnyView { get }
     var shadowTint: Color { get }
     var fillTint: Color { get }
 }

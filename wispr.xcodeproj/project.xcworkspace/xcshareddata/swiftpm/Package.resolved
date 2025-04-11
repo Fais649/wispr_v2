@@ -1,13 +1,31 @@
 {
-  "originHash" : "0a3ded7110ff388a7a99d35d19f4be90b1256587f9679fe2307679ccbcdb3137",
+  "originHash" : "d0eaa07f245c1264790f0d5e0811c2d97ced99e179d98e01accb19c1cf6c7e2f",
   "pins" : [
     {
       "identity" : "audiokit",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/AudioKit/AudioKit.git",
       "state" : {
-        "revision" : "2ebd422855e4645d3169f83d1765d1c8196b4f46",
-        "version" : "5.6.4"
+        "revision" : "5b3fd238ef8ee95c9842ca4ea83ca58ee151e630",
+        "version" : "5.6.5"
+      }
+    },
+    {
+      "identity" : "llm.swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/eastriverlee/LLM.swift/",
+      "state" : {
+        "branch" : "main",
+        "revision" : "7584d0736fce6ec032ab357ee63a8e7b00c64d96"
+      }
+    },
+    {
+      "identity" : "reorderable",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/visfitness/reorderable",
+      "state" : {
+        "revision" : "25319647c88b1872b17f9cedc1424f0626c11f77",
+        "version" : "1.3.1"
       }
     },
     {
@@ -15,8 +33,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tevelee/SwiftUI-Flow.git",
       "state" : {
-        "revision" : "5b2f4b3373ff5ba6a8a1666d52ebfd9dc6c0e10b",
-        "version" : "3.0.1"
+        "revision" : "fd755bc852c738d3b726c6a28fc4640c9a74876f",
+        "version" : "3.0.2"
       }
     },
     {

@@ -149,9 +149,10 @@ class CalendarSyncService {
         eventStore.calendars(for: .event).sorted(using: SortDescriptor(\.title))
     }
 
+    @MainActor
     static func syncCalendars() async {
         let ekCalendars = loadAllEKCalendars()
-        let eventCalendars = await EventCalendarStore.loadCalendars()
+        let eventCalendars = EventCalendarStore.loadCalendars()
         let eventCalendarIdentifiers = eventCalendars.map { $0.identifier }
 
         let newCalendars =
@@ -161,7 +162,7 @@ class CalendarSyncService {
 
         for new in newCalendars {
             let newCal = EventCalendarStore.create(from: new)
-            await EventCalendarStore.insert(newCal)
+            EventCalendarStore.insert(newCal)
         }
     }
 
@@ -206,6 +207,7 @@ class CalendarSyncService {
         synced = true
     }
 
+    @MainActor
     func sync(for eventCalendar: EventCalendar) async {
         await requestAccessToCalendar()
         if !authorized {
@@ -220,7 +222,8 @@ class CalendarSyncService {
             by: { Calendar.current.startOfDay(for: $0.startDate) }
         )
 
-        let items = await ItemStore.loadEventItems()
+        let items = ItemStore.loadEventItems()
+        var days = DayStore.loadDays()
         for (date, ekEvents) in ekEventsDict {
             for e in ekEvents {
                 let item = items
@@ -230,11 +233,30 @@ class CalendarSyncService {
                     }
                     .first ?? Item()
 
-                await item.commit(
-                    timestamp: date,
-                    text: e.title,
-                    ekEvent: e
-                )
+                if
+                    let day = days.filter({
+                        Calendar.current.isDate(
+                            date,
+                            inSameDayAs: $0.date
+                        )
+                    }).first
+                {
+                    item.commit(
+                        day: day,
+                        timestamp: date,
+                        text: e.title,
+                        ekEvent: e
+                    )
+                } else {
+                    let day = DayStore.createBlank(date)
+                    days.append(day)
+                    item.commit(
+                        day: day,
+                        timestamp: date,
+                        text: e.title,
+                        ekEvent: e
+                    )
+                }
             }
         }
     }

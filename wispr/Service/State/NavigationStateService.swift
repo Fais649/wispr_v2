@@ -116,9 +116,13 @@ final class NavigationStateService {
                         in: animation
                     ))
             case let .bookForm(book: book):
-                BookForm(book: book)
+                BookForm(animation: animation, book: book)
                     .navigationTransition(.zoom(
                         sourceID: "newBook",
+                        in: animation
+                    ))
+                    .navigationTransition(.zoom(
+                        sourceID: book.id,
                         in: animation
                     ))
             default:

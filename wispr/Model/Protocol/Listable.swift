@@ -8,14 +8,16 @@ import SwiftUI
 
 protocol Listable: Transferable, Identifiable, Equatable {
     associatedtype Child: Identifiable, Equatable
+
     var children: [Child] { get }
-    @ViewBuilder
     var preview: AnyView { get }
-    var shadowTint: Color { get }
+    var shadowTint: AnyShapeStyle { get }
     var fillTint: Color { get }
+    var menuItems: [MenuItem] { get }
 }
 
 extension Listable {
-    var shadowTint: Color { Color.clear }
+    var shadowTint: AnyShapeStyle { AnyShapeStyle(Color.clear) }
     var fillTint: Color { Color.white }
+    var menuItems: [MenuItem] { [] }
 }

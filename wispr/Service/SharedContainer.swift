@@ -24,7 +24,7 @@ enum SharedState {
 
             return try ModelContainer(
                 for: Schema([
-                    Item.self, Book.self, Tag.self,
+                    Item.self, Book.self, Chapter.self,
                     DaysSchemaV2.Day.self, EventCalendar.self,
                 ]),
                 configurations: config

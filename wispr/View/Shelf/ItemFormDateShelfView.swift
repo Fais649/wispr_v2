@@ -48,24 +48,39 @@ struct ItemFormDateShelfView: View {
     }
 
     func formattedDate(_ date: Date) -> String {
-        date
-            .formatted(
-                .dateTime.day(.twoDigits)
-                    .month(.twoDigits).year(.twoDigits)
-                    .hour()
-                    .minute()
-            )
+        let calendar = Calendar.current
+        if calendar.isDate(date, inSameDayAs: start) {
+            return date.formatted(.dateTime.hour().minute())
+        } else {
+            let daysDifference = calendar.dateComponents(
+                [.day],
+                from: calendar.startOfDay(for: start),
+                to: calendar.startOfDay(for: date)
+            ).day ?? 0
+            return date
+                .formatted(.dateTime.hour().minute()) + "+\(daysDifference)"
+        }
+    }
+
+    func title() -> some View {
+        Text("Date & Time")
+    }
+
+    var todayDate: Date {
+        Calendar.current.roundToNearestHalfHour(Date())
     }
 
     var body: some View {
-        VStack {
+        Screen(
+            .dateShelf,
+            loaded: true,
+            title: title
+        ) {
             DatePicker(
                 "",
                 selection: editingDate == .start ? $start : $end,
                 displayedComponents: isEvent ? [.date, .hourAndMinute] : [.date]
             )
-            .tint(theme.activeTheme.backgroundMaterialOverlay)
-            .frame(width: 340, height: 380)
             .datePickerStyle(.graphical)
             .onChange(of: start) {
                 timestamp = start
@@ -76,20 +91,24 @@ struct ItemFormDateShelfView: View {
                 }
                 duration = end.timeIntervalSince(start)
             }
+            .tint(theme.activeTheme.backgroundMaterialOverlay)
 
-            HStack {
-                if !isEvent {
-                    Spacer()
-                }
-
+            HStack(spacing: Spacing.l) {
                 ToolbarButton {
                     if eventFormData == nil {
-                        eventFormData = EventData.FormData(
-                            startDate: start,
-                            endDate: end
-                        )
+                        start = Calendar.current.roundToNearestHalfHour(start)
+                        end = start.advanced(by: duration)
+
+                        withAnimation {
+                            eventFormData = EventData.FormData(
+                                startDate: start,
+                                endDate: end
+                            )
+                        }
                     } else {
-                        eventFormData = nil
+                        withAnimation {
+                            eventFormData = nil
+                        }
                     }
                 } label: {
                     Image(
@@ -110,9 +129,38 @@ struct ItemFormDateShelfView: View {
                     }.pickerStyle(.segmented)
                         .labelsHidden()
                 }
-            }
+            }.padding(Spacing.m)
+
+            HStack(spacing: Spacing.l) {
+                ToolbarButton {
+                    withAnimation {
+                        start = Calendar.current
+                            .previousDay(for: todayDate)
+                    }
+                } label: {
+                    Text("Yesterday")
+                }
+
+                ToolbarButton {
+                    withAnimation {
+                        start = todayDate
+                    }
+                } label: {
+                    Text("Today")
+                }
+
+                ToolbarButton {
+                    withAnimation {
+                        start = Calendar.current
+                            .nextDay(for: todayDate)
+                    }
+                } label: {
+                    Text("Tomorrow")
+                }
+            }.padding(Spacing.m)
+                .padding(.bottom, Spacing.m)
         }
-        .padding(Spacing.m).frame(height: 420)
+        .padding(.top, Spacing.m)
         .onAppear {
             if let eventFormData {
                 start = eventFormData.startDate
@@ -129,4 +177,3 @@ struct ItemFormDateShelfView: View {
         }
     }
 }
-

@@ -31,13 +31,22 @@ struct DateTrailingTitleLabel: View {
 
     var formattedDate: String {
         let calendar = Calendar.current
-        if calendar.isDateInToday(date) {
-            return "Today"
-        }
+        let today = calendar.startOfDay(for: Date())
+        let targetDay = calendar.startOfDay(for: date)
+
+        let dayDifference = calendar.dateComponents(
+            [.day],
+            from: today,
+            to: targetDay
+        ).day ?? 0
+
         let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .short
+        formatter.unitsStyle = .full
         formatter.dateTimeStyle = .named
-        return formatter.localizedString(for: date, relativeTo: Date())
+
+        return formatter
+            .localizedString(from: DateComponents(day: dayDifference))
+            .localizedCapitalized
     }
 
     var body: some View {

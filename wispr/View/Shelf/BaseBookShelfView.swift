@@ -13,6 +13,7 @@ struct BaseBookShelfView: View {
         NavigationStateService
             .self
     ) private var navigationStateService: NavigationStateService
+    @Environment(\.dismiss) var dismiss
     @Query var books: [Book]
     @State var editBooks = false
 
@@ -20,10 +21,12 @@ struct BaseBookShelfView: View {
     func title() -> some View {
         if navigationStateService.bookState.book != nil {
             ToolbarButton(padding: Spacing.none) {
-                navigationStateService.bookState.book = nil
-                navigationStateService.bookState.chapter = nil
+                withAnimation {
+                    navigationStateService.bookState.book = nil
+                    navigationStateService.bookState.chapter = nil
 
-                navigationStateService.shelfState.dismissShelf()
+                    dismiss()
+                }
             } label: {
                 Image(systemName: "xmark")
             }
@@ -58,9 +61,10 @@ struct BaseBookShelfView: View {
             trailingTitle: trailingTitle
         ) {
             ScrollView {
-                VStack(spacing: 0) {
+                VStack {
                     Disclosures(
                         animation: animation,
+                        expandable: !editBooks,
                         items: books
                             .sorted(by: {
                                 if
@@ -75,12 +79,16 @@ struct BaseBookShelfView: View {
                         itemRow: { book in
                             AniButton(padding: Spacing.xxs) {
                                 if editBooks {
-                                    navigationStateService.goToBookForm(book)
+                                    withAnimation {
+                                        navigationStateService
+                                            .goToBookForm(book)
+                                    }
                                 } else {
-                                    navigationStateService.bookState
-                                        .book = book
-                                    navigationStateService.bookState
-                                        .chapter = nil
+                                    withAnimation {
+                                        navigationStateService.bookState
+                                            .book = book
+                                        dismiss()
+                                    }
                                 }
 
                                 if
@@ -94,24 +102,77 @@ struct BaseBookShelfView: View {
                                 }
                             } label: {
                                 HStack {
-                                    VStack(alignment: .leading) {
-                                        Text(book.name)
-                                            .truncationMode(.tail)
-                                            .lineLimit(1)
-                                    }
+                                    Text(book.name)
+                                        .truncationMode(.tail)
+                                        .lineLimit(1)
+                                    Spacer()
                                 }
+                                .contentShape(Rectangle())
                             }
                             .parentItem()
-                            .padding(Spacing.s)
                             .buttonStyle(.plain)
                             .padding(Spacing.s)
+                            .padding(Spacing.s)
+                            .contentShape(Rectangle())
+                            .scrollTransition(.animated) { content, phase in
+                                content
+                                    .opacity(phase.isIdentity ? 1 : 0)
+                                    .scaleEffect(
+                                        phase.isIdentity || phase
+                                            .value > 0 ? 1 : 0.9, anchor:
+                                        .trailing
+                                    )
+                                    .blur(
+                                        radius: phase.isIdentity || phase
+                                            .value > 0 ? 0 : 5
+                                    )
+                            }
                         },
-                        childRow: { _ in EmptyView() }
+                        childRow: { child in
+                            row(child)
+                        }
                     )
-                    .scrollTransition(Spacing.s)
                 }
                 .safeAreaPadding(.vertical, Spacing.m)
             }
+        }
+    }
+
+    func row(_ child: Chapter) -> some View {
+        AniButton(padding: Spacing.xxs) {
+            withAnimation {
+                navigationStateService.bookState
+                    .book = child.book
+                navigationStateService.bookState
+                    .chapter = child
+                dismiss()
+            }
+        } label: {
+            HStack {
+                Text(child.name)
+                    .truncationMode(.tail)
+                    .lineLimit(1)
+                Spacer()
+            }
+            .contentShape(Rectangle())
+        }
+        .parentItem()
+        .buttonStyle(.plain)
+        .padding(Spacing.s)
+        .padding(Spacing.s)
+        .contentShape(Rectangle())
+        .scrollTransition(.animated) { content, phase in
+            content
+                .opacity(phase.isIdentity ? 1 : 0)
+                .scaleEffect(
+                    phase.isIdentity || phase
+                        .value > 0 ? 1 : 0.9, anchor:
+                    .trailing
+                )
+                .blur(
+                    radius: phase.isIdentity || phase
+                        .value > 0 ? 0 : 5
+                )
         }
     }
 }

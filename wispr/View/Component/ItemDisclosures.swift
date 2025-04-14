@@ -33,34 +33,35 @@ struct ItemDisclosures: View {
 
     var animation: Namespace.ID
 
+    var expandable: Bool = true
     var defaultExpanded: Bool = false
     var items: [Item]
+    var prefix: Int? = nil
 
     func onMove(_ indexSet: IndexSet, _ newIndex: Int) {
-        let (success, message) = ItemStore.updatePositions(
+        let _ = ItemStore.updatePositions(
             items: items,
             indexSet: indexSet,
             newIndex: newIndex
         )
-
-        if !success {
-            withAnimation {
-                flashService.flash = FlashData(type: .error, message: message)
-            }
-        } else {
-            try? modelContext.save()
-        }
     }
 
     func onMoveChild(_ item: Item, _ indexSet: IndexSet, _ newIndex: Int) {
-        item.moveChild(from: indexSet, to: newIndex)
+        var c = item.children
+        c.move(fromOffsets: indexSet, toOffset: newIndex)
+        for (index, child) in c.enumerated() {
+            child.position = index
+        }
+        item.setChildren(c)
     }
 
     var body: some View {
         Disclosures(
             animation: animation,
+            expandable: expandable,
             defaultExpanded: defaultExpanded,
             items: items,
+            prefix: prefix,
             onMove: onMove,
             onDelete: delete,
             onMoveChild: onMoveChild,
@@ -79,6 +80,21 @@ struct ItemDisclosures: View {
         .opacity(flashService.isFlashing ? 0 : 1)
     }
 
+    func formattedDate(from d: Date, _ date: Date) -> String {
+        let calendar = Calendar.current
+        if calendar.isDate(date, inSameDayAs: d) {
+            return date.formatted(.dateTime.hour().minute())
+        } else {
+            let daysDifference = calendar.dateComponents(
+                [.day],
+                from: calendar.startOfDay(for: d),
+                to: calendar.startOfDay(for: date)
+            ).day ?? 0
+            return date
+                .formatted(.dateTime.hour().minute()) + "+\(daysDifference)"
+        }
+    }
+
     @ViewBuilder
     func label(_ item: Item) -> some View {
         AniButton(padding: Spacing.xxs) {
@@ -91,25 +107,13 @@ struct ItemDisclosures: View {
                         .lineLimit(1)
 
                     if let e = item.eventData, !e.allDay {
-                        HStack {
-                            Text(
-                                e.startDate
-                                    .formatted(
-                                        .dateTime.hour()
-                                            .minute()
-                                    )
-                            )
-                            .eventTimeFontStyle()
+                        HStack(spacing: 0) {
+                            Text(formattedDate(from: e.startDate, e.startDate))
+                                .eventTimeFontStyle()
                             Text("-")
                                 .eventTimeFontStyle()
-                            Text(
-                                e.endDate
-                                    .formatted(
-                                        .dateTime.hour()
-                                            .minute()
-                                    )
-                            )
-                            .eventTimeFontStyle()
+                            Text(formattedDate(from: e.startDate, e.endDate))
+                                .eventTimeFontStyle()
                         }
                     }
                 }
@@ -118,11 +122,6 @@ struct ItemDisclosures: View {
         .parentItem()
         .padding(Spacing.s)
         .buttonStyle(.plain)
-        .swipeActions(edge: .leading) {
-            self.archiveButton(item)
-        }.swipeActions(edge: .trailing) {
-            self.deleteButton(item)
-        }
     }
 
     func row(_ child: Item) -> some View {
@@ -145,7 +144,6 @@ struct ItemDisclosures: View {
                     .scaleEffect(0.8)
                 }
 
-                Text(child.position.description)
                 Text(child.text)
                     .multilineTextAlignment(.leading)
             }.buttonStyle(.plain)
@@ -155,9 +153,6 @@ struct ItemDisclosures: View {
         .contentShape(Rectangle())
         .padding(Spacing.xxs)
         .childItem()
-        .swipeActions(edge: .trailing) {
-            self.deleteButton(child)
-        }
     }
 
     @ViewBuilder

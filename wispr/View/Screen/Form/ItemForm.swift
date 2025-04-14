@@ -38,8 +38,9 @@ struct ItemForm: View {
     @State private var taskData: TaskData?
     @State private var eventFormData: EventData.FormData?
     @State private var children: [Item]
+
     @State private var book: Book?
-    @State private var tags: [Tag]
+    @State private var chapter: Chapter?
     @State var showDateShelf: Bool = false
     @State var showBookShelf: Bool = false
 
@@ -53,7 +54,7 @@ struct ItemForm: View {
         taskData = i.taskData
         eventFormData = i.eventData?.formData()
         children = i.children
-        tags = i.tags
+        chapter = i.chapter
     }
 
     enum ItemFormSheets: String, Identifiable {
@@ -102,6 +103,20 @@ struct ItemForm: View {
             }
         }
         .toolbar {
+            ToolbarItemGroup(placement: .bottomBar) {
+                HStack {
+                    Spacer()
+                    ToolbarButton {
+                        navigationStateService.goBack()
+                    } label: {
+                        Image(
+                            systemName: "chevron.down"
+                        )
+                    }
+                    Spacer()
+                }
+            }
+
             ToolbarItemGroup(placement: .keyboard) {
                 ToolbarButton(padding: 0) {
                     focus = nil
@@ -124,6 +139,10 @@ struct ItemForm: View {
 
                         if let book {
                             Text(book.name)
+                            if let chapter {
+                                Image(systemName: "line.diagonal")
+                                Text(chapter.name)
+                            }
                         } else {
                             Image(systemName: "asterisk")
                                 .resizable()
@@ -135,7 +154,7 @@ struct ItemForm: View {
                 }
 
                 ToolbarButton {
-                    navigationStateService.toggleDatePickerShelf()
+                    showDateShelf.toggle()
                 } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "line.diagonal")
@@ -163,29 +182,75 @@ struct ItemForm: View {
                         }
                     }
                 }
+                .sheet(isPresented: $showDateShelf) {
+                    ItemFormDateShelfView($eventFormData, $timestamp)
+                        .presentationDetents([.fraction(0.75)])
+                        .presentationCornerRadius(0)
+                        .presentationBackground {
+                            Rectangle().fill(
+                                theme.activeTheme
+                                    .backgroundMaterialOverlay
+                            )
+                            .fade(
+                                from: .bottom,
+                                fromOffset: 0.6,
+                                to: .top,
+                                toOffset: 1
+                            )
+                        }
+                }
                 Divider()
                 Spacer()
             }
         }
     }
 
+    func formattedDate(_ date: Date) -> String {
+        guard let eventFormData else {
+            return ""
+        }
+
+        let calendar = Calendar.current
+        if calendar.isDate(date, inSameDayAs: eventFormData.startDate) {
+            return date.formatted(.dateTime.hour().minute())
+        } else {
+            let daysDifference = calendar.dateComponents(
+                [.day],
+                from: calendar.startOfDay(for: eventFormData.startDate),
+                to: calendar.startOfDay(for: date)
+            ).day ?? 0
+            return date
+                .formatted(.dateTime.hour().minute()) + "+\(daysDifference)"
+        }
+    }
+
     @ViewBuilder
     func trailingTitle() -> some View {
-        Text(timestamp.formatted(.dateTime.day().month().year()))
+        DateTrailingTitleLabel(
+            date: timestamp
+        )
     }
 
     @ViewBuilder
     func subtitle() -> some View {
-        if let eventFormData {
-            HStack {
-                Spacer()
-                Text(
-                    eventFormData.startDate
-                        .formatted(.dateTime.hour().minute())
-                )
+        HStack {
+            if let eventFormData {
+                Text(formattedDate(eventFormData.startDate))
+                    .eventTimeFontStyle()
                 Text("-")
-                Text(eventFormData.endDate.formatted(.dateTime.hour().minute()))
+                    .eventTimeFontStyle()
+                Text(formattedDate(eventFormData.endDate))
+                    .eventTimeFontStyle()
             }
+
+            Spacer()
+            Text(
+                timestamp
+                    .formatted(
+                        .dateTime.weekday(.abbreviated).day().month()
+                            .year()
+                    )
+            )
         }
     }
 
@@ -195,18 +260,23 @@ struct ItemForm: View {
             title: title,
             trailingTitle: trailingTitle,
             subtitle: subtitle,
-            dateShelf: ItemFormDateShelfView($eventFormData, $timestamp),
-            bookShelf: ItemFormBookShelfView(animation: animation, book: $book),
+            bookShelf: ItemFormBookShelfView(
+                animation: animation,
+                book: $book,
+                chapter: $chapter
+            ),
             backgroundOpacity: 0
         ) {
-            Lst {
+            ScrollView {
                 ForEach(
                     children.sorted(by: { $0.position < $1.position }),
                     id: \.self
                 ) { child in
                     Child(children: $children, child: child, focus: $focus)
                 }
-            }.padding(Spacing.m)
+            }
+            .safeAreaPadding(Spacing.m)
+            .safeAreaPadding(.bottom, Spacing.m)
         }
         .safeAreaPadding(Spacing.m)
         .onChange(of: book) {
@@ -223,23 +293,10 @@ struct ItemForm: View {
         .onAppear {
             if text.isEmpty {
                 focus = .item(id: item.id)
-            }
-
-            if let book {
-                withAnimation {
-                    navigationStateService.tempBackground = {
-                        AnyView(
-                            RandomMeshBackground(color: book.color)
-                        )
-                    }
-                }
+                book = bookState.book
             }
         }
         .onDisappear {
-            if let book {
-                tags = book.tags
-            }
-
             Task {
                 item.commit(
                     timestamp: timestamp,
@@ -247,13 +304,18 @@ struct ItemForm: View {
                     taskData: taskData,
                     eventFormData: eventFormData,
                     book: book,
-                    tags: tags,
+                    chapter: chapter,
                     children: children.filter { $0.text.isNotEmpty }
                 )
             }
 
             withAnimation {
                 navigationStateService.tempBackground = nil
+            }
+        }.background {
+            if let book {
+                RandomMeshBackground(color: book.color)
+                    .ignoresSafeArea()
             }
         }
     }
@@ -323,13 +385,6 @@ struct ItemForm: View {
                 if isFocused {
                     ToolbarItemGroup(placement: .keyboard) {
                         Divider()
-                        AniButton {
-                            print("add_audio")
-                        } label: {
-                            Image(systemName: "link")
-                        }.disabled(child.text.isEmpty)
-
-                        Divider()
 
                         AniButton {
                             child.toggleTaskData()
@@ -340,7 +395,7 @@ struct ItemForm: View {
                                     "square.dotted"
                             )
                             .scaleEffect(0.8)
-                        }.disabled(child.text.isEmpty)
+                        }
                     }
                 }
             }

@@ -24,6 +24,15 @@ class ItemStore {
         try? modelContext.save()
     }
 
+    @MainActor
+    static func delete(_ item: Item) {
+        if let d = item.day {
+            d.items.removeAll { $0.id == item.id }
+            try? modelContext.save()
+        }
+        modelContext.delete(item)
+    }
+
     static func allActiveItemsPredicate() -> Predicate<Item> {
         #Predicate<Item> { $0.parent == nil && !$0.archived }
     }
@@ -40,15 +49,15 @@ class ItemStore {
 
     static func filterByBook(items: [Item], book: Book?) -> [Item] {
         if let book {
-            return items.filter { $0.tags.contains { book.tags.contains($0) } }
+            return items.filter { $0.book == book }
         } else {
             return items
         }
     }
 
-    static func filterByChapter(items: [Item], chapter: Tag?) -> [Item] {
+    static func filterByChapter(items: [Item], chapter: Chapter?) -> [Item] {
         if let chapter {
-            return items.filter { $0.tags.contains(chapter) }
+            return items.filter { $0.chapter == chapter }
         } else {
             return items
         }
@@ -165,7 +174,8 @@ class ItemStore {
         position: Int? = nil,
         archived: Bool = false,
         archivedAt: Date? = nil,
-        tags: [Tag] = [],
+        book: Book? = nil,
+        chapter: Chapter? = nil,
         taskData: TaskData? = nil,
         eventData: EventData? = nil,
         imageData: ImageData? = nil,
@@ -189,7 +199,8 @@ class ItemStore {
         item.archived = archived
         item.archivedAt = archivedAt
         item.position = position ?? ItemStore.calculatePosition(for: timestamp)
-        item.tags = tags
+        item.book = book
+        item.chapter = chapter
         item.taskData = taskData
         item.eventData = eventData
         item.imageData = imageData
@@ -302,6 +313,7 @@ class ItemStore {
 
         var i = items
         i.move(fromOffsets: indexSet, toOffset: newIndex)
+
         for (index, item) in i.enumerated() {
             item.position = index
         }
@@ -339,7 +351,6 @@ final class Item: Codable, Transferable, Listable {
         for (index, child) in _children.enumerated() {
             child.position = index
         }
-        // try? modelContext.save()
     }
 
     private var _children: [Item] = []
@@ -351,7 +362,7 @@ final class Item: Codable, Transferable, Listable {
     var day: Day? = nil
 
     @Relationship(deleteRule: .noAction)
-    var tags: [Tag] = []
+    var chapter: Chapter? = nil
 
     var text = ""
     var taskData: TaskData?
@@ -360,8 +371,20 @@ final class Item: Codable, Transferable, Listable {
     var imageData: ImageData?
     var audioData: AudioData?
 
-    var shadowTint: Color {
-        book?.color ?? Color.white
+    var shadowTint: AnyShapeStyle {
+        if let c = book?.color {
+            AnyShapeStyle(c)
+        } else {
+            AnyShapeStyle(.gray)
+        }
+    }
+
+    var colorTint: AnyShapeStyle {
+        if let c = book?.color {
+            AnyShapeStyle(c)
+        } else {
+            AnyShapeStyle(.gray)
+        }
     }
 
     var preview: AnyView {
@@ -375,9 +398,29 @@ final class Item: Codable, Transferable, Listable {
                 RoundedRectangle(cornerRadius: 4).fill(
                     shadowTint
                 )
-                .opacity(0.2)
             }
         )
+    }
+
+    var menuItems: [MenuItem] {
+        [
+            .init(name: "Delete item", symbol: "trash.fill") {
+                Task { @MainActor in
+
+                    self.delete()
+                }
+            },
+            .init(name: "Archive item", symbol: "archivebox.fill") {
+                Task { @MainActor in
+                    self.archive()
+                }
+            },
+            // .init(name: "Move to...", symbol: "calendar") {
+            //     Task { @MainActor in
+            //         self.delete()
+            //     }
+            // },
+        ]
     }
 
     var fillTint: Color {
@@ -391,7 +434,7 @@ final class Item: Codable, Transferable, Listable {
         archived: Bool = false,
         archivedAt: Date? = nil,
         book: Book? = nil,
-        tags: [Tag] = [],
+        chapter: Chapter? = nil,
         taskData: TaskData? = nil,
         eventData: EventData? = nil,
         imageData: ImageData? = nil,
@@ -403,7 +446,7 @@ final class Item: Codable, Transferable, Listable {
         self.archivedAt = archivedAt
         self.position = position
         self.book = book
-        self.tags = tags
+        self.chapter = chapter
         self.taskData = taskData
         self.eventData = eventData
         self.imageData = imageData
@@ -430,8 +473,8 @@ final class Item: Codable, Transferable, Listable {
         parent == nil && eventData != nil
     }
 
-    var hasTags: Bool {
-        !tags.isEmpty
+    var hasChapter: Bool {
+        chapter != nil
     }
 
     var hasImage: Bool {
@@ -454,7 +497,7 @@ final class Item: Codable, Transferable, Listable {
         archived: Bool = false,
         archivedAt: Date? = nil,
         book: Book? = nil,
-        tags: [Tag] = [],
+        chapter: Chapter? = nil,
         taskData: TaskData? = nil,
         eventData: EventData? = nil,
         imageData: ImageData? = nil,
@@ -467,7 +510,7 @@ final class Item: Codable, Transferable, Listable {
         item.archivedAt = archivedAt
         item.position = position ?? ItemStore.calculatePosition(for: timestamp)
         item.book = book
-        item.tags = tags
+        item.chapter = chapter
         item.taskData = taskData
         item.eventData = eventData
         item.imageData = imageData
@@ -482,7 +525,7 @@ final class Item: Codable, Transferable, Listable {
         taskData: TaskData?,
         eventFormData: EventData.FormData?,
         book: Book? = nil,
-        tags: [Tag],
+        chapter: Chapter? = nil,
         children: [Item],
         syncEkEvent: Bool = true
     ) {
@@ -503,7 +546,7 @@ final class Item: Codable, Transferable, Listable {
         updatePosition()
 
         self.book = book
-        self.tags = tags
+        self.chapter = chapter
         _children = children.filter { $0.text.isNotEmpty }
 
         commit()
@@ -543,16 +586,19 @@ final class Item: Codable, Transferable, Listable {
         try? ItemStore.modelContext.save()
     }
 
+    @MainActor
     func archive() {
         deleteEvent()
         archived = true
         archivedAt = Date()
+
+        try? ItemStore.modelContext.save()
     }
 
     @MainActor
     func delete() {
         deleteEvent()
-        ItemStore.modelContext.delete(self)
+        ItemStore.delete(self)
     }
 
     @MainActor
@@ -698,12 +744,6 @@ final class Item: Codable, Transferable, Listable {
 
         eventData.notifyAt = nil
         NotificationSyncService.delete(id.uuidString)
-    }
-
-    @ViewBuilder
-    var backgroundColor: some View {
-        Tag.composeLinearGradient(for: tags)
-            .opacity(0.6)
     }
 
     enum CodingKeys: String, CodingKey {

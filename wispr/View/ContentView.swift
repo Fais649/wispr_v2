@@ -105,12 +105,15 @@ struct ContentView: View {
     @State var xdragOffset: CGFloat = 0
 
     @State var showDateShelf: Bool = false
+    @State var showBookShelf: Bool = false
     var showDayOverlay: Bool {
         activeDay != nil
     }
 
     @State var firstLoad: Bool = true
+    @State var showVerticalTimeline: Bool = false
     @State var active: Date? = Calendar.current.startOfDay(for: Date())
+    @State var selectedDate: Date = Calendar.current.startOfDay(for: Date())
     @State var activeDay: Day? = nil
 
     var onForm: Bool {
@@ -133,13 +136,16 @@ struct ContentView: View {
         navigationStateService.bookState.book
     }
 
-    var chapter: Tag? {
+    var chapter: Chapter? {
         navigationStateService.bookState.chapter
     }
 
     var noFilter: Bool {
         book == nil && isToday
     }
+
+    @State var showMonth: Bool = false
+    @State var yOffset: CGFloat = 0
 
     var body: some View {
         NavigationStack(path: $navigationStateService.pathState.path) {
@@ -149,11 +155,13 @@ struct ContentView: View {
                         HorizontalTimelineScreen(
                             animation: animation,
                             activeDay: $activeDay,
-                            // selectedDate: $selectedDate,
+                            selectedDate: $selectedDate,
                             showDateShelf: $showDateShelf,
+                            showBookShelf: $showBookShelf,
                             active: $active
                         )
                     }
+
                 } else {
                     Spacer()
                     HStack {
@@ -198,6 +206,136 @@ struct ContentView: View {
                 dayLoaded = true
             }
         }
+    }
+}
+
+struct VerticalMonthTimelineScreen: View {
+    @Environment(\.modelContext) private var modelContext: ModelContext
+    @State private var selectedMonth: Date = Calendar.current
+        .startOfDay(for: Date())
+
+    var animation: Namespace.ID
+
+    @Binding var shown: Bool
+    @Binding var selectedDate: Date
+
+    var monthDates: [Date] {
+        guard
+            let monthInterval = Calendar.current.dateInterval(
+                of: .month,
+                for: selectedMonth
+            ) else { return [] }
+        return Calendar.current.generateDates(inside: monthInterval)
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            let columns = Array(repeating: GridItem(.flexible()), count: 7)
+            HStack {
+                ForEach(
+                    Calendar.current.shortWeekdaySymbols,
+                    id: \.self
+                ) { symbol in
+                    Text(symbol)
+                        .frame(maxWidth: .infinity)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal)
+
+            LazyVGrid(columns: columns, spacing: 8) {
+                let firstWeekday = Calendar.current.component(
+                    .weekday,
+                    from: monthDates.first ?? Date()
+                ) - 1
+
+                ForEach(0 ..< firstWeekday, id: \.self) { _ in
+                    Color.clear.frame(height: 60)
+                }
+
+                ForEach(monthDates, id: \.self) { date in
+                    let day = DayStore.loadDay(by: date) ?? DayStore
+                        .createBlank(date)
+
+                    Button(action: {
+                        let d = DayStore.loadDay(by: date) ??
+                            DayStore.createBlank(date)
+
+                        selectedDate = d.date
+                        withAnimation {
+                            shown = false
+                        }
+                    }) {
+                        VStack {
+                            Text(Calendar.current.component(
+                                .day,
+                                from: date
+                            ).description)
+                                .font(.caption)
+                                .frame(maxWidth: .infinity)
+                                .padding(4)
+
+                            DayCell(
+                                animation: animation,
+                                day: day,
+                                backgroundOpacity: 0
+                            )
+                        }
+                        .background {
+                            if
+                                Calendar.current.isDate(
+                                    date,
+                                    inSameDayAs: selectedDate
+                                )
+                            {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(.ultraThinMaterial)
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .id(date)
+                    .aspectRatio(
+                        CGSize(width: 1, height: 1),
+                        contentMode: .fit
+                    )
+                }
+            }
+            .padding(.horizontal)
+
+            HStack {
+                Button(action: { shiftMonth(by: -1) }) {
+                    Image(systemName: "chevron.left")
+                }
+                Spacer()
+                Text(selectedMonth, formatter: monthYearFormatter)
+                    .font(.headline)
+                Spacer()
+                Button(action: { shiftMonth(by: 1) }) {
+                    Image(systemName: "chevron.right")
+                }
+            }
+            .padding()
+        }
+    }
+
+    private func shiftMonth(by value: Int) {
+        if
+            let newDate = Calendar.current.date(
+                byAdding: .month,
+                value: value,
+                to: selectedMonth
+            )
+        {
+            selectedMonth = newDate
+        }
+    }
+
+    private var monthYearFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "LLLL yyyy"
+        return formatter
     }
 }
 

@@ -31,6 +31,69 @@ extension Calendar {
             -86400
         ))
     }
+
+    func combineDateAndTime(date: Date, time: Date) -> Date {
+        var comps = Calendar.current.dateComponents(
+            [.year, .month, .day],
+            from: date
+        )
+        comps.hour = Calendar.current.component(.hour, from: time)
+        comps.minute = Calendar.current.component(.minute, from: time)
+        let d = Calendar.current.date(from: comps)
+        return d ?? time
+    }
+
+    func startOfWeek(_ date: Date) -> Date? {
+        guard
+            let sunday = self.date(from: dateComponents(
+                [.yearForWeekOfYear, .weekOfYear],
+                from: date
+            )) else { return nil }
+        return self.date(byAdding: .day, value: 1, to: sunday)
+    }
+
+    func endOfWeek(_ date: Date) -> Date? {
+        guard
+            let sunday = self.date(from: dateComponents(
+                [.yearForWeekOfYear, .weekOfYear],
+                from: date
+            )) else { return nil }
+        return self.date(byAdding: .day, value: 7, to: sunday)
+    }
+
+    func startOfHour(for date: Date) -> Date {
+        return self.date(from: dateComponents(
+            [.year, .month, .day, .hour],
+            from: date
+        ))!
+    }
+
+    func roundToNearestHalfHour(_ date: Date) -> Date {
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.hour, .minute], from: date)
+        let minute = components.minute ?? 0
+
+        let roundedMinutes: Int
+        if minute < 15 {
+            roundedMinutes = 0
+        } else if minute < 45 {
+            roundedMinutes = 30
+        } else {
+            // Move to next hour
+            return calendar.date(
+                byAdding: .hour,
+                value: 1,
+                to: calendar.startOfHour(for: date)
+            )!
+        }
+
+        return calendar.date(
+            bySettingHour: components.hour ?? 0,
+            minute: roundedMinutes,
+            second: 0,
+            of: date
+        )!
+    }
 }
 
 extension UIColor {
@@ -103,37 +166,6 @@ extension UIColor {
         }
 
         return hexString
-    }
-}
-
-extension Calendar {
-    func combineDateAndTime(date: Date, time: Date) -> Date {
-        var comps = Calendar.current.dateComponents(
-            [.year, .month, .day],
-            from: date
-        )
-        comps.hour = Calendar.current.component(.hour, from: time)
-        comps.minute = Calendar.current.component(.minute, from: time)
-        let d = Calendar.current.date(from: comps)
-        return d ?? time
-    }
-
-    func startOfWeek(_ date: Date) -> Date? {
-        guard
-            let sunday = self.date(from: dateComponents(
-                [.yearForWeekOfYear, .weekOfYear],
-                from: date
-            )) else { return nil }
-        return self.date(byAdding: .day, value: 1, to: sunday)
-    }
-
-    func endOfWeek(_ date: Date) -> Date? {
-        guard
-            let sunday = self.date(from: dateComponents(
-                [.yearForWeekOfYear, .weekOfYear],
-                from: date
-            )) else { return nil }
-        return self.date(byAdding: .day, value: 7, to: sunday)
     }
 }
 

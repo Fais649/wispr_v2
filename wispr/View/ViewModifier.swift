@@ -229,10 +229,8 @@ private struct ToolbarButtonLabelStyler: ViewModifier {
             .contentShape(Rectangle())
             .toolbarFontStyle()
             .foregroundStyle(.white)
-            .shadow(color: .white, radius: shadowRadius)
             .padding(.horizontal, padding.x)
             .padding(.vertical, padding.y)
-            .blendMode(.hardLight)
     }
 }
 
@@ -326,7 +324,6 @@ struct TitleShadowStyle: ViewModifier {
 struct BaseShadowStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .shadow(color: .white.opacity(0.4), radius: Spacing.xxxs)
     }
 }
 

@@ -14,7 +14,7 @@ final class BookStateService {
     }
 
     var book: Book?
-    var chapter: Tag?
+    var chapter: Chapter?
     var showBook = false
 
     func dismissBook() {
@@ -22,12 +22,13 @@ final class BookStateService {
         chapter = nil
     }
 
-    func setBook(from chapters: [Tag]) async {
-        guard let chapter = chapters.first else {
-            return
-        }
+    func dismissChapter() {
+        chapter = nil
+    }
 
-        guard let book = await BookStore.loadBook(by: chapter) else {
+    @MainActor
+    func setBook(from chapter: Chapter) async {
+        guard let book = BookStore.loadBook(by: chapter) else {
             return
         }
 

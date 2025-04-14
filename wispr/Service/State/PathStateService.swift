@@ -85,6 +85,15 @@ enum Path: Hashable {
         return false
     }
 
+    var isShelf: Bool {
+        switch self {
+            case .bookShelf, .dateShelf, .settingShelf:
+                return true
+            default:
+                return false
+        }
+    }
+
     var isForm: Bool {
         isItemForm || isBookForm
     }

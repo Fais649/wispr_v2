@@ -56,7 +56,7 @@ struct Toolbar: View {
         navigationStateService.bookState.book
     }
 
-    var chapter: Tag? {
+    var chapter: Chapter? {
         navigationStateService.bookState.chapter
     }
 

@@ -52,19 +52,23 @@ struct Screen<
             } else {
                 content()
                     .baseShadowStyle()
-                    .fade(from: .top, fromOffset: 0.8, to: .bottom, toOffset: 1)
             }
         }
         .padding(Spacing.m)
         .background {
-            Button {
-                if let onTapBackground {
-                    onTapBackground()
-                }
-            } label: {
-                RoundedRectangle(cornerRadius: 20).fill(.ultraThinMaterial)
+            if path.isShelf {
+                RoundedRectangle(cornerRadius: 20).fill(.ultraThickMaterial)
                     .stroke(.thinMaterial)
-                    .opacity(backgroundOpacity)
+            } else {
+                Button {
+                    if let onTapBackground {
+                        onTapBackground()
+                    }
+                } label: {
+                    RoundedRectangle(cornerRadius: 20).fill(.regularMaterial)
+                        .stroke(.thinMaterial)
+                        .opacity(backgroundOpacity)
+                }
             }
         }
         .sheet(isPresented: $showShelf) {
@@ -91,6 +95,7 @@ struct Screen<
                     )
                 }
                 .padding(.horizontal, Spacing.m)
+                .containerRelativeFrame([.horizontal, .vertical])
             }
         }
         .screenStyle()

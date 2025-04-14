@@ -16,8 +16,8 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "341"
             endingLineNumber = "341"
-            landmarkName = "moveChild(from:to:)"
-            landmarkType = "7">
+            landmarkName = "Item"
+            landmarkType = "3">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -34,36 +34,6 @@
             endingLineNumber = "168"
             landmarkName = "body"
             landmarkType = "24">
-            <Locations>
-               <Location
-                  uuid = "EF5A5B34-C585-4F0E-BE9D-B9C013FC85CF - c18ae8ea15391e5e"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "closure #4 (Foundation.IndexSet, Swift.Int) -&gt; () in wispr.Disclosure.body.getter : some"
-                  moduleName = "wispr.debug.dylib"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/faisalalalaiwat/punk.systems/code/swift/wispr/wispr/View/Layout/Disclosure.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "168"
-                  endingLineNumber = "168">
-               </Location>
-               <Location
-                  uuid = "EF5A5B34-C585-4F0E-BE9D-B9C013FC85CF - c18ae8ea15391e5e"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "closure #4 (Foundation.IndexSet, Swift.Int) -&gt; () in wispr.Disclosure.body.getter : some"
-                  moduleName = "wispr.debug.dylib"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/faisalalalaiwat/punk.systems/code/swift/wispr/wispr/View/Layout/Disclosure.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "168"
-                  endingLineNumber = "168">
-               </Location>
-            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

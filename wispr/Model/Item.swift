@@ -67,6 +67,18 @@ class ItemStore {
         #Predicate<Item> { $0.id == id }
     }
 
+    static func eventItemPredicated()
+        -> Predicate<Item>
+    {
+        return #Predicate<Item> {
+            if let eventData = $0.eventData {
+                return !eventData.allDay
+            } else {
+                return false
+            }
+        }
+    }
+
     static func eventItemPredicated(for eventCalendar: EventCalendar)
         -> Predicate<Item>
     {
@@ -150,6 +162,51 @@ class ItemStore {
     }
 
     @MainActor
+    static func loadItems(by date: Date) -> [Item] {
+        let desc =
+            FetchDescriptor<Item>(predicate: #Predicate<Item> {
+                $0.day?.date == date
+            })
+
+        let res = try? modelContext.fetch(desc)
+        return res ?? []
+    }
+
+    @MainActor
+    static func loadSeperatedItems(by date: Date) async
+        -> (parentItems: [Item], allDayEvents: [Item])
+    {
+        let desc =
+            FetchDescriptor<Item>(predicate: #Predicate<Item> {
+                $0.day?.date == date
+            })
+
+        guard let res = try? modelContext.fetch(desc) else { return ([], []) }
+
+        let allDayEvents = res.filter {
+            if
+                let e =
+                $0.eventData
+            {
+                return e.allDay
+            } else {
+                return false
+            }
+        }
+
+        let parentItems = res.filter {
+            if let eventData = $0.eventData {
+                return $0.parent == nil && !$0.archived && !eventData.allDay
+            }
+
+            return $0.parent == nil && !$0.archived
+        }
+        .sorted(by: { $0.position < $1.position })
+
+        return (parentItems: parentItems, allDayEvents: allDayEvents)
+    }
+
+    @MainActor
     static func byDay(date _: Date) -> [Item]? {
         let desc = FetchDescriptor<Item>(
             predicate: activeItemsPredicated(
@@ -178,7 +235,7 @@ class ItemStore {
         chapter: Chapter? = nil,
         taskData: TaskData? = nil,
         eventData: EventData? = nil,
-        imageData: ImageData? = nil,
+        imageData: [ImageData]? = nil,
         audioData: AudioData? = nil
     ) -> Item {
         let item = Item()
@@ -368,7 +425,7 @@ final class Item: Codable, Transferable, Listable {
     var taskData: TaskData?
     var eventData: EventData?
     @Attribute(.externalStorage)
-    var imageData: ImageData?
+    var imageData: [ImageData]?
     var audioData: AudioData?
 
     var shadowTint: AnyShapeStyle {
@@ -410,7 +467,7 @@ final class Item: Codable, Transferable, Listable {
                     self.delete()
                 }
             },
-            .init(name: "Archive item", symbol: "archivebox.fill") {
+            .init(name: "Archive item", symbol: "tray.and.arrow.down.fill") {
                 Task { @MainActor in
                     self.archive()
                 }
@@ -437,7 +494,7 @@ final class Item: Codable, Transferable, Listable {
         chapter: Chapter? = nil,
         taskData: TaskData? = nil,
         eventData: EventData? = nil,
-        imageData: ImageData? = nil,
+        imageData: [ImageData]? = nil,
         audioData: AudioData? = nil
     ) {
         self.id = id
@@ -445,8 +502,8 @@ final class Item: Codable, Transferable, Listable {
         self.archived = archived
         self.archivedAt = archivedAt
         self.position = position
-        self.book = book
-        self.chapter = chapter
+        setBook(book)
+        setChapter(chapter)
         self.taskData = taskData
         self.eventData = eventData
         self.imageData = imageData
@@ -500,7 +557,7 @@ final class Item: Codable, Transferable, Listable {
         chapter: Chapter? = nil,
         taskData: TaskData? = nil,
         eventData: EventData? = nil,
-        imageData: ImageData? = nil,
+        imageData: [ImageData]? = nil,
         audioData: AudioData? = nil
     ) -> Item {
         let item = Item()
@@ -527,6 +584,7 @@ final class Item: Codable, Transferable, Listable {
         book: Book? = nil,
         chapter: Chapter? = nil,
         children: [Item],
+        images: [ImageData]? = nil,
         syncEkEvent: Bool = true
     ) {
         setTimestamp(timestamp)
@@ -545,9 +603,13 @@ final class Item: Codable, Transferable, Listable {
 
         updatePosition()
 
-        self.book = book
-        self.chapter = chapter
+        setBook(book)
+        setChapter(chapter)
         _children = children.filter { $0.text.isNotEmpty }
+
+        if let images {
+            imageData = images
+        }
 
         commit()
     }
@@ -589,10 +651,37 @@ final class Item: Codable, Transferable, Listable {
     @MainActor
     func archive() {
         deleteEvent()
+        day = nil
         archived = true
         archivedAt = Date()
 
         try? ItemStore.modelContext.save()
+    }
+
+    func setBook(_ book: Book?) {
+        self.book = book
+    }
+
+    func setChapter(_ chapter: Chapter?) {
+        self.chapter = chapter
+    }
+
+    @MainActor
+    func unarchive() {
+        archived = false
+        archivedAt = nil
+    }
+
+    @MainActor
+    func unarchive(
+        timestamp: Date,
+        book: Book? = nil,
+        chapter: Chapter? = nil
+    ) {
+        setTimestamp(timestamp)
+        setBook(book)
+        setChapter(chapter)
+        unarchive()
     }
 
     @MainActor
@@ -619,8 +708,11 @@ final class Item: Codable, Transferable, Listable {
 
         if let day = DayStore.loadDay(by: timestamp) {
             self.day = day
+            day.items.append(self)
         } else {
-            day = DayStore.createBlank(timestamp)
+            let day = DayStore.createBlank(timestamp)
+            day.items.append(self)
+            self.day = day
         }
 
         ItemStore.save()
@@ -642,6 +734,11 @@ final class Item: Codable, Transferable, Listable {
 
     func toggleTaskDataCompletedAt() {
         taskData?.completedAt = taskData?.completedAt == nil ? Date() : nil
+        if isParent {
+            for c in children.filter({ $0.taskData != nil }) {
+                c.taskData?.completedAt = taskData?.completedAt
+            }
+        }
     }
 
     func toggleEvent(_ startTime: Date? = nil, _ endTime: Date? = nil) {
@@ -918,207 +1015,171 @@ enum FocusedField: Hashable {
     case item(id: UUID), tag(id: UUID)
 }
 
-// struct EventDataRow: View {
-//    var item: Item
-//    @State var startTime: Date
-//    @State var duration: TimeInterval
-//    @State var endTime: Date
-//    @State var isEvent: Bool
-//    @State var panel: Panel = .hidden
-//    enum Panel {
-//        case hidden, startDate, endDate
-//    }
-//
-//    init(item: Item) {
-//        self.item = item
-//        if let eventData = item.eventData {
-//            startTime = eventData.startDate
-//            endTime = eventData.endDate
-//            duration = eventData.endDate
-//                .timeIntervalSince(eventData.startDate)
-//            isEvent = true
-//        } else {
-//            startTime = Date()
-//            endTime = Date().advanced(by: 3600)
-//            duration = 3600
-//            isEvent = false
-//        }
-//    }
-//
-//    var body: some View {
-//        VStack {
-//            if isEvent {
-//                VStack {
-//                    switch panel {
-//                        case .startDate:
-//
-//                            BindableDefaultDatePicker(
-//                                date: $startTime
-//                            )
-//                            .datePickerStyle(.graphical)
-//                            .labelsHidden()
-//                            Divider()
-//
-//                            DatePicker(
-//                                "",
-//                                selection: $startTime,
-//                                displayedComponents: [
-//                                    .hourAndMinute,
-//                                ]
-//                            ).datePickerStyle(.wheel)
-//                                .labelsHidden()
-//                                .frame(height: 35)
-//                                .clipShape(Capsule())
-//
-//                        case .endDate:
-//                            BindableDefaultDatePicker(
-//                                date: $endTime
-//                            )
-//                            .datePickerStyle(.graphical)
-//                            .labelsHidden()
-//                            Divider()
-//                            DatePicker(
-//                                "",
-//                                selection: $endTime,
-//                                displayedComponents: [
-//                                    .hourAndMinute,
-//                                ]
-//                            ).datePickerStyle(.wheel)
-//                                .labelsHidden()
-//                                .frame(height: 35)
-//                                .clipShape(Capsule())
-//
-//                        default:
-//                            EmptyView()
-//                    }
-//                }
-//
-//            } else {
-//                BindableDefaultDatePicker(date: $startTime)
-//            }
-//
-//            Spacer().frame(height: 40)
-//
-//            HStack {
-//                if isEvent {
-//                    ToolbarButton(clipShape: Capsule()) {
-//                        panel = panel == .startDate ? .hidden :
-//                            .startDate
-//                    } label: {
-//                        HStack {
-//                            Text(
-//                                startTime
-//                                    .formatted(
-//                                        .dateTime.day().month()
-//                                        .year(.twoDigits)
-//                                    )
-//                            )
-//                            Divider().frame(height: 12)
-//
-//                            Text(
-//                                startTime
-//                                    .formatted(
-//                                        .dateTime.hour().minute()
-//                                    )
-//                            )
-//                        }
-//                    }.offset(y: panel == .startDate ? -10 : 0)
-//
-//                    ToolbarButton(clipShape: Capsule()) {
-//                        panel = panel == .endDate ? .hidden :
-//                            .endDate
-//                    } label: {
-//                        HStack {
-//                            Text(
-//                                endTime
-//                                    .formatted(
-//                                        .dateTime.day().month()
-//                                        .year(.twoDigits)
-//                                    )
-//                            )
-//
-//                            Divider().frame(height: 12)
-//
-//                            Text(
-//                                endTime
-//                                    .formatted(
-//                                        .dateTime.hour().minute()
-//                                    )
-//                            )
-//                        }
-//                    }.offset(y: panel == .endDate ? -10 : 0)
-//                } else {
-//                    Spacer()
-//                }
-//
-//                ToolbarButton {
-//                    isEvent.toggle()
-//                } label: {
-//                    Image(systemName: isEvent ? "clock.fill" : "clock")
-//                }
-//            }
-//        }
-//        .onChange(of: startTime) {
-//            endTime = startTime.advanced(by: abs(duration))
-//        }.onChange(of: endTime) {
-//            if endTime < startTime {
-//                startTime = endTime.advanced(by: -abs(duration))
-//            } else {
-//                duration = endTime.timeIntervalSince(startTime)
-//            }
-//        }
-//        .onDisappear {
-//            if isEvent {
-//                item.createEvent(startTime, endTime)
-//            } else {
-//                item.deleteEvent()
-//            }
-//        }
-//    }
-// }
-// struct ImageDataButton: View {
-//    @State private var imageItem: PhotosPickerItem?
-//    @Binding var imageData: ImageData?
-//
-//    var body: some View {
-//        if imageData?.data == nil {
-//            PhotosPicker(selection: $imageItem, matching: .images) {
-//                Image(systemName: "photo")
-//            }.onChange(of: imageItem) {
-//                self.saveImage()
-//            }
-//        } else {
-//            Button {
-//                self.deleteImage()
-//            } label: {
-//                Image(systemName: "photo.fill")
-//            }
-//        }
-//    }
-//
-//    func deleteImage() {
-//        imageItem = nil
-//        imageData?.data = nil
-//    }
-//
-//    fileprivate func saveImage() {
-//        Task {
-//            if
-//                let image = try await imageItem?
-//                    .loadTransferable(type: Data.self)
-//            {
-//                withAnimation {
-//                    if var i = imageData {
-//                        i.data = image
-//                        self.imageData = i
-//                    } else {
-//                        self.imageData = ImageData(data: image)
-//                    }
-//                }
-//            }
-//        }
-//    }
-// }
+import PhotosUI
+
+struct ImageDataButton: View {
+    @State private var imageItems: [PhotosPickerItem] = []
+    @Binding var imageData: [ImageData]
+    @Binding var isExpanded: Bool
+    @State var showSheet: Bool = false
+    @State private var preloadedImages: [UIImage] = []
+    @Namespace private var imageTransition
+
+    var count: String {
+        imageData.count.description
+    }
+
+    @State var preloaded = false
+
+    func preloadImages() {
+        Task {
+            let images = imageData.compactMap { data in
+                data.data.flatMap { UIImage(data: $0) }
+            }
+
+            preloadedImages = images
+            preloaded = true
+        }
+    }
+
+    var body: some View {
+        Group {
+            if imageData.isEmpty {
+                PhotosPicker(
+                    selection: $imageItems,
+                    matching: .images,
+                    photoLibrary: .shared()
+                ) {
+                    Image(systemName: "photo.badge.plus")
+                }
+            } else {
+                if isExpanded {
+                    VStack {
+                        ScrollView(.horizontal) {
+                            if preloaded {
+                                HStack {
+                                    ForEach(
+                                        Array(preloadedImages.enumerated()),
+                                        id: \.offset
+                                    ) { _, uiImage in
+                                        Image(uiImage: uiImage)
+                                            .resizable()
+                                            .aspectRatio(1, contentMode: .fit)
+                                            .cornerRadius(12)
+                                            .onTapGesture {
+                                                withAnimation {
+                                                    showSheet = true
+                                                }
+                                            }
+                                            .transition(
+                                                .scale(
+                                                    scale: 0,
+                                                    anchor: .bottom
+                                                )
+                                                .combined(with: .opacity)
+                                            )
+                                    }
+                                }
+                            } else {
+                                ProgressView()
+                            }
+                        }
+
+                        HStack {
+                            PhotosPicker(
+                                selection: $imageItems,
+                                matching: .images,
+                                photoLibrary: .shared()
+                            ) {
+                                Image(systemName: "photo.badge.plus")
+                            }
+                            .matchedGeometryEffect(
+                                id: "photos",
+                                in: imageTransition
+                            )
+
+                            Spacer()
+
+                            Button {
+                                withAnimation {
+                                    isExpanded.toggle()
+                                }
+                            } label: {
+                                Image(systemName: "chevron.down")
+                                    .padding(Spacing.s)
+                            }
+                            .matchedGeometryEffect(
+                                id: "count",
+                                in: imageTransition
+                            )
+                        }
+                    }
+                    .padding(Spacing.m)
+                    .sheet(isPresented: $showSheet) {
+                        ItemFormImageShelfView(
+                            imageItems: $imageItems,
+                            imageData: $imageData,
+                            preloaded: $preloaded,
+                            preloadedImages: $preloadedImages,
+                            imageTransition: imageTransition
+                        )
+                    }
+                } else {
+                    HStack {
+                        Image(systemName: "photo")
+                            .matchedGeometryEffect(
+                                id: "photos",
+                                in: imageTransition,
+                                isSource: true
+                            )
+
+                        Text(count)
+                            .matchedGeometryEffect(
+                                id: "count",
+                                in: imageTransition,
+                                isSource: true
+                            )
+                    }
+                    .padding(Spacing.s)
+                    .frame(height: Spacing.m)
+                    .task {
+                        if !preloaded {
+                            preloadImages()
+                        }
+                    }
+                }
+            }
+        }
+        .onChange(of: imageItems) {
+            addImages()
+        }
+        .onChange(of: preloaded) {
+            if !preloaded {
+                preloadImages()
+            }
+        }
+    }
+
+    func addImages() {
+        Task {
+            var newImages: [ImageData] = []
+            for item in imageItems {
+                if
+                    let data = try? await item
+                        .loadTransferable(type: Data.self)
+                {
+                    newImages.append(ImageData(data: data))
+                }
+            }
+
+            withAnimation {
+                imageData.append(contentsOf: newImages)
+                preloaded = false
+            }
+        }
+    }
+}
+
 //
 // struct AudioRecordingRow: View {
 //    @Environment(\.modelContext) private var modelContext: ModelContext

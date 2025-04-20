@@ -77,16 +77,48 @@ struct BaseDateShelfView: View {
                 navigationStateService.shelfState.dismissShelf()
             }
         }
+
+        .presentationDetents([.fraction(0.64)])
+        .presentationCornerRadius(0)
+        .presentationBackground {
+            Rectangle().fill(
+                theme.activeTheme
+                    .backgroundMaterialOverlay
+            )
+            .fade(
+                from: .bottom,
+                fromOffset: 0.6,
+                to: .top,
+                toOffset: 1
+            )
+        }
+        .padding(.horizontal, Spacing.m)
+        .containerRelativeFrame([.horizontal, .vertical])
     }
 }
 
-struct GraphicalLikeDatePickerStyle: DatePickerStyle {
+struct GraphicalLikeDatePickerStyle<MultiDateSelector: View>: DatePickerStyle {
+    init(
+        onChangeComponents: (() -> Void)? = nil,
+        timeShown: (() -> Bool)? = nil,
+        @ViewBuilder multiDateSelector: @escaping ()
+            -> MultiDateSelector = { EmptyView() }
+    ) {
+        self.onChangeComponents = onChangeComponents
+        self.timeShown = timeShown
+        self.multiDateSelector = multiDateSelector
+    }
+
+    @Namespace var animation
+    var onChangeComponents: (() -> Void)? = nil
+    var timeShown: (() -> Bool)? = nil
+
+    var multiDateSelector: () -> MultiDateSelector
+
     @State private var displayDate: Date = Calendar.current.startOfDay(
         for:
         Date()
     )
-
-    @State var hasScrolled: Bool = false
 
     private let months: [Date] = {
         let calendar = Calendar.current
@@ -153,73 +185,118 @@ struct GraphicalLikeDatePickerStyle: DatePickerStyle {
                         .containerRelativeFrame([.horizontal])
                     }
                 }
-                .scrollTargetLayout()
-                .onAppear {
-                    DispatchQueue.main.async {
-                        proxy.scrollTo(
-                            Calendar.current.dateComponents(
-                                [.month, .year],
-                                from: configuration.selection
-                            )
+                .task {
+                    proxy.scrollTo(
+                        Calendar.current.dateComponents(
+                            [.month, .year],
+                            from: configuration.selection
                         )
-                        displayDate = Calendar.current
-                            .startOfDay(for: configuration.selection)
-                    }
+                    )
+                    displayDate = Calendar.current
+                        .startOfDay(for: configuration.selection)
                 }
+                .scrollTargetLayout()
             }
             .scrollTargetBehavior(.viewAligned)
+        }
+
+        if configuration.displayedComponents.contains(.hourAndMinute) {
+            DatePicker(
+                "",
+                selection: Binding(
+                    get: { configuration.selection },
+                    set: { configuration.selection = $0 }
+                ),
+                displayedComponents: .hourAndMinute
+            )
+            .datePickerStyle(.wheel)
+            .labelsHidden()
+            .frame(maxHeight: 80)
+            .clipShape(RoundedRectangle(cornerRadius: 20))
         }
 
         Divider()
 
         HStack {
-            ToolbarButton {
-                configuration.selection = Date()
-            } label: {
-                HStack {
-                    Spacer()
-                    Text("Today")
-                    Spacer()
-                }
-            }.contentShape(Rectangle())
-
-            Divider()
-
-            ToolbarButton {
-                configuration.selection = Calendar.current
-                    .date(
-                        byAdding: .day,
-                        value: 1,
-                        to: Calendar.current.startOfDay(for: Date())
-                    )!
-            } label: {
-                HStack {
-                    Spacer()
-                    Text("Tomorrow")
-                    Spacer()
-                }
-            }.contentShape(Rectangle())
-
-            Divider()
-
-            ToolbarButton {
-                configuration.selection = Calendar.current
-                    .date(
-                        byAdding: .day,
-                        value: 7,
-                        to:
-                        Calendar.current.startOfDay(for: Date())
-                    )!
-            } label: {
-                HStack {
-                    Spacer()
-                    Text("Next Week")
-                    Spacer()
+            if let onChangeComponents {
+                ToolbarButton {
+                    onChangeComponents()
+                } label: {
+                    if let timeShown {
+                        Image(
+                            systemName: timeShown() ?
+                                "clock.badge.xmark.fill" :
+                                "clock"
+                        )
+                    } else {
+                        Image(systemName: "clock")
+                    }
                 }
             }
-            .contentShape(Rectangle())
+
+            if let timeShown, timeShown() {
+                multiDateSelector()
+                    .matchedGeometryEffect(
+                        id: "datePickerBottomRow",
+                        in: animation,
+                        isSource: false
+                    )
+            } else {
+                HStack {
+                    ToolbarButton {
+                        configuration.selection = Date()
+                    } label: {
+                        HStack {
+                            Spacer()
+                            Text("Today")
+                            Spacer()
+                        }
+                    }.contentShape(Rectangle())
+
+                    Divider()
+
+                    ToolbarButton {
+                        configuration.selection = Calendar.current
+                            .date(
+                                byAdding: .day,
+                                value: 1,
+                                to: Calendar.current.startOfDay(for: Date())
+                            )!
+                    } label: {
+                        HStack {
+                            Spacer()
+                            Text("Tomorrow")
+                            Spacer()
+                        }
+                    }.contentShape(Rectangle())
+
+                    Divider()
+
+                    ToolbarButton {
+                        configuration.selection = Calendar.current
+                            .date(
+                                byAdding: .day,
+                                value: 7,
+                                to:
+                                Calendar.current.startOfDay(for: Date())
+                            )!
+                    } label: {
+                        HStack {
+                            Spacer()
+                            Text("Next Week")
+                            Spacer()
+                        }
+                    }
+                    .contentShape(Rectangle())
+                }
+                .matchedGeometryEffect(
+                    id: "datePickerBottomRow",
+                    in: animation,
+                    isSource: true
+                )
+            }
         }
-        .frame(height: Spacing.l)
+        .frame(maxHeight: Spacing.l)
     }
 
     private func shiftDisplayMonth(by value: Int) {
@@ -261,61 +338,40 @@ struct CalendarView: View {
             .self
     ) private var navigationStateService: NavigationStateService
 
+    @Environment(
+        BookStateService
+            .self
+    ) private var bookState: BookStateService
+
     @Query var days: [Day]
 
     let displayDate: Date
     let configuration: DatePickerStyleConfiguration
 
-    private var dates: [Date] {
+    @State private var dates: [Date] = []
+    @State var daysOfMonth: [Day] = []
+    @State var loaded: Bool = false
+
+    func loadDates() async {
         guard
             let monthInterval = Calendar.current.dateInterval(
                 of: .month,
                 for: displayDate
             )
         else {
-            return []
+            dates = []
+            return
         }
-        return Calendar.current.generateDates(inside: monthInterval)
+
+        dates = Calendar.current.generateDates(inside: monthInterval)
     }
 
-    var filteredDays: [Day] {
-        days
-            .filter { day in
-                if let book = navigationStateService.bookState.book {
-                    if let chapter = navigationStateService.bookState.chapter {
-                        return
-                            day.items
-                                .filter {
-                                    $0.parent == nil && !$0.archived && $0.text
-                                        .isNotEmpty
-                                }
-                                .contains { $0.chapter == chapter }
-                    }
-
-                    return
-                        day.items
-                            .filter {
-                                $0.parent == nil && !$0.archived && $0.text
-                                    .isNotEmpty
-                            }
-                            .contains { $0.book == book }
-                } else {
-                    return day.items
-                        .filter {
-                            $0.parent == nil && !$0.archived && $0.text
-                                .isNotEmpty
-                        }
-                        .isNotEmpty
-                }
-            }
-            .sorted(by: { $0.date < $1.date })
-    }
-
-    func parentItems(for date: Date) -> [Item] {
-        if let d = DayStore.loadDay(from: filteredDays, by: date) {
-            return d.parentItems
+    func loadDaysOfMonth() async {
+        await loadDates()
+        daysOfMonth = days.filter {
+            dates.contains($0.date)
         }
-        return []
+        .sorted(by: { $0.date < $1.date })
     }
 
     var body: some View {
@@ -324,66 +380,141 @@ struct CalendarView: View {
             from: dates.first ?? Date()
         ) - 1
 
-        LazyVGrid(
-            columns: Array(repeating: GridItem(.flexible()), count: 7),
-            spacing: 4
-        ) {
-            ForEach(0 ..< firstWeekday, id: \.self) { _ in
-                Text(" ")
+        VStack {
+            if loaded {
+                LazyVGrid(
+                    columns: Array(repeating: GridItem(.flexible()), count: 7),
+                    spacing: 4
+                ) {
+                    ForEach(0 ..< firstWeekday, id: \.self) { _ in
+                        Text(" ")
+                    }
+
+                    ForEach(daysOfMonth, id: \.self) { day in
+                        DateButton(
+                            day: day,
+                            book: bookState.book,
+                            chapter: bookState.chapter,
+                            configuration: configuration
+                        )
+                    }
+                }
+            } else {
+                Spacer()
+                HStack {
+                    Spacer()
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                        .toolbarBackground(.hidden)
+                        .toolbarBackgroundVisibility(.hidden)
+                        .toolbarVisibility(.hidden)
+                    Spacer()
+                }
+                Spacer()
             }
+        }
+        .task {
+            await loadDaysOfMonth()
+            withAnimation {
+                loaded = true
+            }
+        }
+    }
 
-            ForEach(dates, id: \.self) { date in
-                Button(action: {
-                    configuration.selection = date
-                }) {
-                    VStack {
-                        Text("\(Calendar.current.component(.day, from: date))")
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .padding(8)
-                            .background {
-                                if
-                                    Calendar.current.isDate(
-                                        date,
-                                        inSameDayAs: configuration.selection
-                                    )
-                                {
-                                    Circle()
-                                        .fill(.white)
-                                }
-                            }
+    struct DateButton: View {
+        let day: Day
+        let book: Book?
+        let chapter: Chapter?
 
-                            .foregroundStyle(
+        var date: Date {
+            day.date
+        }
+
+        let configuration: DatePickerStyleConfiguration
+
+        @State var parentItems: [Item] = []
+        @State var loaded: Bool = false
+
+        func loadParentItems() async {
+            if let book {
+                if let chapter {
+                    parentItems = day.parentItems
+                        .filter { $0.chapter == chapter }
+                        .sorted(by: { $0.position < $1.position })
+                }
+
+                parentItems = day.parentItems.filter { $0.book == book }
+                    .sorted(by: { $0.position < $1.position })
+            } else {
+                parentItems = day.parentItems
+            }
+        }
+
+        var body: some View {
+            Button(action: {
+                configuration.selection = Calendar.current
+                    .combineDateAndTime(
+                        date: date,
+                        time: configuration.selection
+                    )
+            }) {
+                VStack {
+                    Text("\(Calendar.current.component(.day, from: date))")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .padding(8)
+                        .background {
+                            if
                                 Calendar.current.isDate(
                                     date,
                                     inSameDayAs: configuration.selection
                                 )
-                                    ? AnyShapeStyle(.ultraThickMaterial) :
-                                    AnyShapeStyle(.white)
+                            {
+                                Circle()
+                                    .fill(.white)
+                            }
+                        }
+                        .foregroundStyle(
+                            Calendar.current.isDate(
+                                date,
+                                inSameDayAs: configuration.selection
                             )
-                            .opacity(
-                                parentItems(for: date).isEmpty
-                                    && !Calendar.current.isDate(
-                                        date,
-                                        inSameDayAs: configuration.selection
-                                    )
-                                    ? 0.7 : 1
-                            )
+                                ? AnyShapeStyle(.ultraThickMaterial) :
+                                AnyShapeStyle(.white)
+                        )
+                        .opacity(
+                            loaded
+                                && parentItems.isEmpty
+                                && !Calendar.current.isDate(
+                                    date,
+                                    inSameDayAs: configuration.selection
+                                )
+                                ? 0.7 : 1
+                        )
 
-                        HStack {
-                            Spacer()
-                            ForEach(parentItems(for: date).prefix(3)) { item in
+                    HStack {
+                        Spacer()
+                        if loaded {
+                            ForEach(parentItems.prefix(3)) { item in
                                 Image(systemName: "circle.fill")
                                     .resizable()
                                     .scaledToFit()
                                     .frame(width: 4, height: 4)
                                     .foregroundStyle(item.shadowTint)
                             }
-                            Spacer()
+                        } else {
+                            EmptyView()
                         }
-                        .frame(height: 4)
+                        Spacer()
                     }
+                    .frame(height: 4)
                 }
-                .buttonStyle(.plain)
+            }
+            .buttonStyle(.plain)
+            .task {
+                await loadParentItems()
+                withAnimation {
+                    loaded = true
+                }
             }
         }
     }

@@ -39,22 +39,27 @@ struct ItemForm: View {
     @State private var eventFormData: EventData.FormData?
     @State private var children: [Item]
 
+    @State private var images: [ImageData]
+
     @State private var book: Book?
     @State private var chapter: Chapter?
+
     @State var showDateShelf: Bool = false
     @State var showBookShelf: Bool = false
+    @State var showArchiveShelf: Bool = false
 
     init(animation: Namespace.ID, item: Item) {
         let i = item
         self.item = i
         self.animation = animation
         book = i.book
+        chapter = i.chapter
         timestamp = i.timestamp
         text = i.text
         taskData = i.taskData
         eventFormData = i.eventData?.formData()
         children = i.children
-        chapter = i.chapter
+        images = i.imageData ?? []
     }
 
     enum ItemFormSheets: String, Identifiable {
@@ -69,138 +74,142 @@ struct ItemForm: View {
         Calendar.current.isDateInToday(timestamp)
     }
 
+    var isFocused: Bool {
+        focus == .item(id: item.id)
+    }
+
     func title() -> some View {
-        TxtField(
-            label: "...",
-            text: $text,
-            focusState: $focus,
-            focus: .item(id: item.id)
-        ) { isTextEmpty in
-            if isTextEmpty {
-                focus = .item(id: item.id)
-                return
-            }
-
-            let newChild = ItemStore.create(
-                timestamp: item.timestamp,
-                parent: item,
-                position: children.count,
-                taskData: item.taskData
-            )
-            children.append(newChild)
-            DispatchQueue.main.async {
-                focus = .item(id: newChild.id)
-            }
-        }
-        .onChange(of: focus) {
-            if case let .item(id: id) = focus {
-                let toDelete = children
-                    .filter { $0.text.isEmpty && $0.id != id }
-                children
-                    .removeAll {
-                        toDelete.map { $0.id }.contains($0.id)
+        HStack {
+            if item.isTask {
+                Button {
+                    withAnimation {
+                        item.toggleTaskDataCompletedAt()
+                        taskData = item.taskData
                     }
-            }
-        }
-        .toolbar {
-            ToolbarItemGroup(placement: .bottomBar) {
-                HStack {
-                    Spacer()
-                    ToolbarButton {
-                        navigationStateService.goBack()
-                    } label: {
-                        Image(
-                            systemName: "chevron.down"
-                        )
-                    }
-                    Spacer()
-                }
-            }
-
-            ToolbarItemGroup(placement: .keyboard) {
-                ToolbarButton(padding: 0) {
-                    focus = nil
                 } label: {
                     Image(
-                        systemName: "keyboard.chevron.compact.down"
+                        systemName: item.isTaskCompleted ? "square.fill" :
+                            "square.dotted"
                     )
+                    .scaleEffect(0.8)
+                }
+            }
+
+            TxtField(
+                label: "...",
+                text: $text,
+                focusState: $focus,
+                focus: .item(id: item.id)
+            ) { isTextEmpty in
+                if isTextEmpty {
+                    focus = .item(id: item.id)
+                    return
                 }
 
-                ToolbarButton {
-                    navigationStateService.toggleBookShelf()
-                } label: {
-                    HStack {
-                        Image(systemName: "line.diagonal")
-                            .opacity(book == nil ? 0.4 : 1)
-                            .scaleEffect(
-                                book == nil ? 0.6 : 1,
-                                anchor: .center
-                            )
-
-                        if let book {
-                            Text(book.name)
-                            if let chapter {
-                                Image(systemName: "line.diagonal")
-                                Text(chapter.name)
+                let newChild = ItemStore.create(
+                    timestamp: item.timestamp,
+                    parent: item,
+                    position: children.count,
+                    taskData: item.taskData
+                )
+                children.append(newChild)
+                DispatchQueue.main.async {
+                    focus = .item(id: newChild.id)
+                }
+            }
+            .onChange(of: focus) {
+                if case let .item(id: id) = focus {
+                    let toDelete = children
+                        .filter { $0.text.isEmpty && $0.id != id }
+                    children
+                        .removeAll {
+                            toDelete.map { $0.id }.contains($0.id)
+                        }
+                }
+            }
+            .toolbar {
+                if navigationStateService.pathState.onItemForm {
+                    ToolbarItemGroup(placement: .bottomBar) {
+                        HStack {
+                            ToolbarButton {
+                                withAnimation {
+                                    item.archive()
+                                }
+                            } label: {
+                                Image(
+                                    systemName: "tray.and.arrow.down.fill"
+                                )
                             }
-                        } else {
-                            Image(systemName: "asterisk")
-                                .resizable()
-                                .scaledToFit()
-                                .contentShape(Rectangle())
-                                .frame(width: 16, height: 16)
-                        }
+
+                            Spacer()
+
+                            ToolbarButton {
+                                navigationStateService.goBack()
+                            } label: {
+                                Image(
+                                    systemName: "chevron.down"
+                                )
+                            }
+
+                            Spacer()
+
+                            ToolbarButton {
+                                withAnimation {
+                                    item.delete()
+                                }
+                            } label: {
+                                Image(
+                                    systemName: "trash.fill"
+                                )
+                            }
+                        }.padding(.horizontal, Spacing.s)
                     }
                 }
 
-                ToolbarButton {
-                    showDateShelf.toggle()
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "line.diagonal")
-                            .opacity(isToday ? 0.4 : 1)
-                            .scaleEffect(
-                                isToday ? 0.6 : 1,
-                                anchor: .center
-                            )
+                ToolbarItemGroup(placement: .keyboard) {
+                    ToolbarButton(padding: 0) {
+                        focus = nil
+                    } label: {
+                        Image(
+                            systemName: "keyboard.chevron.compact.down"
+                        )
+                    }
 
-                        if !isToday {
-                            Text(
-                                timestamp
-                                    .formatted(
-                                        .dateTime.day(.twoDigits)
-                                            .month(.twoDigits)
-                                            .year(.twoDigits)
-                                    )
+                    BookShelfButton(
+                        book: $book,
+                        chapter: $chapter
+                    ) {
+                        ItemFormBookShelfView(
+                            animation: animation,
+                            book: $book,
+                            chapter: $chapter
+                        )
+                    }
+
+                    DateShelfButton(date: $timestamp) {
+                        ItemFormDateShelfView(
+                            $eventFormData,
+                            $timestamp
+                        )
+                    }
+
+                    Divider()
+                    Spacer()
+
+                    if isFocused {
+                        ToolbarButton {
+                            withAnimation {
+                                item.toggleTaskData()
+                                taskData = item.taskData
+                            }
+                        } label: {
+                            Image(
+                                systemName: item.isTask ? "square.fill" :
+                                    "square.dotted"
                             )
-                        } else {
-                            Image(systemName: "circle.fill")
-                                .resizable()
-                                .scaledToFit()
-                                .contentShape(Rectangle())
-                                .frame(width: 12, height: 12)
                         }
                     }
                 }
-                .sheet(isPresented: $showDateShelf) {
-                    ItemFormDateShelfView($eventFormData, $timestamp)
-                        .presentationDetents([.fraction(0.75)])
-                        .presentationCornerRadius(0)
-                        .presentationBackground {
-                            Rectangle().fill(
-                                theme.activeTheme
-                                    .backgroundMaterialOverlay
-                            )
-                            .fade(
-                                from: .bottom,
-                                fromOffset: 0.6,
-                                to: .top,
-                                toOffset: 1
-                            )
-                        }
-                }
-                Divider()
-                Spacer()
             }
         }
     }
@@ -225,79 +234,90 @@ struct ItemForm: View {
     }
 
     @ViewBuilder
-    func trailingTitle() -> some View {
-        DateTrailingTitleLabel(
-            date: timestamp
-        )
-    }
-
-    @ViewBuilder
     func subtitle() -> some View {
-        HStack {
-            if let eventFormData {
-                Text(formattedDate(eventFormData.startDate))
-                    .eventTimeFontStyle()
-                Text("-")
-                    .eventTimeFontStyle()
-                Text(formattedDate(eventFormData.endDate))
-                    .eventTimeFontStyle()
-            }
+        VStack {
+            HStack {
+                DateTrailingTitleLabel(
+                    date: timestamp,
+                    withWeekday: true
+                )
 
-            Spacer()
-            Text(
-                timestamp
-                    .formatted(
-                        .dateTime.weekday(.abbreviated).day().month()
-                            .year()
-                    )
-            )
-        }
-    }
-
-    var body: some View {
-        Screen(
-            .itemForm(item: item),
-            title: title,
-            trailingTitle: trailingTitle,
-            subtitle: subtitle,
-            bookShelf: ItemFormBookShelfView(
-                animation: animation,
-                book: $book,
-                chapter: $chapter
-            ),
-            backgroundOpacity: 0
-        ) {
-            ScrollView {
-                ForEach(
-                    children.sorted(by: { $0.position < $1.position }),
-                    id: \.self
-                ) { child in
-                    Child(children: $children, child: child, focus: $focus)
-                }
-            }
-            .safeAreaPadding(Spacing.m)
-            .safeAreaPadding(.bottom, Spacing.m)
-        }
-        .safeAreaPadding(Spacing.m)
-        .onChange(of: book) {
-            if let book {
-                withAnimation {
-                    navigationStateService.tempBackground = {
-                        AnyView(
-                            RandomMeshBackground(color: book.color)
+                Text(
+                    timestamp
+                        .formatted(
+                            .dateTime.day().month().year(.twoDigits)
                         )
+                )
+                Spacer()
+
+                if let eventFormData {
+                    VStack {
+                        HStack(alignment: .top) {
+                            Text(formattedDate(eventFormData.startDate))
+                                .eventTimeFontStyle()
+                        }
+
+                        HStack(alignment: .bottom) {
+                            Text(formattedDate(eventFormData.endDate))
+                                .eventTimeFontStyle()
+                        }
                     }
                 }
             }
         }
-        .onAppear {
+    }
+
+    @ViewBuilder
+    func trailingFooter() -> some View {
+        HStack {
+            ImageDataButton(
+                imageData: $images,
+                isExpanded: $showFooter
+            )
+        }
+        .frame(
+            width: showFooter ? Spacing.xxl * 1.5 : Spacing.xl,
+            height: showFooter ? Spacing.xxl * 1.5 : Spacing.l
+        )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            withAnimation {
+                showFooter.toggle()
+            }
+        }
+    }
+
+    @State var showFooter: Bool = false
+    var body: some View {
+        Screen(
+            .itemForm(item: item),
+            title: title,
+            subtitle: subtitle,
+            trailingFooter: trailingFooter,
+            backgroundOpacity: 0
+        ) {
+            ScrollView {
+                VStack {
+                    ForEach(
+                        children.sorted(by: { $0.position < $1.position }),
+                        id: \.self
+                    ) { child in
+                        Child(children: $children, child: child, focus: $focus)
+                    }
+                }
+                .safeAreaPadding(Spacing.m)
+                .safeAreaPadding(.bottom, Spacing.l)
+            }
+        }
+        .task {
+            focus = .item(id: item.id)
+
             if text.isEmpty {
-                focus = .item(id: item.id)
                 book = bookState.book
             }
         }
         .onDisappear {
-            Task {
+            withAnimation {
                 item.commit(
                     timestamp: timestamp,
                     text: text,
@@ -305,18 +325,25 @@ struct ItemForm: View {
                     eventFormData: eventFormData,
                     book: book,
                     chapter: chapter,
-                    children: children.filter { $0.text.isNotEmpty }
+                    children: children.filter { $0.text.isNotEmpty },
+                    images: images
                 )
             }
-
-            withAnimation {
-                navigationStateService.tempBackground = nil
-            }
         }.background {
-            if let book {
-                RandomMeshBackground(color: book.color)
-                    .ignoresSafeArea()
-            }
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .overlay {
+                    if let book {
+                        Rectangle()
+                            .fill(book.color)
+                            .opacity(0.3)
+                    } else {
+                        Rectangle()
+                            .fill(item.shadowTint)
+                            .opacity(0.3)
+                    }
+                }
+                .ignoresSafeArea()
         }
     }
 
@@ -333,8 +360,10 @@ struct ItemForm: View {
         var body: some View {
             HStack {
                 if child.isTask {
-                    AniButton {
-                        child.toggleTaskDataCompletedAt()
+                    Button {
+                        withAnimation {
+                            child.toggleTaskDataCompletedAt()
+                        }
                     } label: {
                         Image(
                             systemName: child.isTaskCompleted ? "square.fill" :
@@ -380,21 +409,23 @@ struct ItemForm: View {
                     }
                 }
             }
+            .padding(.vertical, Spacing.s)
             .childItem()
             .toolbar {
                 if isFocused {
                     ToolbarItemGroup(placement: .keyboard) {
-                        Divider()
-
-                        AniButton {
-                            child.toggleTaskData()
-                        } label: {
-                            Image(
-                                systemName: child
-                                    .isTask ? "square.fill" :
-                                    "square.dotted"
-                            )
-                            .scaleEffect(0.8)
+                        HStack {
+                            AniButton {
+                                withAnimation {
+                                    child.toggleTaskData()
+                                }
+                            } label: {
+                                Image(
+                                    systemName: child
+                                        .isTask ? "square.fill" :
+                                        "square.dotted"
+                                )
+                            }
                         }
                     }
                 }

@@ -71,31 +71,6 @@ final class NavigationStateService {
     }
 
     var shelfState: ShelfStateService = .init()
-    var bookState: BookStateService = .init()
-
-    func isShelfShown() -> Bool {
-        shelfState.isShown()
-    }
-
-    func closeShelf() {
-        shelfState.dismissShelf()
-    }
-
-    func openBookShelf() {
-        shelfState.openBookShelf()
-    }
-
-    func openDatePickerShelf() {
-        shelfState.openDatePickerShelf()
-    }
-
-    func toggleDatePickerShelf() {
-        shelfState.toggleDateShelfView()
-    }
-
-    func toggleBookShelf() {
-        shelfState.toggleBookShelf()
-    }
 
     func toggleSettingShelf() {
         shelfState.toggleSettingShelf()

@@ -6,6 +6,8 @@ struct Screen<
     SubTitle: View,
     TrailingTitle: View,
     Content: View,
+    Footer: View,
+    TrailingFooter: View,
     DateShelf: View,
     BookShelf: View
 >: View {
@@ -16,11 +18,14 @@ struct Screen<
     var loaded: Bool = true
     var divider: () -> TitleDivider
     var title: () -> MainTitle
+    var titleStyle: TitleStyle = .regular
     var onTapTitle: (() -> Void)? = nil
     var trailingTitle: () -> TrailingTitle
     var subtitle: () -> SubTitle
     @ViewBuilder var content: () -> Content
 
+    var footer: () -> Footer
+    var trailingFooter: () -> TrailingFooter
     var dateShelf: DateShelf
     var bookShelf: BookShelf
 
@@ -32,9 +37,10 @@ struct Screen<
     var body: some View {
         VStack {
             Title(
+                titleStyle,
                 header: title,
                 subHeader: subtitle,
-                trailingHeader: trailingTitle
+                trailingHeader: trailingTitle,
             ).onTapGesture {
                 if let onTapTitle {
                     onTapTitle()
@@ -53,72 +59,37 @@ struct Screen<
                 content()
                     .baseShadowStyle()
             }
-        }
-        .padding(Spacing.m)
-        .background {
-            if path.isShelf {
-                RoundedRectangle(cornerRadius: 20).fill(.ultraThickMaterial)
-                    .stroke(.thinMaterial)
-            } else {
-                Button {
-                    if let onTapBackground {
-                        onTapBackground()
-                    }
-                } label: {
-                    RoundedRectangle(cornerRadius: 20).fill(.regularMaterial)
+        }.overlay(alignment: .bottomTrailing) {
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    trailingFooter()
+                        .transition(
+                            .scale(scale: 0, anchor: .bottomTrailing)
+                                .combined(with: .opacity)
+                        )
+                        .background {
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(.ultraThickMaterial)
+                                .stroke(.thinMaterial)
+                        }
+                }
+            }
+        }.padding(Spacing.m)
+            .background {
+                if path.isShelf {
+                    RoundedRectangle(cornerRadius: 10).fill(.ultraThickMaterial)
                         .stroke(.thinMaterial)
+                } else {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(.regularMaterial)
+                        .stroke(.ultraThinMaterial)
                         .opacity(backgroundOpacity)
                 }
             }
-        }
-        .sheet(isPresented: $showShelf) {
-            if navigationStateService.pathState.active == path {
-                navigationStateService.shelfState.display(
-                    dateShelf,
-                    bookShelf
-                )
-                .presentationDetents(
-                    navigationStateService.shelfState.shelf
-                        .detents
-                )
-                .presentationCornerRadius(0)
-                .presentationBackground {
-                    Rectangle().fill(
-                        theme.activeTheme
-                            .backgroundMaterialOverlay
-                    )
-                    .fade(
-                        from: .bottom,
-                        fromOffset: 0.6,
-                        to: .top,
-                        toOffset: 1
-                    )
-                }
-                .padding(.horizontal, Spacing.m)
-                .containerRelativeFrame([.horizontal, .vertical])
-            }
-        }
-        .screenStyle()
-        .navigationBarBackButtonHidden()
-        .onChange(of: navigationStateService.shelfState.isShown()) {
-            if !shelfEnabled {
-                return
-            }
-
-            if !navigationStateService.shelfState.isShown() {
-                withAnimation {
-                    navigationStateService.shelfState.dismissShelf()
-                    showShelf = navigationStateService.shelfState.isShown()
-                }
-                return
-            }
-
-            if navigationStateService.pathState.active == path {
-                withAnimation {
-                    showShelf = navigationStateService.shelfState.isShown()
-                }
-            }
-        }
+            .screenStyle()
+            .navigationBarBackButtonHidden()
     }
 }
 
@@ -128,9 +99,12 @@ extension Screen {
         loaded: Bool = true,
         divider: @escaping () -> TitleDivider = { EmptyView() },
         title: @escaping () -> MainTitle = { EmptyView() },
+        titleStyle: TitleStyle = .regular,
         onTapTitle: (() -> Void)? = nil,
         trailingTitle: @escaping () -> TrailingTitle = { EmptyView() },
         subtitle: @escaping () -> SubTitle = { EmptyView() },
+        footer: @escaping () -> Footer = { EmptyView() },
+        trailingFooter: @escaping () -> TrailingFooter = { EmptyView() },
         dateShelf: DateShelf = BaseDateShelfView(),
         bookShelf: BookShelf = BaseBookShelfView(),
         backgroundOpacity: CGFloat = 1,
@@ -143,8 +117,11 @@ extension Screen {
         self.divider = divider
         self.onTapTitle = onTapTitle
         self.title = title
+        self.titleStyle = titleStyle
         self.trailingTitle = trailingTitle
         self.subtitle = subtitle
+        self.footer = footer
+        self.trailingFooter = trailingFooter
         self.content = content
         self.dateShelf = dateShelf
         self.bookShelf = bookShelf

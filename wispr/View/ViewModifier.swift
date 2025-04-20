@@ -3,20 +3,12 @@ import SwiftUI
 import SwiftUIIntrospect
 
 public extension View {
-    func titleTextStyle() -> some View {
-        modifier(TitleTextStyle())
+    func titleFontStyle(_ t: TitleStyle = TitleStyle.regular) -> some View {
+        modifier(TitleFontStyle(titleStyle: t))
     }
 
-    func subTitleTextStyle() -> some View {
-        modifier(SubTitleTextStyle())
-    }
-
-    func titleFontStyle() -> some View {
-        modifier(TitleFontStyle())
-    }
-
-    func subTitleFontStyle() -> some View {
-        modifier(SubTitleFontStyle())
+    func subTitleFontStyle(_ t: TitleStyle = TitleStyle.regular) -> some View {
+        modifier(SubTitleFontStyle(titleStyle: t))
     }
 
     func parentItemFontStyle() -> some View {
@@ -160,18 +152,41 @@ struct SubTitleTextStyle: ViewModifier {
 
 struct SubTitleFontStyle: ViewModifier {
     @Environment(ThemeStateService.self) private var theme: ThemeStateService
+    var titleStyle: TitleStyle = .regular
 
     func body(content: Content) -> some View {
-        content
-            .environment(\.font, theme.activeTheme.h3.weight(.light))
+        switch titleStyle {
+            case .small:
+                content.environment(
+                    \.font,
+                    theme.activeTheme.h4.weight(.ultraLight)
+                )
+            default:
+                content.environment(
+                    \.font,
+                    theme.activeTheme.h3.weight(.light)
+                )
+        }
     }
 }
 
 struct TitleFontStyle: ViewModifier {
     @Environment(ThemeStateService.self) private var theme: ThemeStateService
+    var titleStyle: TitleStyle = .regular
 
     func body(content: Content) -> some View {
-        content.environment(\.font, theme.activeTheme.h3.weight(.semibold))
+        switch titleStyle {
+            case .small:
+                content.environment(
+                    \.font,
+                    theme.activeTheme.h4.weight(.regular)
+                )
+            default:
+                content.environment(
+                    \.font,
+                    theme.activeTheme.h3.weight(.semibold)
+                )
+        }
     }
 }
 

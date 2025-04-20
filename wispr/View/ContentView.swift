@@ -16,51 +16,29 @@ struct ActiveDay {
 @Observable
 class Globals {}
 
+struct Logo: View {
+    var body: some View {
+        Image("Logo")
+            .resizable()
+            .scaledToFit()
+            .frame(width: 12, height: 12)
+    }
+}
+
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-
     @Environment(ThemeStateService.self) private var theme: ThemeStateService
     @State var globals: Globals = .init()
     @State var navigationStateService: NavigationStateService = .init()
+    @State var bookState: BookStateService = .init()
     @State var dayState: DayStateService = .init()
     @State var flashService: FlashStateService = .init()
     @State var calendarSyncService: CalendarSyncService = .init()
 
     @Namespace var animation
 
-    @State var editMode: EditMode = .inactive
-    @State var showShelf: Bool = false
-
     @State var timelineLoaded: Bool = false
-    @State var dayLoaded: Bool = false
-
-    @Query() var days: [Day]
-
-    var path: [Path] {
-        navigationStateService.pathState.path
-    }
-
-    var date: Date {
-        dayState.active.date
-    }
-
-    var tab: Path {
-        navigationStateService.pathState.tab
-    }
-
-    var bookFilter: Book? {
-        navigationStateService.bookState.book
-    }
-
-    func load() {
-        withAnimation {
-            timelineLoaded = false
-        }
-
-        withAnimation {
-            timelineLoaded = true
-        }
-    }
+    @State var selectedDate: Date = Calendar.current.startOfDay(for: Date())
 
     func deleteEmptyItems(in context: ModelContext) async {
         do {
@@ -77,91 +55,77 @@ struct ContentView: View {
         }
     }
 
-    func consolidateDuplicateDays(in context: ModelContext) async {
+    func consolidateAndFillDays(in context: ModelContext) async {
         do {
             let calendar = Calendar.current
-            let days = DayStore.loadDays()
-            let groupedDays = Dictionary(grouping: days) { day in
-                calendar.startOfDay(for: day.date)
+            let today = calendar.startOfDay(for: Date())
+            let allDays = DayStore.loadDays()
+
+            let grouped = Dictionary(grouping: allDays) {
+                calendar.startOfDay(for: $0.date)
+            }
+            var uniqueDays: [Date: Day] = [:]
+
+            for (date, duplicates) in grouped {
+                let primary = duplicates.first!
+                for dup in duplicates.dropFirst() {
+                    primary.items.append(contentsOf: dup.items)
+                    context.delete(dup)
+                }
+                uniqueDays[date] = primary
             }
 
-            for (_, duplicates) in groupedDays {
-                guard duplicates.count > 1 else { continue }
-
-                let primary = duplicates.first!
-                for duplicate in duplicates.dropFirst() {
-                    primary.items.append(contentsOf: duplicate.items)
-                    context.delete(duplicate)
+            for offset in -365 ... 365 {
+                let date = calendar.date(
+                    byAdding: .day,
+                    value: offset,
+                    to: today
+                )!
+                let startOfDay = calendar.startOfDay(for: date)
+                if uniqueDays[startOfDay] == nil {
+                    let newDay = DayStore.createBlank(startOfDay)
+                    context.insert(newDay)
+                    uniqueDays[startOfDay] = newDay
                 }
             }
 
             try context.save()
         } catch {
-            print("Error consolidating duplicates: \(error)")
+            print("Error consolidating and filling days: \(error)")
         }
     }
 
-    @State var dragOffset: CGFloat = 0
-    @State var xdragOffset: CGFloat = 0
+    @Query var books: [Book]
+    @State var activeDate: Date? = Calendar.current.startOfDay(for: Date())
 
-    @State var showDateShelf: Bool = false
-    @State var showBookShelf: Bool = false
-    var showDayOverlay: Bool {
-        activeDay != nil
-    }
-
-    @State var firstLoad: Bool = true
-    @State var showVerticalTimeline: Bool = false
-    @State var active: Date? = Calendar.current.startOfDay(for: Date())
-    @State var selectedDate: Date = Calendar.current.startOfDay(for: Date())
-    @State var activeDay: Day? = nil
-
-    var onForm: Bool {
-        navigationStateService.pathState.onForm
-    }
-
-    var onBookForm: Bool {
-        navigationStateService.pathState.onBookForm
-    }
-
-    var bookShelfShown: Bool {
-        navigationStateService.shelfState.isBook()
-    }
-
-    var isToday: Bool {
-        dayState.isTodayActive()
-    }
-
-    var book: Book? {
-        navigationStateService.bookState.book
-    }
-
-    var chapter: Chapter? {
-        navigationStateService.bookState.chapter
-    }
-
-    var noFilter: Bool {
-        book == nil && isToday
-    }
-
-    @State var showMonth: Bool = false
-    @State var yOffset: CGFloat = 0
+    @State var showSheet: Bool = true
 
     var body: some View {
         NavigationStack(path: $navigationStateService.pathState.path) {
             VStack {
                 if timelineLoaded {
-                    VStack {
-                        HorizontalTimelineScreen(
-                            animation: animation,
-                            activeDay: $activeDay,
-                            selectedDate: $selectedDate,
-                            showDateShelf: $showDateShelf,
-                            showBookShelf: $showBookShelf,
-                            active: $active
+                    HorizontalTimelineScreen(
+                        animation: animation,
+                        selectedDate: $selectedDate,
+                        activeDate: $activeDate
+                    ).tag("main")
+                        .contentMargins(
+                            .horizontal,
+                            10,
+                            for: .scrollContent
                         )
-                    }
-
+                        .tabViewStyle(.page)
+                        .toolbar {
+                            ToolbarItemGroup(
+                                placement: .bottomBar
+                            ) {
+                                Tool(
+                                    animation: animation,
+                                    selectedDate: $selectedDate,
+                                    activeDate: $activeDate
+                                )
+                            }
+                        }
                 } else {
                     Spacer()
                     HStack {
@@ -175,7 +139,8 @@ struct ContentView: View {
                     }
                     Spacer()
                 }
-            }.overlay {
+            }
+            .overlay {
                 flashService.flashMessage
             }
             .navigationDestination(for: Path.self) { path in
@@ -192,18 +157,17 @@ struct ContentView: View {
         .environment(globals)
         .environment(navigationStateService)
         .environment(dayState)
-        .environment(navigationStateService.bookState)
+        .environment(bookState)
         .environment(navigationStateService.shelfState)
         .environment(flashService)
         .environment(calendarSyncService)
         .task {
             await calendarSyncService.sync()
             await deleteEmptyItems(in: modelContext)
-            await consolidateDuplicateDays(in: modelContext)
+            await consolidateAndFillDays(in: modelContext)
 
             withAnimation {
                 timelineLoaded = true
-                dayLoaded = true
             }
         }
     }

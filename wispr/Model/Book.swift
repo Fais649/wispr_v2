@@ -82,6 +82,13 @@ final class Book: Codable, Transferable, Identifiable, Equatable, Listable {
     var timestamp: Date = Date()
     var lastClicked: Date?
 
+    @Relationship(inverse: \Item.book)
+    var items: [Item] = []
+
+    var otherItems: [Item] {
+        items.filter { $0.chapter == nil }
+    }
+
     var parent: Book? = nil
     var children: [Chapter] {
         chapters.sorted(by: { $0.timestamp < $1.timestamp })

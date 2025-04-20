@@ -1,5 +1,9 @@
 import SwiftUI
 
+public enum TitleStyle {
+    case regular, small, xlarge
+}
+
 struct Title<
     Divider: View,
     Header: View,
@@ -11,12 +15,16 @@ struct Title<
     var subHeader: () -> SubHeader
     var trailingHeader: () -> TrailingHeader
 
+    var style: TitleStyle = .regular
+
     init(
+        _ style: TitleStyle = .regular,
         divider: @escaping () -> Divider = { EmptyView() },
         header: @escaping () -> Header = { EmptyView() },
         subHeader: @escaping () -> SubHeader = { EmptyView() },
         trailingHeader: @escaping () -> TrailingHeader = { EmptyView() }
     ) {
+        self.style = style
         self.divider = divider
         self.header = header
         self.subHeader = subHeader
@@ -36,12 +44,12 @@ struct Title<
                     trailingHeader()
                 }
             }
-            .titleTextStyle()
+            .titleFontStyle(style)
 
             HStack {
                 subHeader()
             }
-            .subTitleTextStyle()
+            .subTitleFontStyle(style)
         }
     }
 }

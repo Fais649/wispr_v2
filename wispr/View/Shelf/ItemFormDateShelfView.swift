@@ -81,20 +81,8 @@ struct ItemFormDateShelfView: View {
                 selection: editingDate == .start ? $start : $end,
                 displayedComponents: isEvent ? [.date, .hourAndMinute] : [.date]
             )
-            .datePickerStyle(.graphical)
-            .onChange(of: start) {
-                timestamp = start
-                end = start.advanced(by: duration)
-            }.onChange(of: end) {
-                if end < start {
-                    start = end.advanced(by: -duration)
-                }
-                duration = end.timeIntervalSince(start)
-            }
-            .tint(theme.activeTheme.backgroundMaterialOverlay)
-
-            HStack(spacing: Spacing.l) {
-                ToolbarButton {
+            .datePickerStyle(GraphicalLikeDatePickerStyle(
+                onChangeComponents: {
                     if eventFormData == nil {
                         start = Calendar.current.roundToNearestHalfHour(start)
                         end = start.advanced(by: duration)
@@ -110,55 +98,33 @@ struct ItemFormDateShelfView: View {
                             eventFormData = nil
                         }
                     }
-                } label: {
-                    Image(
-                        systemName: isEvent ? "clock.badge.xmark.fill" :
-                            "clock"
-                    )
-                }
+                },
+                timeShown: { isEvent },
+                multiDateSelector: {
+                    if isEvent {
+                        Picker("", selection: $editingDate) {
+                            ToolbarButton {
+                                Text(formattedDate(start))
+                            }.tag(EditingDate.start)
 
-                if isEvent {
-                    Picker("", selection: $editingDate) {
-                        ToolbarButton {
-                            Text(formattedDate(start))
-                        }.tag(EditingDate.start)
-
-                        ToolbarButton {
-                            Text(formattedDate(end))
-                        }.tag(EditingDate.end)
-                    }.pickerStyle(.segmented)
-                        .labelsHidden()
-                }
-            }.padding(Spacing.m)
-
-            HStack(spacing: Spacing.l) {
-                ToolbarButton {
-                    withAnimation {
-                        start = Calendar.current
-                            .previousDay(for: todayDate)
+                            ToolbarButton {
+                                Text(formattedDate(end))
+                            }.tag(EditingDate.end)
+                        }.pickerStyle(.segmented)
+                            .labelsHidden()
                     }
-                } label: {
-                    Text("Yesterday")
                 }
-
-                ToolbarButton {
-                    withAnimation {
-                        start = todayDate
-                    }
-                } label: {
-                    Text("Today")
+            ))
+            .onChange(of: start) {
+                timestamp = start
+                end = start.advanced(by: duration)
+            }.onChange(of: end) {
+                if end < start {
+                    start = end.advanced(by: -duration)
                 }
-
-                ToolbarButton {
-                    withAnimation {
-                        start = Calendar.current
-                            .nextDay(for: todayDate)
-                    }
-                } label: {
-                    Text("Tomorrow")
-                }
-            }.padding(Spacing.m)
-                .padding(.bottom, Spacing.m)
+                duration = end.timeIntervalSince(start)
+            }
+            .tint(theme.activeTheme.backgroundMaterialOverlay)
         }
         .padding(.top, Spacing.m)
         .onAppear {
@@ -174,6 +140,21 @@ struct ItemFormDateShelfView: View {
                 e.endDate = end
                 eventFormData = e
             }
+        }
+
+        .presentationDetents([.fraction(0.75)])
+        .presentationCornerRadius(0)
+        .presentationBackground {
+            Rectangle().fill(
+                theme.activeTheme
+                    .backgroundMaterialOverlay
+            )
+            .fade(
+                from: .bottom,
+                fromOffset: 0.6,
+                to: .top,
+                toOffset: 1
+            )
         }
     }
 }

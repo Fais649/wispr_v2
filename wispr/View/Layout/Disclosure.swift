@@ -176,7 +176,6 @@ struct Disclosure<
                     } else {
                         regular()
                     }
-                    Spacer()
                 }
                 .contentShape(Rectangle())
 
@@ -192,32 +191,37 @@ struct Disclosure<
             }
 
             if _expandable, isExpanded {
-                ForEach(children) { item in
-                    HStack {
-                        if !reversed {
-                            Spacer().frame(width: Spacing.l)
-                        }
-
-                        if isEditing, let onDeleteChild {
-                            AniButton {
-                                onDeleteChild(item)
-                            } label: {
-                                Image(systemName: "xmark")
+                VStack {
+                    ForEach(children) { item in
+                        HStack(alignment: .firstTextBaseline) {
+                            if !reversed {
+                                Spacer().frame(width: Spacing.l)
                             }
-                            .buttonStyle(.plain)
+
+                            if isEditing, let onDeleteChild {
+                                AniButton {
+                                    onDeleteChild(item)
+                                } label: {
+                                    Image(systemName: "xmark")
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            childRow(item)
+                                .padding(Spacing.xs)
+                            Spacer()
                         }
-                        childRow(item)
-                        Spacer()
+                        .contentShape(Rectangle())
                     }
-                    .contentShape(Rectangle())
                 }
             }
         }
-        .frame(minHeight: Spacing.xl)
+
+        .padding(Spacing.m)
         .background(bg)
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .contentShape(RoundedRectangle(cornerRadius: 10))
         .matchedTransitionSource(id: item.id, in: animation)
+        .matchedGeometryEffect(id: item.id, in: animation)
         .contextMenu {
             ForEach(item.menuItems) { menuItem in
                 Button(menuItem.name, systemImage: menuItem.symbol) {
@@ -227,17 +231,12 @@ struct Disclosure<
                 }
             }
         }
-        .scrollTransition(.animated) { content, phase in
-            content
-                .opacity(phase.isIdentity ? 1 : 0)
-                .scaleEffect(
-                    phase.isIdentity || phase.value > 0 ? 1 : 0.8, anchor:
-                    .bottom
-                )
-                .offset(
-                    y:
-                    phase.isIdentity || phase.value > 0 ? 0 : 20
-                )
+        .onTapGesture {
+            if _expandable {
+                withAnimation {
+                    isExpanded.toggle()
+                }
+            }
         }
     }
 }

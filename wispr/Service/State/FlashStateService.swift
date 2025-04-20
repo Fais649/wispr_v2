@@ -13,7 +13,7 @@ class FlashStateService {
     var flashMessage: some View {
         if let flash {
             HStack {
-                flash.icon.subTitleTextStyle()
+                flash.icon.subTitleFontStyle()
                 Text(flash.message)
             }.onAppear {
                 DispatchQueue.main.asyncAfter(

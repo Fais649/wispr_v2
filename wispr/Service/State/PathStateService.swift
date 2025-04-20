@@ -55,7 +55,9 @@ final class PathStateService {
     }
 
     func goBack() {
-        path.removeLast()
+        if path.isNotEmpty {
+            path.removeLast()
+        }
     }
 
     func setActive(_ path: Path) {
@@ -76,6 +78,8 @@ enum Path: Hashable {
          itemForm(item: Item),
          dateShelf,
          bookShelf,
+         archiveShelf,
+         imageShelf,
          settingShelf
 
     var isBookForm: Bool {

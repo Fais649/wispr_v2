@@ -34,7 +34,7 @@ struct ItemDisclosures: View {
     var animation: Namespace.ID
 
     var expandable: Bool = true
-    var defaultExpanded: Bool = false
+    @State var defaultExpanded: Bool = false
     var items: [Item]
     var prefix: Int? = nil
 
@@ -69,89 +69,64 @@ struct ItemDisclosures: View {
         ) { item in
             label(item)
                 .id(item.id)
-                .padding(Spacing.s)
-                .matchedGeometryEffect(id: item.id, in: animation)
         } childRow: { child in
             row(child)
-                .padding(Spacing.s)
                 .id(child.id)
         }
         .listRowInsets(EdgeInsets())
         .opacity(flashService.isFlashing ? 0 : 1)
     }
 
-    func formattedDate(from d: Date, _ date: Date) -> String {
-        let calendar = Calendar.current
-        if calendar.isDate(date, inSameDayAs: d) {
-            return date.formatted(.dateTime.hour().minute())
-        } else {
-            let daysDifference = calendar.dateComponents(
-                [.day],
-                from: calendar.startOfDay(for: d),
-                to: calendar.startOfDay(for: date)
-            ).day ?? 0
-            return date
-                .formatted(.dateTime.hour().minute()) + "+\(daysDifference)"
-        }
-    }
-
     @ViewBuilder
     func label(_ item: Item) -> some View {
-        AniButton(padding: Spacing.xxs) {
-            navigationStateService.goToItemForm(item)
-        } label: {
-            HStack {
-                VStack(alignment: .leading) {
-                    Text(item.text)
-                        .truncationMode(.tail)
-                        .lineLimit(1)
-
-                    if let e = item.eventData, !e.allDay {
-                        HStack(spacing: 0) {
-                            Text(formattedDate(from: e.startDate, e.startDate))
-                                .eventTimeFontStyle()
-                            Text("-")
-                                .eventTimeFontStyle()
-                            Text(formattedDate(from: e.startDate, e.endDate))
-                                .eventTimeFontStyle()
-                        }
-                    }
+        Button {
+            if item.isTask {
+                withAnimation {
+                    item.toggleTaskDataCompletedAt()
                 }
+            } else {
+                navigationStateService.goToItemForm(item)
             }
+        } label: {
+            ItemRowLabel(item: item)
+                .opacity(getOpacity(item))
+                .scaleEffect(getScale(item), anchor: .leading)
         }
+        .contentShape(Rectangle())
         .parentItem()
-        .padding(Spacing.s)
         .buttonStyle(.plain)
     }
 
-    func row(_ child: Item) -> some View {
-        HStack {
-            AniButton(padding: Spacing.s) {
-                if var task = child.taskData {
-                    withAnimation {
-                        task.completedAt = task
-                            .completedAt == nil ? Date() : nil
-                        child.taskData = task
-                    }
-                }
-            } label: {
-                if let task = child.taskData {
-                    Image(
-                        systemName: task.completedAt == nil ? "square.dotted" :
-                            "square.fill"
-                    )
-                    .buttonFontStyle()
-                    .scaleEffect(0.8)
-                }
-
-                Text(child.text)
-                    .multilineTextAlignment(.leading)
-            }.buttonStyle(.plain)
-
-            Spacer()
+    func getScale(_ item: Item) -> CGFloat {
+        if let task = item.taskData {
+            return task.completedAt == nil ? 1 : 0.8
         }
+
+        return 1
+    }
+
+    func getOpacity(_ item: Item) -> CGFloat {
+        if let task = item.taskData {
+            return task.completedAt == nil ? 1 : 0.6
+        }
+
+        return 1
+    }
+
+    func row(_ child: Item) -> some View {
+        Button {
+            if child.isTask {
+                withAnimation {
+                    child.toggleTaskDataCompletedAt()
+                }
+            }
+        } label: {
+            ItemRowLabel(item: child)
+                .opacity(getOpacity(child))
+                .scaleEffect(getScale(child), anchor: .leading)
+        }
+        .buttonStyle(.plain)
         .contentShape(Rectangle())
-        .padding(Spacing.xxs)
         .childItem()
     }
 

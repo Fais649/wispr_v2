@@ -10,14 +10,15 @@ import SwiftUI
 struct DayCell: View {
     @Environment(\.modelContext) private var modelContext: ModelContext
     @Environment(
-        Globals
-            .self
-    ) private var globals: Globals
-    @Environment(
         NavigationStateService
             .self
     ) private var navigationStateService:
         NavigationStateService
+
+    @Environment(
+        BookStateService
+            .self
+    ) private var bookState: BookStateService
 
     @Environment(
         DayStateService
@@ -40,7 +41,7 @@ struct DayCell: View {
 
     var noAllDayEvents: [Item] {
         let items = ItemStore.filterAllDayEvents(from: parentItems)
-        if let book = navigationStateService.bookState.book {
+        if let book = bookState.book {
             return items.filter { $0.book == book }
         }
         return items.sorted(by: { $0.position < $1.position })
@@ -96,14 +97,15 @@ struct DayCell: View {
 struct DayScreen: View {
     @Environment(\.modelContext) private var modelContext: ModelContext
     @Environment(
-        Globals
-            .self
-    ) private var globals: Globals
-    @Environment(
         NavigationStateService
             .self
     ) private var navigationStateService:
         NavigationStateService
+
+    @Environment(
+        BookStateService
+            .self
+    ) private var bookState: BookStateService
 
     @Environment(
         DayStateService
@@ -112,35 +114,25 @@ struct DayScreen: View {
 
     var animation: Namespace.ID
 
-    var day: Day
+    var date: Date
+    var items: [Item]
     var scrollView: Bool = true
+    var titleStyle: TitleStyle = .regular
     var backgroundOpacity: CGFloat = 0.5
 
-    var parentItems: [Item] {
-        day.items
-            .filter { $0.parent == nil && !$0.archived && $0.text.isNotEmpty }
+    var book: Book? {
+        bookState.book
     }
 
-    var dayEvents: [Item] {
-        ItemStore.allDayEvents(from: parentItems)
+    var chapter: Chapter? {
+        bookState.chapter
     }
 
-    var noAllDayEvents: [Item] {
-        let items = ItemStore.filterAllDayEvents(from: parentItems)
-        if let book = navigationStateService.bookState.book {
-            return items.filter { $0.book == book }
-        }
-        return items
-            .filter { $0.parent == nil && !$0.archived && $0.text.isNotEmpty }
-            .sorted(by: { $0.position < $1.position })
-    }
-
-    func createGeometryID(date: Date, suffix: String) -> String {
-        return date.hashValue.description + suffix
-    }
+    @State var allDayEvents: [Item] = []
+    @State var parentItems: [Item] = []
+    @State var loaded: Bool = false
 
     var body: some View {
-        let date = day.date
         Screen(
             .dayScreen,
             loaded: true,
@@ -149,6 +141,7 @@ struct DayScreen: View {
                     date: date
                 )
             },
+            titleStyle: titleStyle,
             trailingTitle: {
                 Text(
                     date
@@ -173,67 +166,71 @@ struct DayScreen: View {
                 }
 
             },
-            backgroundOpacity: backgroundOpacity,
-            onTapBackground: {
-                navigationStateService
-                    .goToItemForm(date: day.date)
-            }
+            backgroundOpacity: backgroundOpacity
         ) {
             VStack {
-                if scrollView {
-                    ScrollView {
-                        if dayEvents.isNotEmpty {
-                            ForEach(dayEvents.sorted { first, second in
-                                first.text.count > second.text.count
-                            }) { item in
-                                HStack {
-                                    Text(item.text)
-                                    Spacer()
-                                }
-                                .fontWeight(.ultraLight)
-                            }
-                        }
-
-                        ItemDisclosures(
+                if loaded {
+                    if scrollView {
+                        ScrollingItemList(
                             animation: animation,
-                            defaultExpanded: true,
-                            items: noAllDayEvents
+                            dayEvents: allDayEvents,
+                            noAllDayEvents: parentItems.filter {
+                                if let book {
+                                    if let chapter {
+                                        return $0.chapter == chapter
+                                    }
+
+                                    return $0.book == book
+                                }
+                                return true
+                            }
+                        )
+                    } else {
+                        ItemList(
+                            animation: animation,
+                            dayEvents: allDayEvents,
+                            noAllDayEvents: parentItems.filter {
+                                if let book {
+                                    if let chapter {
+                                        return $0.chapter == chapter
+                                    }
+
+                                    return $0.book == book
+                                }
+                                return true
+                            }
                         )
                     }
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                    .safeAreaPadding(
-                        .vertical,
-                        Spacing.m
-                    )
                 } else {
-                    if dayEvents.isNotEmpty {
-                        ForEach(dayEvents.sorted { first, second in
-                            first.text.count > second.text.count
-                        }) { item in
-                            HStack {
-                                Text(item.text)
-                                Spacer()
-                            }
-                            .fontWeight(.ultraLight)
-                        }
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        ProgressView()
+                            .progressViewStyle(.circular)
+                            .toolbarBackground(.hidden)
+                            .toolbarBackgroundVisibility(.hidden)
+                            .toolbarVisibility(.hidden)
+                        Spacer()
                     }
-
-                    ItemDisclosures(
-                        animation: animation,
-                        defaultExpanded: true,
-                        items: noAllDayEvents
-                    )
+                    Spacer()
                 }
             }
-            .overlay(alignment: .center) {
-                if noAllDayEvents.isEmpty {
-                    ToolbarButton(padding: 0) {
-                        withAnimation {
-                            navigationStateService.goToItemForm()
-                        }
-                    } label: {
-                        Image(systemName: "plus")
-                    }
+            .onChange(of: items) {
+                loaded = false
+                Task {
+                    (parentItems, allDayEvents) = await ItemStore
+                        .loadSeperatedItems(by: date)
+                }
+
+                withAnimation {
+                    loaded = true
+                }
+            }
+            .task {
+                await (parentItems, allDayEvents) = ItemStore
+                    .loadSeperatedItems(by: date)
+                withAnimation {
+                    loaded = true
                 }
             }
         }

@@ -13,17 +13,19 @@ struct BaseBookShelfView: View {
         NavigationStateService
             .self
     ) private var navigationStateService: NavigationStateService
+    @Environment(BookStateService.self) private var bookState: BookStateService
+    @Environment(ThemeStateService.self) private var theme: ThemeStateService
     @Environment(\.dismiss) var dismiss
     @Query var books: [Book]
     @State var editBooks = false
 
     @ViewBuilder
     func title() -> some View {
-        if navigationStateService.bookState.book != nil {
+        if bookState.book != nil {
             ToolbarButton(padding: Spacing.none) {
                 withAnimation {
-                    navigationStateService.bookState.book = nil
-                    navigationStateService.bookState.chapter = nil
+                    bookState.book = nil
+                    bookState.chapter = nil
 
                     dismiss()
                 }
@@ -77,7 +79,7 @@ struct BaseBookShelfView: View {
                                 }
                             }),
                         itemRow: { book in
-                            AniButton(padding: Spacing.xxs) {
+                            Button {
                                 if editBooks {
                                     withAnimation {
                                         navigationStateService
@@ -85,8 +87,7 @@ struct BaseBookShelfView: View {
                                     }
                                 } else {
                                     withAnimation {
-                                        navigationStateService.bookState
-                                            .book = book
+                                        bookState.book = book
                                         dismiss()
                                     }
                                 }
@@ -111,8 +112,6 @@ struct BaseBookShelfView: View {
                             }
                             .parentItem()
                             .buttonStyle(.plain)
-                            .padding(Spacing.s)
-                            .padding(Spacing.s)
                             .contentShape(Rectangle())
                             .scrollTransition(.animated) { content, phase in
                                 content
@@ -136,15 +135,32 @@ struct BaseBookShelfView: View {
                 .safeAreaPadding(.vertical, Spacing.m)
             }
         }
+        .presentationDetents([.fraction(0.6)])
+        .presentationCornerRadius(0)
+        .presentationBackground {
+            Rectangle().fill(
+                theme.activeTheme
+                    .backgroundMaterialOverlay
+            )
+            .fade(
+                from: .bottom,
+                fromOffset: 0.6,
+                to: .top,
+                toOffset: 1
+            )
+        }
+        .padding(.horizontal, Spacing.m)
+        .containerRelativeFrame([
+            .horizontal,
+            .vertical,
+        ])
     }
 
     func row(_ child: Chapter) -> some View {
-        AniButton(padding: Spacing.xxs) {
+        Button {
             withAnimation {
-                navigationStateService.bookState
-                    .book = child.book
-                navigationStateService.bookState
-                    .chapter = child
+                bookState.book = child.book
+                bookState.chapter = child
                 dismiss()
             }
         } label: {
@@ -158,8 +174,6 @@ struct BaseBookShelfView: View {
         }
         .parentItem()
         .buttonStyle(.plain)
-        .padding(Spacing.s)
-        .padding(Spacing.s)
         .contentShape(Rectangle())
         .scrollTransition(.animated) { content, phase in
             content

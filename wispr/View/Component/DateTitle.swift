@@ -28,6 +28,7 @@ struct DateTrailingTitleLabel: View {
             .self
     ) private var navigationStateService: NavigationStateService
     var date: Date
+    var withWeekday: Bool = false
 
     var formattedDate: String {
         let calendar = Calendar.current
@@ -44,9 +45,16 @@ struct DateTrailingTitleLabel: View {
         formatter.unitsStyle = .full
         formatter.dateTimeStyle = .named
 
-        return formatter
+        let relative = formatter
             .localizedString(from: DateComponents(day: dayDifference))
             .localizedCapitalized
+
+        if withWeekday {
+            let weekday = date.formatted(.dateTime.weekday(.abbreviated))
+            return "\(relative) – \(weekday)"
+        }
+
+        return "\(relative)"
     }
 
     var body: some View {

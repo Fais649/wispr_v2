@@ -29,10 +29,8 @@ struct AniButton<Content: View>: View {
 
     var body: some View {
         Button {
-            // withAnimation(.spring(duration: duration)) {
             action()
             clicked.toggle()
-            // }
         } label: {
             label()
         }.padding(padding)

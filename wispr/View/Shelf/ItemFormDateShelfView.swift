@@ -73,7 +73,6 @@ struct ItemFormDateShelfView: View {
     var body: some View {
         Screen(
             .dateShelf,
-            loaded: true,
             title: title
         ) {
             DatePicker(
@@ -126,7 +125,7 @@ struct ItemFormDateShelfView: View {
             }
             .tint(theme.activeTheme.backgroundMaterialOverlay)
         }
-        .padding(.top, Spacing.m)
+        .shelfScreenStyle([.fraction(0.75)])
         .onAppear {
             if let eventFormData {
                 start = eventFormData.startDate
@@ -140,21 +139,6 @@ struct ItemFormDateShelfView: View {
                 e.endDate = end
                 eventFormData = e
             }
-        }
-
-        .presentationDetents([.fraction(0.75)])
-        .presentationCornerRadius(0)
-        .presentationBackground {
-            Rectangle().fill(
-                theme.activeTheme
-                    .backgroundMaterialOverlay
-            )
-            .fade(
-                from: .bottom,
-                fromOffset: 0.6,
-                to: .top,
-                toOffset: 1
-            )
         }
     }
 }

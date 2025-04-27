@@ -30,6 +30,7 @@ struct Screen<
     var bookShelf: BookShelf
 
     @State private var showShelf = false
+    var backgroundTint: Color
     var backgroundOpacity: CGFloat
     var onTapBackground: (() -> Void)? = nil
     var shelfEnabled = true
@@ -59,7 +60,8 @@ struct Screen<
                 content()
                     .baseShadowStyle()
             }
-        }.overlay(alignment: .bottomTrailing) {
+        }
+        .overlay(alignment: .bottomTrailing) {
             VStack {
                 Spacer()
                 HStack {
@@ -76,20 +78,33 @@ struct Screen<
                         }
                 }
             }
-        }.padding(Spacing.m)
-            .background {
-                if path.isShelf {
-                    RoundedRectangle(cornerRadius: 10).fill(.ultraThickMaterial)
-                        .stroke(.thinMaterial)
-                } else {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(.regularMaterial)
-                        .stroke(.ultraThinMaterial)
-                        .opacity(backgroundOpacity)
-                }
+        }.overlay(alignment: .bottom) {
+            footer()
+                .transition(
+                    .scale(scale: 0, anchor: .bottomTrailing)
+                        .combined(with: .opacity)
+                )
+        }
+        .safeAreaPadding(Spacing.m)
+        .background {
+            if path.isShelf {
+                RoundedRectangle(cornerRadius: 10).fill(.ultraThickMaterial)
+                    .stroke(.thinMaterial)
+                    .opacity(backgroundOpacity)
+            } else {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(.regularMaterial)
+                    .stroke(.ultraThinMaterial)
+                    .opacity(backgroundOpacity)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(backgroundTint)
+                            .opacity(0.3)
+                    }
             }
-            .screenStyle()
-            .navigationBarBackButtonHidden()
+        }
+        .screenStyle()
+        .navigationBarBackButtonHidden()
     }
 }
 
@@ -107,6 +122,7 @@ extension Screen {
         trailingFooter: @escaping () -> TrailingFooter = { EmptyView() },
         dateShelf: DateShelf = BaseDateShelfView(),
         bookShelf: BookShelf = BaseBookShelfView(),
+        backgroundTint: Color = .clear,
         backgroundOpacity: CGFloat = 1,
         onTapBackground: (() -> Void)? = nil,
         shelfEnabled: Bool = true,
@@ -125,6 +141,7 @@ extension Screen {
         self.content = content
         self.dateShelf = dateShelf
         self.bookShelf = bookShelf
+        self.backgroundTint = backgroundTint
         self.backgroundOpacity = backgroundOpacity
         self.onTapBackground = onTapBackground
         self.shelfEnabled = shelfEnabled

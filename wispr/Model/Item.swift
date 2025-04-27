@@ -28,7 +28,6 @@ class ItemStore {
     static func delete(_ item: Item) {
         if let d = item.day {
             d.items.removeAll { $0.id == item.id }
-            try? modelContext.save()
         }
         modelContext.delete(item)
     }
@@ -218,8 +217,9 @@ class ItemStore {
     }
 
     @MainActor
-    static func itemExists(id: UUID) -> Bool {
-        return byId(id: id) != nil
+    static func itemExists(persistentModelID: PersistentIdentifier) -> Bool {
+        modelContext.insertedModelsArray
+            .contains { $0.persistentModelID == persistentModelID }
     }
 
     @MainActor
@@ -400,6 +400,18 @@ final class Item: Codable, Transferable, Listable {
         _children = children
     }
 
+    func setImages(_ images: [ImageData]?) {
+        imageData = images
+    }
+
+    func appendChild(_ child: Item) {
+        _children.append(child)
+    }
+
+    func clearEmptyChildren() {
+        _children.removeAll { $0.text.isEmpty }
+    }
+
     func moveChild(
         from indexSet: IndexSet,
         to newIndex: Int
@@ -410,7 +422,8 @@ final class Item: Codable, Transferable, Listable {
         }
     }
 
-    private var _children: [Item] = []
+    @Relationship(deleteRule: .cascade, inverse: \Item.parent)
+    var _children: [Item] = []
 
     @Relationship(deleteRule: .noAction)
     var book: Book? = nil
@@ -436,11 +449,11 @@ final class Item: Codable, Transferable, Listable {
         }
     }
 
-    var colorTint: AnyShapeStyle {
+    var colorTint: Color {
         if let c = book?.color {
-            AnyShapeStyle(c)
+            c
         } else {
-            AnyShapeStyle(.gray)
+            .gray
         }
     }
 
@@ -463,11 +476,13 @@ final class Item: Codable, Transferable, Listable {
         [
             .init(name: "Delete item", symbol: "trash.fill") {
                 Task { @MainActor in
-
                     self.delete()
                 }
             },
-            .init(name: "Archive item", symbol: "tray.and.arrow.down.fill") {
+            .init(
+                name: "Archive item",
+                symbol: "square.3.layers.3d.top.filled"
+            ) {
                 Task { @MainActor in
                     self.archive()
                 }
@@ -486,6 +501,7 @@ final class Item: Codable, Transferable, Listable {
 
     init(
         id: UUID = UUID(),
+        parent: Item? = nil,
         position: Int = 0,
         timestamp: Date = .init(),
         archived: Bool = false,
@@ -498,6 +514,7 @@ final class Item: Codable, Transferable, Listable {
         audioData: AudioData? = nil
     ) {
         self.id = id
+        self.parent = parent
         self.timestamp = Calendar.current.startOfDay(for: timestamp)
         self.archived = archived
         self.archivedAt = archivedAt
@@ -575,21 +592,28 @@ final class Item: Codable, Transferable, Listable {
         return item
     }
 
+    func setEvent(_ eventFormData: EventData.FormData?) {
+        if let eventFormData {
+            createEvent(
+                eventFormData.startDate,
+                eventFormData.endDate,
+                true
+            )
+        } else {
+            deleteEvent()
+        }
+    }
+
     @MainActor
     func commit(
         timestamp: Date,
-        text: String = "",
-        taskData: TaskData?,
         eventFormData: EventData.FormData?,
-        book: Book? = nil,
-        chapter: Chapter? = nil,
         children: [Item],
-        images: [ImageData]? = nil,
         syncEkEvent: Bool = true
     ) {
-        setTimestamp(timestamp)
-        self.text = text
-        self.taskData = taskData
+        if timestamp != self.timestamp {
+            setTimestamp(timestamp)
+        }
 
         if let eventFormData {
             createEvent(
@@ -601,16 +625,20 @@ final class Item: Codable, Transferable, Listable {
             deleteEvent()
         }
 
-        updatePosition()
+        // updatePosition()
 
-        setBook(book)
-        setChapter(chapter)
-        _children = children.filter { $0.text.isNotEmpty }
-
-        if let images {
-            imageData = images
+        if children.isNotEmpty {
+            _children = children.filter { $0.text.isNotEmpty }
         }
 
+        commit()
+    }
+
+    @MainActor
+    func commit(
+        text: String = "",
+    ) {
+        self.text = text
         commit()
     }
 
@@ -637,15 +665,17 @@ final class Item: Codable, Transferable, Listable {
     @MainActor
     func commit() {
         if text.isNotEmpty {
-            if !ItemStore.itemExists(id: id) {
-                updatePosition()
+            Task {
+                if !ItemStore.itemExists(persistentModelID: persistentModelID) {
+                    updatePosition()
+                    ItemStore.modelContext.insert(self)
+                }
             }
-            ItemStore.modelContext.insert(self)
         } else {
             ItemStore.modelContext.delete(self)
         }
 
-        try? ItemStore.modelContext.save()
+        // try? ItemStore.modelContext.save()
     }
 
     @MainActor
@@ -656,6 +686,20 @@ final class Item: Codable, Transferable, Listable {
         archivedAt = Date()
 
         try? ItemStore.modelContext.save()
+    }
+
+    @MainActor
+    func archive(_ child: Item) {
+        removeChild(child)
+        child.parent = nil
+        child.archived = true
+        child.archivedAt = Date()
+
+        try? ItemStore.modelContext.save()
+    }
+
+    func setText(_ text: String) {
+        self.text = text
     }
 
     func setBook(_ book: Book?) {
@@ -682,6 +726,17 @@ final class Item: Codable, Transferable, Listable {
         setBook(book)
         setChapter(chapter)
         unarchive()
+        try? ItemStore.modelContext.save()
+    }
+
+    func removeChild(_ child: Item) {
+        _children.removeAll { $0.id == child.id }
+    }
+
+    @MainActor
+    func delete(_ child: Item) {
+        removeChild(child)
+        ItemStore.delete(child)
     }
 
     @MainActor
@@ -706,6 +761,10 @@ final class Item: Codable, Transferable, Listable {
     func setTimestamp(_ date: Date) {
         timestamp = date
 
+        if let d = day {
+            d.items.removeAll { $0.id == id }
+        }
+
         if let day = DayStore.loadDay(by: timestamp) {
             self.day = day
             day.items.append(self)
@@ -715,7 +774,6 @@ final class Item: Codable, Transferable, Listable {
             self.day = day
         }
 
-        ItemStore.save()
         updatePosition()
     }
 
@@ -843,10 +901,56 @@ final class Item: Codable, Transferable, Listable {
         NotificationSyncService.delete(id.uuidString)
     }
 
+    func setAudioData(_ audioData: AudioData?) {
+        self.audioData = audioData
+    }
+
+    func deleteImageData() {
+        if let imageData {
+            do {
+                for i in imageData {
+                    if let path = i.path, let url = URL(string: path) {
+                        try FileManager.default.removeItem(at: url)
+                        print("Image deleted: \(url)")
+                    }
+
+                    if
+                        let thumbnailPath = i.thumbnailPath,
+                        let url = URL(string: thumbnailPath)
+                    {
+                        try FileManager.default.removeItem(at: url)
+                        print("Thumbnail deleted: \(url)")
+                    }
+                }
+
+            } catch {
+                print("Failed to delete images: \(error)")
+            }
+
+            self.imageData = nil
+        }
+    }
+
+    func deleteAudioData() {
+        if let audioData {
+            do {
+                try FileManager.default.removeItem(at: audioData.url)
+                print("Audio deleted: \(audioData.url)")
+                self.audioData = nil
+            } catch {
+                print("Failed to delete audio: \(error)")
+            }
+        }
+    }
+
     enum CodingKeys: String, CodingKey {
         case id
         case position
         case timestamp
+        case text
+        case taskData
+        case imageData
+        case children
     }
 
     static var transferRepresentation: some TransferRepresentation {
@@ -859,6 +963,10 @@ final class Item: Codable, Transferable, Listable {
         id = try values.decode(UUID.self, forKey: .id)
         position = try values.decode(Int.self, forKey: .position)
         timestamp = try values.decode(Date.self, forKey: .timestamp)
+        text = try values.decode(String.self, forKey: .text)
+        taskData = try values.decode(TaskData?.self, forKey: .taskData)
+        imageData = try values.decode([ImageData]?.self, forKey: .imageData)
+        _children = try values.decode([Item].self, forKey: .children)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -866,6 +974,10 @@ final class Item: Codable, Transferable, Listable {
         try container.encode(id, forKey: .id)
         try container.encode(position, forKey: .position)
         try container.encode(timestamp, forKey: .timestamp)
+        try container.encode(text, forKey: .text)
+        try container.encode(taskData, forKey: .taskData)
+        try container.encode(imageData, forKey: .imageData)
+        try container.encode(_children, forKey: .children)
     }
 
     var displayRepresentation: DisplayRepresentation {
@@ -951,11 +1063,70 @@ struct TaskData: Identifiable, Codable, Equatable, Hashable, Formable {
     var completedAt: Date?
 }
 
+struct ImageData: Identifiable, Codable {
+    var id: UUID = .init()
+    var path: String?
+    var thumbnailPath: String?
+
+    init(_ data: Data) {
+        guard let uiImage = UIImage(data: data) else {
+            return
+        }
+
+        if let imageData = uiImage.jpegData(compressionQuality: 0.9) {
+            let filename = "\(UUID().uuidString).jpg"
+            path = saveImageToDisk(data: imageData, filename: filename)
+        }
+
+        if
+            let imageData = uiImage.aspectFittedToHeight(100)
+                .jpegData(compressionQuality: 0.5)
+        {
+            let filename = "\(UUID().uuidString).jpg"
+            thumbnailPath = saveImageToDisk(data: imageData, filename: filename)
+        }
+    }
+
+    func loadImage() -> Image? {
+        guard
+            let path,
+            let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
+            let uiImage = UIImage(data: data) else { return nil }
+        return Image(uiImage: uiImage)
+    }
+
+    func loadThumbnail() -> Image? {
+        guard
+            let thumbnailPath,
+            let data =
+            try? Data(contentsOf: URL(fileURLWithPath: thumbnailPath)),
+            let uiImage = UIImage(data: data) else { return nil }
+        return Image(uiImage: uiImage)
+    }
+
+    func saveImageToDisk(data: Data, filename: String) -> String? {
+        let url = getDocumentsDirectory().appendingPathComponent(filename)
+        do {
+            try data.write(to: url)
+            return url.path // Store this path
+        } catch {
+            print("Error saving image: \(error)")
+            return nil
+        }
+    }
+
+    func getDocumentsDirectory() -> URL {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+            .first!
+    }
+}
+
 struct AudioData: Identifiable, Codable {
     var id: UUID = .init()
     var date: Date
     var url: URL
     var transcript: String
+    var transcribed: Bool = false
 
     init(_ date: Date = Date(), url: URL? = nil, transcript: String = "") {
         self.date = date
@@ -975,210 +1146,11 @@ struct AudioData: Identifiable, Codable {
     }
 }
 
-struct ImageData: Identifiable, Codable {
-    var id: UUID = .init()
-    var date: Date
-    var url: URL?
-
-    var image: Image? {
-        if let data = data {
-            if let image = UIImage(data: data) {
-                return Image(uiImage: image)
-            }
-        }
-        return nil
-    }
-
-    var data: Data?
-
-    init(_ date: Date = Date(), url: URL? = nil, data: Data? = nil) {
-        self.date = date
-        if let u = url {
-            self.url = u
-        } else {
-            let documentPath = FileManager.default.urls(
-                for: .documentDirectory,
-                in: .userDomainMask
-            )[0]
-            let audioFilename = documentPath
-                .appendingPathComponent(UUID().description + ".m4a")
-            self.url = audioFilename
-        }
-
-        if let data = data {
-            self.data = data
-        }
-    }
-}
-
 enum FocusedField: Hashable {
-    case item(id: UUID), tag(id: UUID)
+    case item(id: UUID), tag(id: UUID), items(id: UUID), audioData(id: UUID)
 }
 
 import PhotosUI
-
-struct ImageDataButton: View {
-    @State private var imageItems: [PhotosPickerItem] = []
-    @Binding var imageData: [ImageData]
-    @Binding var isExpanded: Bool
-    @State var showSheet: Bool = false
-    @State private var preloadedImages: [UIImage] = []
-    @Namespace private var imageTransition
-
-    var count: String {
-        imageData.count.description
-    }
-
-    @State var preloaded = false
-
-    func preloadImages() {
-        Task {
-            let images = imageData.compactMap { data in
-                data.data.flatMap { UIImage(data: $0) }
-            }
-
-            preloadedImages = images
-            preloaded = true
-        }
-    }
-
-    var body: some View {
-        Group {
-            if imageData.isEmpty {
-                PhotosPicker(
-                    selection: $imageItems,
-                    matching: .images,
-                    photoLibrary: .shared()
-                ) {
-                    Image(systemName: "photo.badge.plus")
-                }
-            } else {
-                if isExpanded {
-                    VStack {
-                        ScrollView(.horizontal) {
-                            if preloaded {
-                                HStack {
-                                    ForEach(
-                                        Array(preloadedImages.enumerated()),
-                                        id: \.offset
-                                    ) { _, uiImage in
-                                        Image(uiImage: uiImage)
-                                            .resizable()
-                                            .aspectRatio(1, contentMode: .fit)
-                                            .cornerRadius(12)
-                                            .onTapGesture {
-                                                withAnimation {
-                                                    showSheet = true
-                                                }
-                                            }
-                                            .transition(
-                                                .scale(
-                                                    scale: 0,
-                                                    anchor: .bottom
-                                                )
-                                                .combined(with: .opacity)
-                                            )
-                                    }
-                                }
-                            } else {
-                                ProgressView()
-                            }
-                        }
-
-                        HStack {
-                            PhotosPicker(
-                                selection: $imageItems,
-                                matching: .images,
-                                photoLibrary: .shared()
-                            ) {
-                                Image(systemName: "photo.badge.plus")
-                            }
-                            .matchedGeometryEffect(
-                                id: "photos",
-                                in: imageTransition
-                            )
-
-                            Spacer()
-
-                            Button {
-                                withAnimation {
-                                    isExpanded.toggle()
-                                }
-                            } label: {
-                                Image(systemName: "chevron.down")
-                                    .padding(Spacing.s)
-                            }
-                            .matchedGeometryEffect(
-                                id: "count",
-                                in: imageTransition
-                            )
-                        }
-                    }
-                    .padding(Spacing.m)
-                    .sheet(isPresented: $showSheet) {
-                        ItemFormImageShelfView(
-                            imageItems: $imageItems,
-                            imageData: $imageData,
-                            preloaded: $preloaded,
-                            preloadedImages: $preloadedImages,
-                            imageTransition: imageTransition
-                        )
-                    }
-                } else {
-                    HStack {
-                        Image(systemName: "photo")
-                            .matchedGeometryEffect(
-                                id: "photos",
-                                in: imageTransition,
-                                isSource: true
-                            )
-
-                        Text(count)
-                            .matchedGeometryEffect(
-                                id: "count",
-                                in: imageTransition,
-                                isSource: true
-                            )
-                    }
-                    .padding(Spacing.s)
-                    .frame(height: Spacing.m)
-                    .task {
-                        if !preloaded {
-                            preloadImages()
-                        }
-                    }
-                }
-            }
-        }
-        .onChange(of: imageItems) {
-            addImages()
-        }
-        .onChange(of: preloaded) {
-            if !preloaded {
-                preloadImages()
-            }
-        }
-    }
-
-    func addImages() {
-        Task {
-            var newImages: [ImageData] = []
-            for item in imageItems {
-                if
-                    let data = try? await item
-                        .loadTransferable(type: Data.self)
-                {
-                    newImages.append(ImageData(data: data))
-                }
-            }
-
-            withAnimation {
-                imageData.append(contentsOf: newImages)
-                preloaded = false
-            }
-        }
-    }
-}
 
 //
 // struct AudioRecordingRow: View {

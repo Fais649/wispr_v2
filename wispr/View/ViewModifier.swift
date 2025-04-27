@@ -7,6 +7,10 @@ public extension View {
         modifier(TitleFontStyle(titleStyle: t))
     }
 
+    func shelfScreenStyle(_ detents: Set<PresentationDetent>) -> some View {
+        modifier(ShelfScreenStyle(detents: detents))
+    }
+
     func subTitleFontStyle(_ t: TitleStyle = TitleStyle.regular) -> some View {
         modifier(SubTitleFontStyle(titleStyle: t))
     }
@@ -33,6 +37,25 @@ public extension View {
 
     func decorationFontStyle() -> some View {
         modifier(DecorationFontStyle())
+    }
+
+    func onEnterKey(
+        _ string: Binding<String>,
+        action: @escaping () -> Void
+    ) -> some View {
+        modifier(OnEnterKey(string: string, action: action))
+    }
+
+    func itemBoxStyle(_ colorTint: Color) -> some View {
+        modifier(ItemBoxStyle(colorTint: colorTint))
+    }
+
+    func inlineItemButtonStyle() -> some View {
+        modifier(InlineItemButtonStyle())
+    }
+
+    func inlineSubItemButtonStyle() -> some View {
+        modifier(InlineSubItemButtonStyle())
     }
 
     func toolbarButtonLabelStyler(
@@ -194,7 +217,61 @@ struct ParentItemFontStyle: ViewModifier {
     @Environment(ThemeStateService.self) private var theme: ThemeStateService
 
     func body(content: Content) -> some View {
-        content.environment(\.font, theme.activeTheme.h4.weight(.regular))
+        content.environment(\.font, theme.activeTheme.h4.weight(.light))
+    }
+}
+
+struct ShelfScreenStyle: ViewModifier {
+    @Environment(ThemeStateService.self) private var theme: ThemeStateService
+
+    @FocusState var focus: Bool
+    var detents: Set<PresentationDetent>
+    func body(content: Content) -> some View {
+        content
+            .focused($focus)
+            .padding(.top, Spacing.m)
+            .safeAreaPadding(.bottom, Spacing.l)
+            .presentationDetents(detents)
+            .presentationCornerRadius(0)
+            .presentationBackground {
+                Rectangle().fill(
+                    theme.activeTheme
+                        .backgroundMaterialOverlay
+                )
+                .fade(
+                    from: .bottom,
+                    fromOffset: 0.6,
+                    to: .top,
+                    toOffset: 1
+                )
+            }
+            .padding(.horizontal, Spacing.m)
+            .containerRelativeFrame([.horizontal, .vertical])
+    }
+}
+
+struct ItemBoxStyle: ViewModifier {
+    let colorTint: Color
+
+    var bgRect: some Shape {
+        RoundedRectangle(cornerRadius: 4)
+    }
+
+    var bg: some View {
+        bgRect
+            .fill(.ultraThinMaterial)
+            .overlay(
+                bgRect
+                    .fill(colorTint.gradient)
+                    .opacity(0.4)
+            )
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .contentShape(RoundedRectangle(cornerRadius: 4))
+            .padding(Spacing.m)
+            .background(bg)
     }
 }
 
@@ -202,7 +279,7 @@ struct ChildItemFontStyle: ViewModifier {
     @Environment(ThemeStateService.self) private var theme: ThemeStateService
 
     func body(content: Content) -> some View {
-        content.environment(\.font, theme.activeTheme.h4.weight(.light))
+        content.environment(\.font, theme.activeTheme.h4.weight(.ultraLight))
     }
 }
 
@@ -217,7 +294,7 @@ struct ToolbarFontStyle: ViewModifier {
 struct EventTimeFontStyle: ViewModifier {
     @Environment(ThemeStateService.self) private var theme: ThemeStateService
     func body(content: Content) -> some View {
-        content.environment(\.font, theme.activeTheme.h4.weight(.thin))
+        content.environment(\.font, theme.activeTheme.h5.weight(.thin))
     }
 }
 
@@ -225,6 +302,33 @@ struct ButtonFontStyle: ViewModifier {
     @Environment(ThemeStateService.self) private var theme: ThemeStateService
     func body(content: Content) -> some View {
         content.environment(\.font, theme.activeTheme.h3.weight(.regular))
+    }
+}
+
+struct OnEnterKey: ViewModifier {
+    @Binding var string: String
+    var action: () -> Void
+
+    func body(content: Content) -> some View {
+        content.onChange(of: string) {
+            guard string.contains("\n") else { return }
+            string = string.replacing("\n", with: "")
+            action()
+        }
+    }
+}
+
+struct InlineSubItemButtonStyle: ViewModifier {
+    @Environment(ThemeStateService.self) private var theme: ThemeStateService
+    func body(content: Content) -> some View {
+        content.environment(\.font, theme.activeTheme.h4.weight(.light))
+    }
+}
+
+struct InlineItemButtonStyle: ViewModifier {
+    @Environment(ThemeStateService.self) private var theme: ThemeStateService
+    func body(content: Content) -> some View {
+        content.environment(\.font, theme.activeTheme.h3.weight(.light))
     }
 }
 
@@ -398,5 +502,77 @@ private struct ScrollTransition: ViewModifier {
         } else {
             content
         }
+    }
+}
+
+private struct CursorToEndOnFocus: ViewModifier {
+    private class CursorBehavior: UIView, UITextFieldDelegate {
+        func textFieldDidBeginEditing(_ textField: UITextField) {
+            let endPosition = textField.endOfDocument
+            textField.selectedTextRange = textField.textRange(
+                from: endPosition,
+                to: endPosition
+            )
+        }
+    }
+
+    private var cursorBehavior = CursorBehavior()
+
+    func body(content: Content) -> some View {
+        content.introspect(
+            .textField,
+            on: .iOS(.v13, .v14, .v15, .v16, .v17, .v18)
+        ) { textField in
+            textField.delegate = cursorBehavior
+        }
+    }
+}
+
+extension View {
+    func cursorToEndOnFocus() -> some View {
+        modifier(CursorToEndOnFocus())
+    }
+}
+
+private struct TextFieldSubmit: ViewModifier {
+    // private class that conforms UITextFieldDelegate
+    private class TextFieldKeyboardBehavior: UIView, UITextFieldDelegate {
+        var submitAction: (() -> Void)?
+
+        func textFieldShouldReturn(_: UITextField) -> Bool {
+            submitAction?() // called when keyboard return button is pressed
+            return false // cancel default behavior of return button
+        }
+    }
+
+    // instance to UITextFieldDelegate
+    private var textFieldKeyboardBehavior = TextFieldKeyboardBehavior()
+
+    init(submitAction: @escaping () -> Void) {
+        textFieldKeyboardBehavior.submitAction = submitAction
+    }
+
+    func body(content: Content) -> some View {
+        content.introspect(
+            .textField,
+            on: .iOS(.v13, .v14, .v15, .v16, .v17, .v18)
+        ) { textField in
+            // UITextField reached with Introspect
+            textField.delegate = textFieldKeyboardBehavior
+        }
+    }
+}
+
+// make the modifier publicly available for use with TextField.
+extension TextField {
+    func customSubmit(submitAction: @escaping (() -> Void)) -> some View {
+        modifier(TextFieldSubmit(submitAction: submitAction))
+    }
+}
+
+// make the modifier publicly available for use with SecureField.
+extension SecureField {
+    func customSubmit(submitAction: @escaping (() -> Void)) -> some View {
+        modifier(TextFieldSubmit(submitAction: submitAction))
     }
 }

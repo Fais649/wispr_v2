@@ -26,6 +26,9 @@ final class NavigationStateService {
         pathState.onDayScreen
     }
 
+    var addItem: (add: Bool, date: Date?) = (false, nil)
+    var insertItem: (insert: Bool, item: Item?, date: Date?) = (false, nil, nil)
+
     var onTimeline: Bool {
         pathState.onTimelineScreen
     }

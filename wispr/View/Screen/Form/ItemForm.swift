@@ -270,10 +270,7 @@ struct ItemForm: View {
     @ViewBuilder
     func trailingFooter() -> some View {
         HStack {
-            ImageDataButton(
-                imageData: $images,
-                isExpanded: $showFooter
-            )
+            EmptyView()
         }
         .frame(
             width: showFooter ? Spacing.xxl * 1.5 : Spacing.xl,
@@ -318,16 +315,16 @@ struct ItemForm: View {
         }
         .onDisappear {
             withAnimation {
-                item.commit(
-                    timestamp: timestamp,
-                    text: text,
-                    taskData: taskData,
-                    eventFormData: eventFormData,
-                    book: book,
-                    chapter: chapter,
-                    children: children.filter { $0.text.isNotEmpty },
-                    images: images
-                )
+                // item.commit(
+                //     timestamp: timestamp,
+                //     text: text,
+                //     taskData: taskData,
+                //     eventFormData: eventFormData,
+                //     book: book,
+                //     chapter: chapter,
+                //     children: children.filter { $0.text.isNotEmpty },
+                //     images: images
+                // )
             }
         }.background {
             Rectangle()

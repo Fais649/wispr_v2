@@ -1,5 +1,5 @@
 {
-  "originHash" : "d0eaa07f245c1264790f0d5e0811c2d97ced99e179d98e01accb19c1cf6c7e2f",
+  "originHash" : "0f1d72b74f14fb4dd3df9136460e062200fcb90f7072083957fef122e8538cb3",
   "pins" : [
     {
       "identity" : "audiokit",
@@ -8,6 +8,42 @@
       "state" : {
         "revision" : "5b3fd238ef8ee95c9842ca4ea83ca58ee151e630",
         "version" : "5.6.5"
+      }
+    },
+    {
+      "identity" : "audiokitex",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/AudioKit/AudioKitEX.git",
+      "state" : {
+        "revision" : "23e8e3bffd9fbc1dffa72f1d47c7f714dd777288",
+        "version" : "5.6.2"
+      }
+    },
+    {
+      "identity" : "audiokitui",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/AudioKit/AudioKitUI.git",
+      "state" : {
+        "revision" : "1a61e8a96c7ee24c3e5abe06dc3334a31fd7571d",
+        "version" : "0.3.7"
+      }
+    },
+    {
+      "identity" : "autoresizingsheet",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/benedom/AutoResizingSheet",
+      "state" : {
+        "revision" : "131c20853019f6a7be710f04d666bcc416512672",
+        "version" : "1.0.5"
+      }
+    },
+    {
+      "identity" : "controls",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/AudioKit/Controls.git",
+      "state" : {
+        "revision" : "4dd10370125af7f1e26d7a71b2c5929bb3c95087",
+        "version" : "1.1.4"
       }
     },
     {

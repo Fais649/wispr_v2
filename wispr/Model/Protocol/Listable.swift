@@ -12,6 +12,7 @@ protocol Listable: Transferable, Identifiable, Equatable {
     var children: [Child] { get }
     var preview: AnyView { get }
     var shadowTint: AnyShapeStyle { get }
+    var colorTint: Color { get }
     var fillTint: Color { get }
     var menuItems: [MenuItem] { get }
 }
@@ -19,5 +20,6 @@ protocol Listable: Transferable, Identifiable, Equatable {
 extension Listable {
     var shadowTint: AnyShapeStyle { AnyShapeStyle(Color.clear) }
     var fillTint: Color { Color.white }
+    var colorTint: Color { Color.gray }
     var menuItems: [MenuItem] { [] }
 }

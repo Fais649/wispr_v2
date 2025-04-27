@@ -154,6 +154,8 @@ final class Book: Codable, Transferable, Identifiable, Equatable, Listable {
         AnyShapeStyle(color)
     }
 
+    var colorTint: Color { color }
+
     init(
         name: String,
         chapters: [Chapter],

@@ -135,25 +135,7 @@ struct BaseBookShelfView: View {
                 .safeAreaPadding(.vertical, Spacing.m)
             }
         }
-        .presentationDetents([.fraction(0.6)])
-        .presentationCornerRadius(0)
-        .presentationBackground {
-            Rectangle().fill(
-                theme.activeTheme
-                    .backgroundMaterialOverlay
-            )
-            .fade(
-                from: .bottom,
-                fromOffset: 0.6,
-                to: .top,
-                toOffset: 1
-            )
-        }
-        .padding(.horizontal, Spacing.m)
-        .containerRelativeFrame([
-            .horizontal,
-            .vertical,
-        ])
+        .shelfScreenStyle([.fraction(0.6)])
     }
 
     func row(_ child: Chapter) -> some View {

@@ -35,10 +35,6 @@ struct DayCell: View {
             .filter { $0.parent == nil && !$0.archived && $0.text.isNotEmpty }
     }
 
-    var dayEvents: [Item] {
-        ItemStore.allDayEvents(from: parentItems)
-    }
-
     var noAllDayEvents: [Item] {
         let items = ItemStore.filterAllDayEvents(from: parentItems)
         if let book = bookState.book {
@@ -112,13 +108,19 @@ struct DayScreen: View {
             .self
     ) private var dayState: DayStateService
 
+    @FocusState var focus: FocusedField?
+    @State private var highlight: FocusedField?
+
     var animation: Namespace.ID
 
-    var date: Date
-    var items: [Item]
+    var day: Day
     var scrollView: Bool = true
     var titleStyle: TitleStyle = .regular
     var backgroundOpacity: CGFloat = 0.5
+
+    var date: Date {
+        day.date
+    }
 
     var book: Book? {
         bookState.book
@@ -128,9 +130,13 @@ struct DayScreen: View {
         bookState.chapter
     }
 
-    @State var allDayEvents: [Item] = []
-    @State var parentItems: [Item] = []
     @State var loaded: Bool = false
+
+    @State var items: [Item] = []
+
+    var path: Path {
+        navigationStateService.pathState.active
+    }
 
     var body: some View {
         Screen(
@@ -170,37 +176,88 @@ struct DayScreen: View {
         ) {
             VStack {
                 if loaded {
-                    if scrollView {
-                        ScrollingItemList(
-                            animation: animation,
-                            dayEvents: allDayEvents,
-                            noAllDayEvents: parentItems.filter {
-                                if let book {
-                                    if let chapter {
-                                        return $0.chapter == chapter
-                                    }
-
-                                    return $0.book == book
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            ForEach(day.allDayEvents, id: \.id) { item in
+                                HStack {
+                                    Text(item.text)
+                                    Spacer()
                                 }
-                                return true
+                                .fontWeight(.ultraLight)
                             }
-                        )
-                    } else {
-                        ItemList(
-                            animation: animation,
-                            dayEvents: allDayEvents,
-                            noAllDayEvents: parentItems.filter {
-                                if let book {
-                                    if let chapter {
-                                        return $0.chapter == chapter
-                                    }
 
-                                    return $0.book == book
-                                }
-                                return true
+                            ForEach(
+                                $items,
+                                id: \.id
+                            ) { $item in
+                                InLineItem(
+                                    item: item,
+                                    focus: $focus,
+                                    highlight: $highlight
+                                ).id(FocusedField.item(id: item.id))
+                                    .contextMenu {
+                                        Button(
+                                            "Delete",
+                                            systemImage: "trash.fill"
+                                        ) {
+                                            withAnimation {
+                                                item.delete()
+                                                items
+                                                    .removeAll {
+                                                        $0.id == item.id
+                                                    }
+                                            }
+                                        }
+
+                                        if !item.archived {
+                                            Button(
+                                                "Archive",
+                                                systemImage: "tray.and.arrow.down.fill"
+                                            ) {
+                                                withAnimation {
+                                                    item.archive()
+                                                    items
+                                                        .removeAll {
+                                                            $0.id == item.id
+                                                        }
+                                                }
+                                            }
+                                        }
+                                    }
                             }
-                        )
+                        }
+                        .onChange(of: highlight) {
+                            guard let item = highlight else { return }
+                            withAnimation {
+                                proxy.scrollTo(item, anchor: .top)
+                            }
+                        }
+                        .onChange(of: focus) {
+                            guard let item = focus else { return }
+                            withAnimation {
+                                proxy.scrollTo(item, anchor: .top)
+                            }
+                        }
+                        .onTapGesture {
+                            withAnimation {
+                                highlight = nil
+                            }
+                            focus = nil
+                        }
                     }
+                    .safeAreaPadding(
+                        .bottom,
+                        focus == nil ? Spacing.none : Spacing.xl
+                    )
+                    .onChange(of: highlight) {
+                        if highlight == nil {
+                            withAnimation {
+                                items.removeAll { $0.text.isEmpty }
+                            }
+                        }
+                    }
+                    .scrollBounceBehavior(.basedOnSize, axes: .vertical)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
                 } else {
                     Spacer()
                     HStack {
@@ -215,24 +272,80 @@ struct DayScreen: View {
                     Spacer()
                 }
             }
-            .onChange(of: items) {
-                loaded = false
-                Task {
-                    (parentItems, allDayEvents) = await ItemStore
-                        .loadSeperatedItems(by: date)
-                }
-
-                withAnimation {
-                    loaded = true
-                }
-            }
             .task {
-                await (parentItems, allDayEvents) = ItemStore
-                    .loadSeperatedItems(by: date)
-                withAnimation {
-                    loaded = true
+                let i = day.items.filter {
+                    if let eventData = $0.eventData {
+                        return $0.parent == nil && !$0.archived &&
+                            !eventData.allDay
+                    }
+
+                    return $0.parent == nil && !$0.archived
+                }
+                .sorted(by: { $0.position < $1.position })
+
+                items = i
+                loaded = true
+            }
+            .onChange(of: navigationStateService.insertItem.insert) {
+                guard navigationStateService.insertItem.insert else { return }
+                let (_, insertItem, date) = navigationStateService.insertItem
+                guard let date = date else { return }
+                if
+                    Calendar.current.isDate(
+                        date,
+                        inSameDayAs:
+                        self.date
+                    ), let i = insertItem
+                {
+                    i.timestamp = day.date
+                    i.day = day
+                    i.unarchive()
+                    withAnimation {
+                        items.append(i)
+                    }
+                    navigationStateService.insertItem = (false, nil, nil)
                 }
             }
+            .onChange(of: navigationStateService.addItem.add) {
+                guard navigationStateService.addItem.add else { return }
+                let (addItem, date) = navigationStateService.addItem
+                if addItem, date == self.date {
+                    let item =
+                        ItemStore.create(
+                            day: day,
+                            timestamp: Calendar.current.combineDateAndTime(
+                                date: self.date,
+                                time: Date()
+                            ),
+                            book: book,
+                            chapter: chapter
+                        )
+
+                    withAnimation {
+                        items.append(item)
+                    }
+                    // focus = .item(id: item.id)
+
+                    navigationStateService.addItem = (false, nil)
+                }
+            }
+        }
+        .onTapGesture {
+            withAnimation {
+                highlight = nil
+            }
+            focus = nil
+        }
+    }
+}
+
+struct TestDay: View {
+    @Environment(\.modelContext) private var modelContext: ModelContext
+    @Bindable var day: Day
+
+    var body: some View {
+        ForEach($day.items) { $item in
+            TextField("", text: $item.text)
         }
     }
 }

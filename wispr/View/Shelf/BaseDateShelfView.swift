@@ -65,7 +65,7 @@ struct BaseDateShelfView: View {
         .task {
             selectedDate = dayState.active.date
         }
-        .padding(.top, Spacing.m)
+        .shelfScreenStyle([.fraction(0.64)])
         .onChange(of: selectedDate) {
             if selectedDate != dayState.active.date {
                 if let d = DayStore.loadDay(from: days, by: selectedDate) {
@@ -77,23 +77,6 @@ struct BaseDateShelfView: View {
                 navigationStateService.shelfState.dismissShelf()
             }
         }
-
-        .presentationDetents([.fraction(0.64)])
-        .presentationCornerRadius(0)
-        .presentationBackground {
-            Rectangle().fill(
-                theme.activeTheme
-                    .backgroundMaterialOverlay
-            )
-            .fade(
-                from: .bottom,
-                fromOffset: 0.6,
-                to: .top,
-                toOffset: 1
-            )
-        }
-        .padding(.horizontal, Spacing.m)
-        .containerRelativeFrame([.horizontal, .vertical])
     }
 }
 

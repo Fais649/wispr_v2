@@ -73,10 +73,12 @@ final class PathStateService {
 
 enum Path: Hashable {
     case dayScreen,
+         none,
          timelineScreen,
          bookForm(book: Book),
          itemForm(item: Item),
          dateShelf,
+         audioRecorderShelf,
          bookShelf,
          archiveShelf,
          imageShelf,

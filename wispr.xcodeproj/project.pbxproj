@@ -21,12 +21,13 @@
 		3D6190FFEE042F8C9B28EA80 /* Title.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16B08F126606DB50D467CA4D /* Title.swift */; };
 		462FFDA2C516198C2371E4A6 /* BookScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73DA075D2B1BD4F719E9A75E /* BookScreen.swift */; };
 		498491347791AE6ED7F35ED4 /* Day.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D261881758A8FD6A113CFF1 /* Day.swift */; };
+		4BAB3ED4ACC50004362339ED /* WeekTimelineScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BC070835AED4CD9199BC7AA /* WeekTimelineScreen.swift */; };
+		4C6E44AC2AA52ABE8DA9BC79 /* AudioRecorderShelfView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11A865565FE7DBD0AC4F311 /* AudioRecorderShelfView.swift */; };
 		54F7713493F76D9F53345CF6 /* ItemRowLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F57CB5A26EE1916A6E5158C /* ItemRowLabel.swift */; };
 		5684F58B2CD29729D362A52B /* Lst.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3734624BA75FC7733A3F263 /* Lst.swift */; };
 		6067CD7156E2398C3198389A /* BaseArchiveShelfView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E29597EAB00461CD3515858 /* BaseArchiveShelfView.swift */; };
 		636077DF87F189F5D1DF0741 /* ItemList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 263B02BB21CF2C614CD0BCDF /* ItemList.swift */; };
-		6BE224F72395BCC42A564F72 /* ScrollingItemList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE6FB0BF7F15A75B1B6239A /* ScrollingItemList.swift */; };
-		74B7F6BE7B8480297044C7C7 /* Shelf.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E19435878094767EA5E5419 /* Shelf.swift */; };
+		6BE224F72395BCC42A564F72 /* InLineItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE6FB0BF7F15A75B1B6239A /* InLineItem.swift */; };
 		803F796C67C3444C573A04B2 /* HorizontalTimelineScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD6ABDB60C074A3F279D6402 /* HorizontalTimelineScreen.swift */; };
 		822805030A061B3D4B9C7525 /* BaseArchiveShelfView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E29597EAB00461CD3515858 /* BaseArchiveShelfView.swift */; };
 		82D58128EEEB9DECDABF8D0E /* ItemFormImageShelfView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3E2AADA584E01F30DFA94E7 /* ItemFormImageShelfView.swift */; };
@@ -34,6 +35,8 @@
 		84E41B281BF1D79CB4C169A9 /* DateShelfButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A59F0C22912EFC52F3A9E8F8 /* DateShelfButton.swift */; };
 		85F7D2E53058F518008CF171 /* DateShelfButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A59F0C22912EFC52F3A9E8F8 /* DateShelfButton.swift */; };
 		877F11909503F1733CEC1DFB /* ItemFormImageShelfView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3E2AADA584E01F30DFA94E7 /* ItemFormImageShelfView.swift */; };
+		890F27F65029D5F8B416CEB8 /* WeekTimelineScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BC070835AED4CD9199BC7AA /* WeekTimelineScreen.swift */; };
+		8C06FB707AF34E85BF7F97C0 /* AudioRecorderShelfView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11A865565FE7DBD0AC4F311 /* AudioRecorderShelfView.swift */; };
 		9042C71DCCCBCBA250A0315B /* HorizontalTimelineDateShelfView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FEAA797C610D08261B275A7 /* HorizontalTimelineDateShelfView.swift */; };
 		911C71D0BEC738EB10381B2B /* Lst.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3734624BA75FC7733A3F263 /* Lst.swift */; };
 		91F31540CCE2CF8BD00A21AE /* ItemFormBookShelfView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC973170E15C14DB75C41B4B /* ItemFormBookShelfView.swift */; };
@@ -47,7 +50,10 @@
 		A2215F452D88681C00A558C8 /* SwiftUIIntrospect-Static in Frameworks */ = {isa = PBXBuildFile; productRef = A2215F442D88681C00A558C8 /* SwiftUIIntrospect-Static */; };
 		A2215F502D886B1000A558C8 /* NavigationTransitions in Frameworks */ = {isa = PBXBuildFile; productRef = A2215F4F2D886B1000A558C8 /* NavigationTransitions */; };
 		A2215F552D896AE400A558C8 /* SwipeActions in Frameworks */ = {isa = PBXBuildFile; productRef = A2215F542D896AE400A558C8 /* SwipeActions */; };
+		A22CB6112DB995E6007F9561 /* AudioKitUI in Frameworks */ = {isa = PBXBuildFile; productRef = A22CB6102DB995E6007F9561 /* AudioKitUI */; };
+		A22CB87F2DBCD732007F9561 /* AutoResizingSheet in Frameworks */ = {isa = PBXBuildFile; productRef = A22CB87E2DBCD732007F9561 /* AutoResizingSheet */; };
 		A23567062DA8FE62006FB2A6 /* LLM in Frameworks */ = {isa = PBXBuildFile; productRef = A23567052DA8FE62006FB2A6 /* LLM */; };
+		A2CB0BD42DB99054000E64B3 /* AudioKitEX in Frameworks */ = {isa = PBXBuildFile; productRef = A2CB0BD32DB99054000E64B3 /* AudioKitEX */; };
 		A2FE05B12D5B96260087AE41 /* AudioKit in Frameworks */ = {isa = PBXBuildFile; productRef = A2FE05B02D5B96260087AE41 /* AudioKit */; };
 		A2FE05B42D5B96350087AE41 /* SwiftWhisper in Frameworks */ = {isa = PBXBuildFile; productRef = A2FE05B32D5B96350087AE41 /* SwiftWhisper */; };
 		A2FFF11A2DA987EF00A0FE13 /* Reorderable in Frameworks */ = {isa = PBXBuildFile; productRef = A2FFF1192DA987EF00A0FE13 /* Reorderable */; };
@@ -57,7 +63,7 @@
 		BAF59CC6FF652F3ACEF7FB00 /* BookFormColorShelf.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16214298583665E7D7D915D1 /* BookFormColorShelf.swift */; };
 		BDCF45ACC1E396C313F88AC9 /* VerticalTimelineScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28E0D276C47A546417069FFC /* VerticalTimelineScreen.swift */; };
 		C497A3FE70F8274A1F04A368 /* DayStateService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC3ED17A6E72AB1F77C80E94 /* DayStateService.swift */; };
-		C87E5731BBB70472E3AD9089 /* ScrollingItemList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE6FB0BF7F15A75B1B6239A /* ScrollingItemList.swift */; };
+		C87E5731BBB70472E3AD9089 /* InLineItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE6FB0BF7F15A75B1B6239A /* InLineItem.swift */; };
 		C9D86662010EB266CC5BA6ED /* Day.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D261881758A8FD6A113CFF1 /* Day.swift */; };
 		CD62B28452B2B23683CF1239 /* ToolbarButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6292165AD7F6F20802D69344 /* ToolbarButton.swift */; };
 		D8FEB375C25F2DDF56390A90 /* DateTitle.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC721D73CCC0E2BDB54F3AF /* DateTitle.swift */; };
@@ -115,7 +121,6 @@
 		2ED7E400481892B607A35FB3 /* BaseSettingBookShelfView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BaseSettingBookShelfView.swift; sourceTree = "<group>"; };
 		3126C96E2E44450BD3114378 /* CalendarUtil.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CalendarUtil.swift; sourceTree = "<group>"; };
 		31DA0596A1365E6B9C7259DD /* Observables.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Observables.swift; sourceTree = "<group>"; };
-		3E19435878094767EA5E5419 /* Shelf.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Shelf.swift; sourceTree = "<group>"; };
 		3FEAA797C610D08261B275A7 /* HorizontalTimelineDateShelfView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HorizontalTimelineDateShelfView.swift; sourceTree = "<group>"; };
 		47A9352EC3E6DAF16016F1E6 /* Element.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Element.swift; sourceTree = "<group>"; };
 		4D261881758A8FD6A113CFF1 /* Day.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Day.swift; sourceTree = "<group>"; };
@@ -132,7 +137,8 @@
 		73DA075D2B1BD4F719E9A75E /* BookScreen.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BookScreen.swift; sourceTree = "<group>"; };
 		7E29597EAB00461CD3515858 /* BaseArchiveShelfView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BaseArchiveShelfView.swift; sourceTree = "<group>"; };
 		87930D6097773C3020435CF5 /* FlashService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FlashService.swift; sourceTree = "<group>"; };
-		8AE6FB0BF7F15A75B1B6239A /* ScrollingItemList.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScrollingItemList.swift; sourceTree = "<group>"; };
+		8AE6FB0BF7F15A75B1B6239A /* InLineItem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = InLineItem.swift; sourceTree = "<group>"; };
+		8BC070835AED4CD9199BC7AA /* WeekTimelineScreen.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeekTimelineScreen.swift; sourceTree = "<group>"; };
 		90608142470C5F53BFA16CFA /* TextInput.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TextInput.swift; sourceTree = "<group>"; };
 		9094C8D17F51B95FE060A2CE /* Screen.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Screen.swift; sourceTree = "<group>"; };
 		9B72413105B525634EC035D6 /* Query.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Query.swift; sourceTree = "<group>"; };
@@ -146,6 +152,7 @@
 		A2B9AD0A2D5B25190087911B /* widgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = widgetExtension.entitlements; sourceTree = "<group>"; };
 		A59F0C22912EFC52F3A9E8F8 /* DateShelfButton.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DateShelfButton.swift; sourceTree = "<group>"; };
 		AD7F7ECBCFFA99C65D789F04 /* Quarter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Quarter.swift; sourceTree = "<group>"; };
+		B11A865565FE7DBD0AC4F311 /* AudioRecorderShelfView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AudioRecorderShelfView.swift; sourceTree = "<group>"; };
 		C3734624BA75FC7733A3F263 /* Lst.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Lst.swift; sourceTree = "<group>"; };
 		C44952C8CF97636BAC358E05 /* TimeLine.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TimeLine.swift; sourceTree = "<group>"; };
 		CC973170E15C14DB75C41B4B /* ItemFormBookShelfView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ItemFormBookShelfView.swift; sourceTree = "<group>"; };
@@ -248,6 +255,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				A23567062DA8FE62006FB2A6 /* LLM in Frameworks */,
+				A2CB0BD42DB99054000E64B3 /* AudioKitEX in Frameworks */,
+				A22CB87F2DBCD732007F9561 /* AutoResizingSheet in Frameworks */,
+				A22CB6112DB995E6007F9561 /* AudioKitUI in Frameworks */,
 				A2174CE32D781AFE00BF4E86 /* Flow in Frameworks */,
 				A2215F502D886B1000A558C8 /* NavigationTransitions in Frameworks */,
 				A2FFF11A2DA987EF00A0FE13 /* Reorderable in Frameworks */,
@@ -298,6 +308,7 @@
 				16214298583665E7D7D915D1 /* BookFormColorShelf.swift */,
 				7E29597EAB00461CD3515858 /* BaseArchiveShelfView.swift */,
 				E3E2AADA584E01F30DFA94E7 /* ItemFormImageShelfView.swift */,
+				B11A865565FE7DBD0AC4F311 /* AudioRecorderShelfView.swift */,
 			);
 			path = Shelf;
 			sourceTree = "<group>";
@@ -317,6 +328,7 @@
 				28E0D276C47A546417069FFC /* VerticalTimelineScreen.swift */,
 				55E8DB00AA1F868E9097962E /* ChapterScreen.swift */,
 				73DA075D2B1BD4F719E9A75E /* BookScreen.swift */,
+				8BC070835AED4CD9199BC7AA /* WeekTimelineScreen.swift */,
 			);
 			path = Screen;
 			sourceTree = "<group>";
@@ -337,7 +349,6 @@
 			children = (
 				9094C8D17F51B95FE060A2CE /* Screen.swift */,
 				16B08F126606DB50D467CA4D /* Title.swift */,
-				3E19435878094767EA5E5419 /* Shelf.swift */,
 				6292165AD7F6F20802D69344 /* ToolbarButton.swift */,
 				5A475F925986F9BE9E31B2E2 /* TxtField.swift */,
 				C3734624BA75FC7733A3F263 /* Lst.swift */,
@@ -430,7 +441,7 @@
 			children = (
 				CCC721D73CCC0E2BDB54F3AF /* DateTitle.swift */,
 				90608142470C5F53BFA16CFA /* TextInput.swift */,
-				8AE6FB0BF7F15A75B1B6239A /* ScrollingItemList.swift */,
+				8AE6FB0BF7F15A75B1B6239A /* InLineItem.swift */,
 				263B02BB21CF2C614CD0BCDF /* ItemList.swift */,
 				1F57CB5A26EE1916A6E5158C /* ItemRowLabel.swift */,
 				A59F0C22912EFC52F3A9E8F8 /* DateShelfButton.swift */,
@@ -478,6 +489,9 @@
 				A2215F542D896AE400A558C8 /* SwipeActions */,
 				A23567052DA8FE62006FB2A6 /* LLM */,
 				A2FFF1192DA987EF00A0FE13 /* Reorderable */,
+				A2CB0BD32DB99054000E64B3 /* AudioKitEX */,
+				A22CB6102DB995E6007F9561 /* AudioKitUI */,
+				A22CB87E2DBCD732007F9561 /* AutoResizingSheet */,
 			);
 			productName = wispr;
 			productReference = A2A587862D3120F20000B20D /* wispr.app */;
@@ -566,6 +580,9 @@
 				A2215F532D896AE400A558C8 /* XCRemoteSwiftPackageReference "SwipeActions" */,
 				A23567042DA8FE62006FB2A6 /* XCRemoteSwiftPackageReference "LLM.swift" */,
 				A2FFF1182DA987EF00A0FE13 /* XCRemoteSwiftPackageReference "reorderable" */,
+				A2CB0BD22DB99054000E64B3 /* XCRemoteSwiftPackageReference "AudioKitEX" */,
+				A22CB60F2DB995E6007F9561 /* XCRemoteSwiftPackageReference "AudioKitUI" */,
+				A22CB87D2DBCD732007F9561 /* XCRemoteSwiftPackageReference "AutoResizingSheet" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A2A587872D3120F20000B20D /* Products */;
@@ -618,7 +635,6 @@
 				D8FEB375C25F2DDF56390A90 /* DateTitle.swift in Sources */,
 				2B08DCDA40FC5DC62AC201AA /* Screen.swift in Sources */,
 				3D6190FFEE042F8C9B28EA80 /* Title.swift in Sources */,
-				74B7F6BE7B8480297044C7C7 /* Shelf.swift in Sources */,
 				82EF7E0068945D9AE5DB95C9 /* ToolbarButton.swift in Sources */,
 				B323BC9E3F7391B76D1F41B6 /* TxtField.swift in Sources */,
 				5684F58B2CD29729D362A52B /* Lst.swift in Sources */,
@@ -632,7 +648,7 @@
 				BDCF45ACC1E396C313F88AC9 /* VerticalTimelineScreen.swift in Sources */,
 				A32A011CABF6F3524EF66921 /* LLMService.swift in Sources */,
 				0B871B087AB8A9E803D9DC25 /* ItemFormArchiveShelfView.swift in Sources */,
-				C87E5731BBB70472E3AD9089 /* ScrollingItemList.swift in Sources */,
+				C87E5731BBB70472E3AD9089 /* InLineItem.swift in Sources */,
 				636077DF87F189F5D1DF0741 /* ItemList.swift in Sources */,
 				54F7713493F76D9F53345CF6 /* ItemRowLabel.swift in Sources */,
 				3702074F5F83CBC3E8B7CE5D /* BookFormColorShelf.swift in Sources */,
@@ -641,6 +657,8 @@
 				FE51F055ABCC2F23CAF9EAFA /* ChapterScreen.swift in Sources */,
 				A17C90B2D93F9459C923D4AD /* BookScreen.swift in Sources */,
 				877F11909503F1733CEC1DFB /* ItemFormImageShelfView.swift in Sources */,
+				890F27F65029D5F8B416CEB8 /* WeekTimelineScreen.swift in Sources */,
+				8C06FB707AF34E85BF7F97C0 /* AudioRecorderShelfView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -664,7 +682,7 @@
 				38C1AAD0E51E149A37E75BE6 /* VerticalTimelineScreen.swift in Sources */,
 				FC3D96940D809E022D797B07 /* LLMService.swift in Sources */,
 				33410574A1CA88A2156EF37B /* ItemFormArchiveShelfView.swift in Sources */,
-				6BE224F72395BCC42A564F72 /* ScrollingItemList.swift in Sources */,
+				6BE224F72395BCC42A564F72 /* InLineItem.swift in Sources */,
 				DD55FE70E7A7230800F379C6 /* ItemList.swift in Sources */,
 				F003C71B22C5B822501EF3F4 /* ItemRowLabel.swift in Sources */,
 				BAF59CC6FF652F3ACEF7FB00 /* BookFormColorShelf.swift in Sources */,
@@ -673,6 +691,8 @@
 				F25E10FE4615EF6FEBE5CAE9 /* ChapterScreen.swift in Sources */,
 				462FFDA2C516198C2371E4A6 /* BookScreen.swift in Sources */,
 				82D58128EEEB9DECDABF8D0E /* ItemFormImageShelfView.swift in Sources */,
+				4BAB3ED4ACC50004362339ED /* WeekTimelineScreen.swift in Sources */,
+				4C6E44AC2AA52ABE8DA9BC79 /* AudioRecorderShelfView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1019,12 +1039,36 @@
 				minimumVersion = 1.1.0;
 			};
 		};
+		A22CB60F2DB995E6007F9561 /* XCRemoteSwiftPackageReference "AudioKitUI" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/AudioKit/AudioKitUI.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.3.7;
+			};
+		};
+		A22CB87D2DBCD732007F9561 /* XCRemoteSwiftPackageReference "AutoResizingSheet" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/benedom/AutoResizingSheet";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.5;
+			};
+		};
 		A23567042DA8FE62006FB2A6 /* XCRemoteSwiftPackageReference "LLM.swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/eastriverlee/LLM.swift/";
 			requirement = {
 				branch = main;
 				kind = branch;
+			};
+		};
+		A2CB0BD22DB99054000E64B3 /* XCRemoteSwiftPackageReference "AudioKitEX" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/AudioKit/AudioKitEX.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.6.2;
 			};
 		};
 		A2FE05AF2D5B96260087AE41 /* XCRemoteSwiftPackageReference "AudioKit" */ = {
@@ -1099,10 +1143,25 @@
 			package = A2215F532D896AE400A558C8 /* XCRemoteSwiftPackageReference "SwipeActions" */;
 			productName = SwipeActions;
 		};
+		A22CB6102DB995E6007F9561 /* AudioKitUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A22CB60F2DB995E6007F9561 /* XCRemoteSwiftPackageReference "AudioKitUI" */;
+			productName = AudioKitUI;
+		};
+		A22CB87E2DBCD732007F9561 /* AutoResizingSheet */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A22CB87D2DBCD732007F9561 /* XCRemoteSwiftPackageReference "AutoResizingSheet" */;
+			productName = AutoResizingSheet;
+		};
 		A23567052DA8FE62006FB2A6 /* LLM */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = A23567042DA8FE62006FB2A6 /* XCRemoteSwiftPackageReference "LLM.swift" */;
 			productName = LLM;
+		};
+		A2CB0BD32DB99054000E64B3 /* AudioKitEX */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A2CB0BD22DB99054000E64B3 /* XCRemoteSwiftPackageReference "AudioKitEX" */;
+			productName = AudioKitEX;
 		};
 		A2FE05B02D5B96260087AE41 /* AudioKit */ = {
 			isa = XCSwiftPackageProductDependency;

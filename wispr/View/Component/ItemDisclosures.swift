@@ -38,6 +38,8 @@ struct ItemDisclosures: View {
     var items: [Item]
     var prefix: Int? = nil
 
+    @State var edit: Bool = false
+
     func onMove(_ indexSet: IndexSet, _ newIndex: Int) {
         let _ = ItemStore.updatePositions(
             items: items,
@@ -84,8 +86,6 @@ struct ItemDisclosures: View {
                 withAnimation {
                     item.toggleTaskDataCompletedAt()
                 }
-            } else {
-                navigationStateService.goToItemForm(item)
             }
         } label: {
             ItemRowLabel(item: item)

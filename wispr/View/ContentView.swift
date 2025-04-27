@@ -21,7 +21,7 @@ struct Logo: View {
         Image("Logo")
             .resizable()
             .scaledToFit()
-            .frame(width: 12, height: 12)
+            .frame(width: 18, height: 18)
     }
 }
 
@@ -99,59 +99,60 @@ struct ContentView: View {
     @State var activeDate: Date? = Calendar.current.startOfDay(for: Date())
 
     @State var showSheet: Bool = true
+    @State var showArchive: Bool = false
+
+    @Query(filter: #Predicate<Item> { $0.parent != nil }) var children: [Item]
+    @Query() var allItems: [Item]
+
+    @State var mainID: UUID = .init()
+
+    @State var selectedPath: Path? = .timelineScreen
+    @State var mainPath: Path = .timelineScreen
 
     var body: some View {
-        NavigationStack(path: $navigationStateService.pathState.path) {
+        NavigationStack {
             VStack {
-                if timelineLoaded {
-                    HorizontalTimelineScreen(
-                        animation: animation,
-                        selectedDate: $selectedDate,
-                        activeDate: $activeDate
-                    ).tag("main")
-                        .contentMargins(
-                            .horizontal,
-                            10,
-                            for: .scrollContent
-                        )
-                        .tabViewStyle(.page)
-                        .toolbar {
-                            ToolbarItemGroup(
-                                placement: .bottomBar
-                            ) {
-                                Tool(
-                                    animation: animation,
-                                    selectedDate: $selectedDate,
-                                    activeDate: $activeDate
-                                )
-                            }
-                        }
+                if let book = bookState.book {
+                    TestBookScreen(book: book)
                 } else {
-                    Spacer()
-                    HStack {
+                    if timelineLoaded {
+                        HorizontalTimelineScreen(
+                            animation: animation,
+                            selectedDate: $selectedDate,
+                            activeDate: $activeDate
+                        )
+                        .tag(Path.timelineScreen)
+                    } else {
                         Spacer()
-                        ProgressView()
-                            .progressViewStyle(.circular)
-                            .toolbarBackground(.hidden)
-                            .toolbarBackgroundVisibility(.hidden)
-                            .toolbarVisibility(.hidden)
+                        HStack {
+                            Spacer()
+                            ProgressView()
+                                .progressViewStyle(.circular)
+                            Spacer()
+                        }
                         Spacer()
                     }
-                    Spacer()
                 }
             }
             .overlay {
                 flashService.flashMessage
             }
-            .navigationDestination(for: Path.self) { path in
-                navigationStateService.destination(animation, path)
-                    .background(navigationStateService.background)
-            }
             .tabViewStyle(.page)
-            .background(navigationStateService.background)
+            .background(RandomMeshBackground(color: .white))
+            .id(Path.timelineScreen)
+            .toolbar {
+                ToolbarItemGroup(
+                    placement: .bottomBar
+                ) {
+                    Tool(
+                        animation: animation,
+                        selectedPath: $selectedPath,
+                        selectedDate: $selectedDate,
+                        activeDate: $activeDate,
+                    )
+                }
+            }
         }
-        .toolbarBackground(.ultraThinMaterial)
-        .toolbarBackgroundVisibility(.visible)
         .scrollIndicators(.hidden)
         .scrollContentBackground(.hidden)
         .environment(globals)
@@ -313,24 +314,17 @@ struct GlobalBackground: View {
 
     var body: some View {
         VStack {
-            if let bg = navigationStateService.tempBackground {
-                bg()
-            } else if let book = activeBook.book {
-                book.globalBackground
-            } else {
-                RandomMeshBackground(
-                    color: theme.activeTheme
-                        .defaultBackgroundColor
-                )
-            }
+            RandomMeshBackground(
+                color: theme.activeTheme
+                    .defaultBackgroundColor
+            )
         }
-        .overlay(theme.activeTheme.backgroundMaterialOverlay)
-        .ignoresSafeArea()
         .allowsHitTesting(false)
     }
 }
 
 struct RandomMeshBackground: View {
+    @Environment(ThemeStateService.self) private var theme: ThemeStateService
     @State var topRight: CGFloat = .random(in: 0 ... 1)
     @State var topLeft: CGFloat = .random(in: 0 ... 1)
     @State var top: CGFloat = .random(in: 0 ... 1)
@@ -361,5 +355,7 @@ struct RandomMeshBackground: View {
             color.opacity(bottomRight),
         ])
         .blur(radius: 30)
+        .overlay(theme.activeTheme.backgroundMaterialOverlay)
+        .ignoresSafeArea()
     }
 }
